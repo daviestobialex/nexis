@@ -13,12 +13,9 @@ message Ping {
 message Manifest {
   bytes pubkey = 1;
   uint32 protocol_version = 2; // protobuf protocol version message id for nexus
-  fixed64 node_id = 3; // node id, would have to do some research how this would matter from a peer to peer network point of view
   string org_name = 4;// name of organisation
   string org_url = 5;// name of organisation
-  google.protobuf.Timestamp last_seen = 6;// request and response time stamp
-  Contact contact = 7;// user to contact within orgnisation
-  bytes signature = 11;          // signature over manifest (except signature field)
+  Contact contact = 7;// user to contact within organisation
 }
 
 message Contact{
@@ -66,8 +63,10 @@ message Result {
 }
 
 message PeerDiscovery {
-    bool addr = 1;// get network peer information
-    bool  addrs = 2; // get all peers from a peer
+   oneof payload {
+      bool addr = 1;// get network peer information
+      bool  addrs = 2; // get all peers from a peer
+  }
 }
 
 message NexusMessage {
@@ -77,6 +76,15 @@ message NexusMessage {
     Catalog catalog   = 3;
     Call function_call = 4;
     uint32 get_catalog = 6; 
-    PeerDiscovery peerDiscovery = 7;
+    PeerDiscovery peer_discovery = 7;
   }
+}
+
+message NexusEnvelop {
+    fixed64 node_id = 2; // node id, would have to do some research how this would matter from a peer to peer network point of view
+    fixed64 message_id = 3;     // UUID as string
+    NexusMessage message = 4;        // optional message-specific payload
+    bytes checksum = 5;       // first 4 bytes of double SHA-256(payload)    
+    google.protobuf.Timestamp time_stamp = 6;// request and response time stamp
+    bytes signature = 11;          // signature over manifest (except signature field)
 }

@@ -2,15 +2,21 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package org.nexus.base;
+package org.nexus.core;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.io.FileNotFoundException;
+import java.time.Duration;
+import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.nexus.core.PeerGroup;
+import org.nexus.base.Manifest;
+import org.nexus.base.NexusEnvelopBuilder;
+import org.nexus.base.NexusNetwork;
+import org.nexus.base.NodeIdentity;
+import org.nexus.base.NodeIdentityProvider;
 import org.nexus.net.NioProtoServer;
 
 /**
@@ -61,8 +67,13 @@ public class NexusBootstrap {
     private void seedPeers(NexusNetwork network, int maxConnections) {
 
         // connect to peers and seed
-        PeerGroup peer = new PeerGroup(network, group);
-        // begin message propagagtions to active peers, a class would handle this
-        peer.beginMessagePropagation();
+        PeerGroup peer = new PeerGroup(network, group, maxConnections);
+        try {
+            // begin message propagagtions to active peers, a class would handle this
+            Thread.sleep(Duration.ofSeconds(5));
+        } catch (InterruptedException ex) {
+            Logger.getLogger(NexusBootstrap.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        peer.beginMessagePropagation(new NexusEnvelopBuilder(identity));
     }
 }

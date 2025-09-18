@@ -70,4 +70,9 @@ public final class NodeId {
             return new byte[]{};
         }
     }
+
+    public byte[] getId() {
+        return id;
+    }
+
 }

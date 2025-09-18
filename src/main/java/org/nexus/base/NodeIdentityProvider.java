@@ -4,12 +4,6 @@
  */
 package org.nexus.base;
 
-import java.io.FileNotFoundException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.KeyPair;
-
 /**
  *
  * @author daviestobialex

@@ -4,7 +4,7 @@
  */
 package org.nexus.testers;
 
-import org.nexus.base.NexusBootstrap;
+import org.nexus.core.NexusBootstrap;
 import org.nexus.base.NexusNetwork;
 
 /**
@@ -19,7 +19,7 @@ public class NexusTestPoint {
         NexusBootstrap peerManager = new NexusBootstrap();
 
 //        peerManager.start(9001, NexusNetwork.LOCALHOSTTEST, 5);
-        peerManager.start(9001, NexusNetwork.LOCALHOSTTEST, 5);
+        peerManager.start(9004, NexusNetwork.LOCALHOSTTEST, 5);
 //        peerManager.start(9002, NexusNetwork.LOCALHOSTTEST, 5);
 
         // Keep the JVM alive

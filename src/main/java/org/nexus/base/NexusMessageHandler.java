@@ -9,6 +9,6 @@ package org.nexus.base;
  *
  * @author daviestobialex
  */
-public interface MessageHandler {
+public interface NexusMessageHandler {
 
 }
