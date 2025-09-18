@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package org.nexus.base.net;
+package org.nexus.net;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -12,8 +12,8 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import java.util.Set;
-import org.nexus.base.handlers.ConnectionHandler;
-import org.nexus.base.handlers.PingPongConnectionHandler;
+import org.nexus.handlers.ConnectionHandler;
+import org.nexus.handlers.PingPongConnectionHandler;
 
 /**
  *

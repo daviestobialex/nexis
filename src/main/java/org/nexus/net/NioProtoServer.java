@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package org.nexus.base.net;
+package org.nexus.net;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -12,7 +12,7 @@ import io.netty.handler.codec.protobuf.ProtobufEncoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 import java.util.Set;
-import org.nexus.base.handlers.ProtoConnectionHandler;
+import org.nexus.handlers.ProtoConnectionHandler;
 import org.nexus.base.proto.NexusProtocol;
 
 /**

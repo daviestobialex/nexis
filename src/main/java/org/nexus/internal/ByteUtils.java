@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.nexus.base.internal;
+package org.nexus.internal;
 
 import com.google.common.io.BaseEncoding;
 
@@ -27,8 +27,8 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Comparator;
-import static org.nexus.base.internal.Preconditions.check;
-import static org.nexus.base.internal.Preconditions.checkArgument;
+import static org.nexus.internal.Preconditions.check;
+import static org.nexus.internal.Preconditions.checkArgument;
 
 /**
  * Utility methods for bit, byte, and integer manipulation and conversion. Most of these were moved here

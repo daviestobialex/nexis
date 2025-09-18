@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.nexus.base.internal;
+package org.nexus.internal;
 
 /**
  * This class implements a subset of the functionality of the {@code HexFormat} class available in Java 17 and later.

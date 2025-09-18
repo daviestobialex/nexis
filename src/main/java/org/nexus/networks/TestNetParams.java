@@ -2,16 +2,16 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package org.nexus.base.networks;
+package org.nexus.networks;
 
 import org.nexus.base.NexusNetwork;
-import org.nexus.base.internal.Sha256Hash;
+import org.nexus.internal.Sha256Hash;
 
 /**
  *
  * @author daviestobialex
  */
-public class TestNetParams extends NexusNetworkParams {
+public class TestNetParams extends NexusNetworkConfiguration {
 
     public TestNetParams() {
         super(NexusNetwork.LOCALHOSTTEST, 0xf9beb4d9);

@@ -2,24 +2,24 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package org.nexus.base.networks;
+package org.nexus.networks;
 
 import java.time.Instant;
-import org.nexus.base.NetworkParams;
+import org.nexus.base.NetworkConfiguration;
 import org.nexus.base.NexusNetwork;
-import org.nexus.base.internal.Sha256Hash;
+import org.nexus.internal.Sha256Hash;
 
 /**
  *
  * @author daviestobialex
  */
-public class NexusNetworkParams extends NetworkParams {
+public class NexusNetworkConfiguration extends NetworkConfiguration {
 
     private static final Sha256Hash GENESIS_HASH = Sha256Hash.wrap("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f");
     private static final Instant GENESIS_TIME = Instant.ofEpochSecond(1231006505);
     private static final long GENESIS_NONCE = 2083236893;
 
-    public NexusNetworkParams(NexusNetwork network, int packetMagic) {
+    public NexusNetworkConfiguration(NexusNetwork network, int packetMagic) {
         super(network, packetMagic);
     }
 
@@ -30,7 +30,7 @@ public class NexusNetworkParams extends NetworkParams {
      * @return the network parameters for the given string ID or NULL if not
      * recognized
      */
-    public static NexusNetworkParams fromID(String id) {
+    public static NexusNetworkConfiguration fromID(String id) {
         if (id.equals(NexusNetwork.ID_TESTNET)) {
             return TestNetParams.get();
         } else {
@@ -45,7 +45,7 @@ public class NexusNetworkParams extends NetworkParams {
      * @return the network parameters for the given string ID
      * @throws IllegalArgumentException if unknown network
      */
-    public static NexusNetworkParams of(NexusNetwork network) {
+    public static NexusNetworkConfiguration of(NexusNetwork network) {
         switch (network) {
             case LOCALHOSTTEST -> {
                 return TestNetParams.get();

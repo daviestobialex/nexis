@@ -4,7 +4,7 @@
  */
 package org.nexus.base;
 
-import org.nexus.base.internal.Sha256Hash;
+import org.nexus.internal.Sha256Hash;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -12,8 +12,9 @@ import java.util.Objects;
 /**
  *
  * <p>
- * NetworkParameters contains the data needed for working with an instantiation
- * of a Nexus chain.</p>
+ * NetworkConfiguration contains the data needed for working with an instantiation
+ * of a Nexus network chain.
+ * </p>
  *
  * <p>
  * This is an abstract class, concrete instantiations can be found in the
@@ -22,7 +23,7 @@ import java.util.Objects;
  *
  * @author daviestobialex
  */
-public abstract class NetworkParams {
+public abstract class NetworkConfiguration {
 
     protected final NexusNetwork network;
 
@@ -65,7 +66,7 @@ public abstract class NetworkParams {
     protected int[] addrSeeds;
     protected Map<Integer, Sha256Hash> checkpoints = new HashMap<>();
 
-    protected NetworkParams(NexusNetwork network, int messagePrefix) {
+    protected NetworkConfiguration(NexusNetwork network, int messagePrefix) {
         this.network = network;
         this.packetMagic = messagePrefix;
     }
@@ -102,7 +103,7 @@ public abstract class NetworkParams {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        return network.id().equals(((NetworkParams) o).network.id());
+        return network.id().equals(((NetworkConfiguration) o).network.id());
     }
 
     @Override

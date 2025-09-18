@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package org.nexus.base.listeners;
+package org.nexus.listeners;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -13,7 +13,7 @@ import java.util.Random;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import org.nexus.base.networks.NexusNetworkParams;
+import org.nexus.networks.NexusNetworkConfiguration;
 
 /**
  *
@@ -23,7 +23,7 @@ public class PeerConnectListener implements ChannelFutureListener {
 
     private static final Logger LOGGER = Logger.getLogger(PeerConnectListener.class.getName());
 
-    private final NexusNetworkParams networkParams;
+    private final NexusNetworkConfiguration networkParams;
     private final Bootstrap bootstrap;
     private final EventLoop eventLoop;
 
@@ -38,7 +38,7 @@ public class PeerConnectListener implements ChannelFutureListener {
     private final Random random = new Random();
 
     public PeerConnectListener(
-            NexusNetworkParams networkParams,
+            NexusNetworkConfiguration networkParams,
             Bootstrap bootstrap,
             EventLoop eventLoop,
             CopyOnWriteArraySet<Channel> activePeers,

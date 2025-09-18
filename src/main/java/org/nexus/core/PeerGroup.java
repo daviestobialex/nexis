@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package org.nexus.base.core;
+package org.nexus.core;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -13,9 +13,9 @@ import java.net.InetSocketAddress;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArraySet;
 import org.nexus.base.NexusNetwork;
-import org.nexus.base.listeners.PeerConnectListener;
-import org.nexus.base.net.NioProtoServer;
-import org.nexus.base.networks.NexusNetworkParams;
+import org.nexus.listeners.PeerConnectListener;
+import org.nexus.net.NioProtoServer;
+import org.nexus.networks.NexusNetworkConfiguration;
 
 /**
  *
@@ -25,6 +25,9 @@ public class PeerGroup {
 
     // Currently active peers. This is an ordered list rather than a set to make unit tests predictable.
     private final CopyOnWriteArraySet<Channel> peers = new CopyOnWriteArraySet<>();
+    private final NexusNetworkConfiguration params;
+    private static final int DEFAULT_MAX_CONNECTIONS = 1;
+    private final EventLoopGroup group;
 
     /**
      * Creates a PeerGroup for the given network.No chain is provided so this
@@ -36,19 +39,39 @@ public class PeerGroup {
      * @param group
      */
     public PeerGroup(NexusNetwork network, EventLoopGroup group) {
-        this(NexusNetworkParams.of(Objects.requireNonNull(network)), group);
+        this(NexusNetworkConfiguration.of(Objects.requireNonNull(network)), group);
 
     }
 
-    public PeerGroup(NexusNetwork network, EventLoopGroup group, int maxConnections) {
-        this(NexusNetworkParams.of(Objects.requireNonNull(network)), group);
+    protected PeerGroup(NexusNetworkConfiguration params, EventLoopGroup group) {
+        this(params, group, DEFAULT_MAX_CONNECTIONS);
     }
 
-    protected PeerGroup(NexusNetworkParams params, EventLoopGroup group) {
+    protected PeerGroup(NexusNetworkConfiguration params, EventLoopGroup group, int maxConnections) {
 
+        this.params = params;
         String host = params.getNetwork().id();
         int port = params.getPort();
+        this.group = group;
 
+        connectToPeer(host, port);
+
+        seed(maxConnections);
+    }
+
+    private void seed(int maxConnections) {
+
+        String[] dnsSeeds = params.getDnsSeeds();
+
+        for (String address : dnsSeeds) {
+            if (peers.size() > maxConnections) {
+                break;
+            }
+            connectToPeer(address, params.getPort());
+        }
+    }
+
+    private void connectToPeer(String host, int port) {
         Bootstrap b = new Bootstrap();
         b.group(group)
                 .channel(NioSocketChannel.class)
@@ -64,5 +87,13 @@ public class PeerGroup {
                         peers,
                         10,
                         10));
+    }
+
+    /**
+     * node will not begin to initiate contact with other connected peers until
+     * this is called
+     */
+    public void beginMessagePropagation() {
+
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.nexus.base.internal;
+package org.nexus.internal;
 
 import java.util.function.Supplier;
 

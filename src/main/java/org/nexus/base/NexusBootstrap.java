@@ -9,10 +9,9 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.io.FileNotFoundException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.nexus.base.core.PeerGroup;
-import org.nexus.base.net.NioProtoServer;
+import org.nexus.core.PeerGroup;
+import org.nexus.net.NioProtoServer;
 
 /**
  *
@@ -61,7 +60,9 @@ public class NexusBootstrap {
 
     private void seedPeers(NexusNetwork network, int maxConnections) {
 
-        PeerGroup peers = new PeerGroup(network, group);
-
+        // connect to peers and seed
+        PeerGroup peer = new PeerGroup(network, group);
+        // begin message propagagtions to active peers, a class would handle this
+        peer.beginMessagePropagation();
     }
 }
