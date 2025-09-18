@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package org.nexus.base.proto;
+
+option optimize_for = SPEED;
+
+message Ping {
+  uint32 ping = 1; // used to keep track of the number of pings between peers
+}
+
+message Manifest {
+  bytes pubkey = 1;
+  uint32 protocol_version = 2; // protobuf protocol version message id for nexus
+  fixed64 node_id = 3; // node id, would have to do some research how this would matter from a peer to peer network point of view
+  string org_name = 4;// name of organisation
+  string org_url = 5;// name of organisation
+  google.protobuf.Timestamp last_seen = 6;// request and response time stamp
+  Contact contact = 7;// user to contact within orgnisation
+  bytes signature = 11;          // signature over manifest (except signature field)
+}
+
+message Contact{
+  string full_name = 1;
+  string email = 2;
+  string org_role = 3;
+}
+
+// Merkle proof for an item included in a Merkle tree
+message MerkleBranch {
+  repeated bytes siblings = 1;   // sibling hashes up to root (ordered)
+  bool leafOnLeft = 2;          // optional hint for reconstruction (or include position bits)
+}
+
+// anchor info included in block or special transaction
+message ManifestAnchor {
+  bytes manifest_hash = 1;      // leaf value that was anchored
+  uint32 block_height = 2;      // block height where root was stored
+  bytes merkle_root = 3;        // merkle root stored in block
+  MerkleBranch branch = 4;      // inclusion proof for manifest_hash
+  bytes block_header = 5;       // serialized header bytes (client uses header parser to validate)
+}
+
+message Catalog {
+  repeated Specification interfaces = 1;
+}
+
+message Specification {
+  string description = 1;
+  string category = 2;// API Specifications must fall under a single category, for separation of concerns purposes
+  repeated Call operations = 3;
+}
+
+// still trying to understand this fully
+message Call {
+  string api_id = 1;
+  bytes params = 3; // fixed numbering (no gaps)
+  Result response = 4;
+}
+
+message Result {
+  uint32 status = 1;  // 0=OK, 1=Error
+  string message = 2;
+  bytes response_data = 3;
+}
+
+message PeerDiscovery {
+    bool addr = 1;// get network peer information
+    bool  addrs = 2; // get all peers from a peer
+}
+
+message NexusMessage {
+  oneof payload {
+    Manifest manifest   = 1;
+    Ping ping   = 2;
+    Catalog catalog   = 3;
+    Call function_call = 4;
+    uint32 get_catalog = 6; 
+    PeerDiscovery peerDiscovery = 7;
+  }
+}
