@@ -22,6 +22,11 @@ Thanks to the pioneering work of Satoshi Nakamoto and projects like BitcoinJ
 
 ---
 
+### Message Protocol
+
+
+---
+
 ## 📦 Installation
 
 Clone the repo:

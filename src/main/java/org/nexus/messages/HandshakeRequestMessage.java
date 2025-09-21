@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package org.nexus.base.messages;
+package org.nexus.messages;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
@@ -15,19 +15,19 @@ import org.nexus.networks.NexusNetworkConfiguration;
  *
  * @author daviestobialex
  */
-public class ManifestRequestMessage implements NexusMessage {
+public class HandshakeRequestMessage implements NexusMessage {
 
     protected final UUID id;
-    protected final NexusProtocol.Manifest manifest;
+    protected final NexusProtocol.Handshake handshake;
     protected final byte[] nodeId;
     protected final NexusNetworkConfiguration params;
 
-    public ManifestRequestMessage(
+    public HandshakeRequestMessage(
             NexusNetworkConfiguration params,
-            NexusProtocol.Manifest manifest,
+            NexusProtocol.Handshake handshake,
             byte[] nodeId) {
         id = UUID.randomUUID();
-        this.manifest = manifest;
+        this.handshake = handshake;
         this.nodeId = nodeId;
         this.params = params;
     }
@@ -45,19 +45,18 @@ public class ManifestRequestMessage implements NexusMessage {
     @Override
     public NexusProtocol.NexusMessage message() {
         return NexusProtocol.NexusMessage.newBuilder()
-                .setManifest(manifest) // wrap Manifest into NexusMessage
+                .setHandshake(handshake) // wrap Manifest into NexusMessage
                 .build();
     }
 
     @Override
     public byte[] serialize() {
         // payload(magicBytes + message + nodeId + msgId) + checksum
-        ByteBuffer buffer = ByteBuffer.allocate(256);
 
-        byte[] payload = getByteConcatenatedPayload(buffer, params.getPacketMagic());
+        byte[] payload = getByteConcatenatedPayload(params.getPacketMagic());
         byte[] checksum = NexusMessage.computeChecksum(payload);
-
-        buffer = ByteBuffer.allocate(256);
+        System.out.println("PAYOAD LEN " + payload.length + " checksum " + checksum.length);
+        ByteBuffer buffer = ByteBuffer.allocate(payload.length + checksum.length);
         buffer.put(payload);
         buffer.put(checksum);
 
@@ -66,9 +65,7 @@ public class ManifestRequestMessage implements NexusMessage {
 
     @Override
     public byte[] checkSum() {
-        ByteBuffer buffer = ByteBuffer.allocate(256);
-
-        byte[] payload = getByteConcatenatedPayload(buffer, params.getPacketMagic());
+        byte[] payload = getByteConcatenatedPayload(params.getPacketMagic());
         return NexusMessage.computeChecksum(payload);
     }
 

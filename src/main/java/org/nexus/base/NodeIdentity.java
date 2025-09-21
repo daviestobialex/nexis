@@ -15,6 +15,7 @@
  */
 package org.nexus.base;
 
+import org.nexus.core.NodeId;
 import java.security.KeyPair;
 
 /**

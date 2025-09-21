@@ -4,11 +4,9 @@
  */
 package org.nexus.base;
 
-import com.google.protobuf.GeneratedMessage;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.util.Arrays;
-import java.util.UUID;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexus.internal.ByteUtils;
 
@@ -40,7 +38,9 @@ public interface NexusMessage {
         }
     }
 
-    public default byte[] getByteConcatenatedPayload(ByteBuffer buffer, int magicBytes) {
+    public default byte[] getByteConcatenatedPayload(int magicBytes) {
+        byte[] magic = ByteUtils.writInt32BE(magicBytes);
+        ByteBuffer buffer = ByteBuffer.allocate(magic.length + message().toByteArray().length + nodeId().length + messageId().length);
         buffer.put(ByteUtils.writInt32BE(magicBytes));
         buffer.put(message().toByteArray());
         buffer.put(nodeId());

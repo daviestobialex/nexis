@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package org.nexus.testers;
+package org.nexus.starter;
 
 import org.nexus.core.NexusBootstrap;
 import org.nexus.base.NexusNetwork;
@@ -16,10 +16,10 @@ public class NexusTestPoint {
     @Deprecated // for test purposes alone and will be removed
     public static void main(String[] args) throws Exception {
 
-        NexusBootstrap peerManager = new NexusBootstrap();
+        NexusBootstrap peerManager = new NexusBootstrap(NexusNetwork.LOCALHOSTTEST);
 
 //        peerManager.start(9001, NexusNetwork.LOCALHOSTTEST, 5);
-        peerManager.start(9004, NexusNetwork.LOCALHOSTTEST, 5);
+        peerManager.start(9000, 5);
 //        peerManager.start(9002, NexusNetwork.LOCALHOSTTEST, 5);
 
         // Keep the JVM alive

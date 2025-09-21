@@ -332,6 +332,12 @@ public class ByteUtils {
         stream.write(buf);
     }
 
+    public static byte[] writeInt32LE(long val) throws IOException {
+        byte[] buf = new byte[4];
+        writeInt32LE(val, ByteBuffer.wrap(buf));
+        return buf;
+    }
+
     /**
      * Write a 32-bit integer to a given output stream in big-endian format.
      * <p>
@@ -366,6 +372,12 @@ public class ByteUtils {
         byte[] buf = new byte[8];
         writeInt64LE(val, ByteBuffer.wrap(buf));
         stream.write(buf);
+    }
+
+    public static byte[] writeInt64LE(long val) throws IOException {
+        byte[] buf = new byte[8];
+        writeInt64LE(val, ByteBuffer.wrap(buf));
+        return buf;
     }
 
     /**

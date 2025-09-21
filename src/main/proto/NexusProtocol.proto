@@ -77,14 +77,35 @@ message NexusMessage {
     Call function_call = 4;
     uint32 get_catalog = 6; 
     PeerDiscovery peer_discovery = 7;
+    Handshake handshake = 8; // handshake protocol
+    challengeResponse challenge = 9; // handshake challenge response
+   
   }
 }
 
+message Handshake {
+    fixed64 nonce = 1;
+}
+
+message challengeResponse {
+    bytes public_key = 1;
+}
+
+// size matters
+// UUID (128 bits / 16 bytes)
+// long (64 bits / 8 bytes) 
+// That’s 8 bytes saved per ID. Since you have 2 IDs (node + message), you save 16 bytes per message.
+// Example:
+// If your average message is ~125 bytes 
+// With UUIDs → 125 bytes
+// With longs → ~109 bytes
+// That’s about 13% smaller messages. Over millions of messages, that’s a real bandwidth and memory difference.
+// TODO: optimize payload sizes
 message NexusEnvelop {
-    fixed64 node_id = 2; // node id, would have to do some research how this would matter from a peer to peer network point of view
-    fixed64 message_id = 3;     // UUID as string
+    bytes node_id = 2; // node id, would have to do some research how this would matter from a peer to peer network point of view
+    bytes message_id = 3;     // UUID as string but should be reduced to a 8 bytes
     NexusMessage message = 4;        // optional message-specific payload
-    bytes checksum = 5;       // first 4 bytes of double SHA-256(payload)    
+    bytes checksum = 5;       // first 4 bytes of double SHA-256(payload)    should be smaller as well
     google.protobuf.Timestamp time_stamp = 6;// request and response time stamp
     bytes signature = 11;          // signature over manifest (except signature field)
 }

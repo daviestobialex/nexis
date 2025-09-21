@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package org.nexus.base;
+package org.nexus.core;
 
 /**
  *
@@ -15,22 +15,25 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.nexus.base.PublicNodeProperties;
 
 /**
  *
  * @author daviestobialex
  */
-public final class NodeId {
+public final class NodeId implements PublicNodeProperties {
 
     private final byte[] id;
+    private final byte[] pubKey;
     private final static Logger log = Logger.getLogger(NodeId.class.getName());
 
-    public NodeId(byte[] id) {
-        this.id = id;
+    public NodeId(byte[] pubKey) {
+        this.id = stableNodeId(pubKey);
+        this.pubKey = pubKey;
     }
 
     public static NodeId fromPublicKey(byte[] pubKey) {
-        return new NodeId(stableNodeId(pubKey));
+        return new NodeId(pubKey);
     }
 
     public BigInteger toBigInt() {
@@ -63,7 +66,7 @@ public final class NodeId {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(input);
-            // Take the first 8 bytes of the hash
+            // TODO: ?Take the first 8 bytes of the hash
             return ByteBuffer.wrap(hash).array();
         } catch (NoSuchAlgorithmException ex) {
             log.log(Level.SEVERE, "Node can not start without node id generation", ex);
@@ -71,8 +74,14 @@ public final class NodeId {
         }
     }
 
+    @Override
     public byte[] getId() {
         return id;
+    }
+
+    @Override
+    public byte[] getPublicKey() {
+        return pubKey;
     }
 
 }

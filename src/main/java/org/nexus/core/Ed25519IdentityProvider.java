@@ -4,26 +4,20 @@
  */
 package org.nexus.core;
 
-import org.nexus.core.SimpleNodeIdentity;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.nexus.base.NodeIdentity;
 import org.nexus.base.NodeIdentityProvider;
+import static org.nexus.internal.CryptographyUtils.loadKeyPair;
 
 /**
  *
@@ -91,32 +85,4 @@ public class Ed25519IdentityProvider implements NodeIdentityProvider {
         return keyGen.generateKeyPair();
     }
 
-    /**
-     * Loads an Ed25519 KeyPair from the given file paths.
-     *
-     * @param privateKeyPath path to the private key file (PKCS#8 encoded)
-     * @param publicKeyPath path to the public key file (X.509 encoded)
-     * @return reconstructed KeyPair
-     * @throws java.io.IOException
-     * @throws java.security.NoSuchAlgorithmException
-     * @throws java.security.spec.InvalidKeySpecException
-     */
-    public static KeyPair loadKeyPair(Path privateKeyPath, Path publicKeyPath)
-            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
-
-        byte[] privateBytes = Files.readAllBytes(privateKeyPath);
-        byte[] publicBytes = Files.readAllBytes(publicKeyPath);
-
-        KeyFactory keyFactory = KeyFactory.getInstance("Ed25519");
-
-        // PrivateKey is stored in PKCS#8 format
-        PKCS8EncodedKeySpec privSpec = new PKCS8EncodedKeySpec(privateBytes);
-        PrivateKey privateKey = keyFactory.generatePrivate(privSpec);
-
-        // PublicKey is stored in X.509 format
-        X509EncodedKeySpec pubSpec = new X509EncodedKeySpec(publicBytes);
-        PublicKey publicKey = keyFactory.generatePublic(pubSpec);
-
-        return new KeyPair(publicKey, privateKey);
-    }
 }

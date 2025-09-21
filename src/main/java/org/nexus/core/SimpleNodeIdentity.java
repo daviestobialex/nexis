@@ -7,7 +7,6 @@ package org.nexus.core;
 import java.security.KeyPair;
 
 import java.nio.charset.StandardCharsets;
-import org.nexus.base.NodeId;
 import org.nexus.base.NodeIdentity;
 
 /**

@@ -4,14 +4,12 @@
  */
 package org.nexus.net;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
-import java.util.Set;
 import org.nexus.handlers.ConnectionHandler;
 import org.nexus.handlers.PingPongConnectionHandler;
 
@@ -20,12 +18,6 @@ import org.nexus.handlers.PingPongConnectionHandler;
  * @author daviestobialex
  */
 public class NioServer extends ChannelInitializer<SocketChannel> {
-
-    final Set<Channel> activePeers;
-
-    public NioServer(Set<Channel> activePeers) {
-        this.activePeers = activePeers;
-    }
 
     @Override
     protected void initChannel(SocketChannel ch) {
@@ -41,7 +33,7 @@ public class NioServer extends ChannelInitializer<SocketChannel> {
                 new LengthFieldPrepender(4),//
                 new StringDecoder(),
                 new StringEncoder(),
-                new ConnectionHandler(activePeers),
+                new ConnectionHandler(),
                 new PingPongConnectionHandler()
         );
     }

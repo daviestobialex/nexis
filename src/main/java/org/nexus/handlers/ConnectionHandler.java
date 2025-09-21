@@ -8,18 +8,10 @@ package org.nexus.handlers;
  *
  * @author daviestobialex
  */
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import java.util.Set;
 
 public class ConnectionHandler extends SimpleChannelInboundHandler<byte[]> {
-    private final Set<Channel> activePeers;
-
-    public ConnectionHandler(Set<Channel> activePeers) {
-          this.activePeers = activePeers;
-    }
-    
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
@@ -37,7 +29,5 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<byte[]> {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         System.out.println("Disconnected from peer: " + ctx.channel().remoteAddress());
-        activePeers.remove(ctx.channel());
     }
 }
-

@@ -6,21 +6,22 @@ package org.nexus.base;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Timestamp;
-import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.Security;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.nexus.base.proto.NexusProtocol;
 
 /**
  *
  * @author daviestobialex
  */
-public class NexusEnvelopBuilder {
+public final class NexusEnvelopBuilder {
 
     private final NodeIdentity node;
 
@@ -32,8 +33,8 @@ public class NexusEnvelopBuilder {
         try {
             NexusProtocol.NexusEnvelop envelop = NexusProtocol.NexusEnvelop.newBuilder()
                     .setChecksum(ByteString.copyFrom(message.checkSum()))
-                    .setNodeId(ByteBuffer.wrap(message.nodeId()).getLong())
-                    .setMessageId(ByteBuffer.wrap(message.messageId()).getLong())
+                    .setNodeId(ByteString.copyFrom(message.nodeId()))
+                    .setMessageId(ByteString.copyFrom(message.messageId()))
                     .setMessage(message.message())
                     .setTimeStamp(now())
                     .setSignature(ByteString.copyFrom(sign(message.serialize())))
@@ -48,6 +49,8 @@ public class NexusEnvelopBuilder {
 
     public byte[] sign(byte[] toSign) throws NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, SignatureException {
 
+        // Add the Bouncy Castle provider
+        Security.addProvider(new BouncyCastleProvider());
         Signature sig = Signature.getInstance("Ed25519", "BC");
         sig.initSign(node.getKeyPair().getPrivate());
         sig.update(toSign);

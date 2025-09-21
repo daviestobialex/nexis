@@ -5,14 +5,14 @@
 package org.nexus.listeners;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.EventLoop;
 import java.util.Random;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import org.nexus.core.Peer;
+import org.nexus.core.PeerRegistry;
 import org.nexus.networks.NexusNetworkConfiguration;
 
 /**
@@ -27,10 +27,7 @@ public class PeerConnectListener implements ChannelFutureListener {
     private final Bootstrap bootstrap;
     private final EventLoop eventLoop;
 
-    private final CopyOnWriteArraySet<Channel> activePeers;
-    private final CopyOnWriteArraySet<String> pendingPeers;
-    private final CopyOnWriteArraySet<String> failedPeers;
-
+    private final PeerRegistry peerRegistry;
     private final int maxRetries;
     private final long maxBackoffSeconds;
     private int attempt = 0;
@@ -41,36 +38,32 @@ public class PeerConnectListener implements ChannelFutureListener {
             NexusNetworkConfiguration networkParams,
             Bootstrap bootstrap,
             EventLoop eventLoop,
-            CopyOnWriteArraySet<Channel> activePeers,
             int maxRetries,
             long maxBackoffSeconds) {
         this.networkParams = networkParams;
         this.bootstrap = bootstrap;
         this.eventLoop = eventLoop;
-        this.activePeers = activePeers;
-        this.pendingPeers = new CopyOnWriteArraySet<>();
-        this.failedPeers = new CopyOnWriteArraySet<>();
         this.maxRetries = maxRetries;
         this.maxBackoffSeconds = maxBackoffSeconds;
 
-        pendingPeers.add(peerId());
+        // add root network 
+        this.peerRegistry = PeerRegistry.getInstance();
     }
 
     @Override
     public void operationComplete(ChannelFuture future) {
         if (future.isSuccess()) {
             LOGGER.info(" Connected to peer: " + peerId());
-            activePeers.add(future.channel());
-            pendingPeers.remove(peerId());
-            LOGGER.info(" active peer size : " + activePeers.size() + " pending peer size: " + pendingPeers.size() + " failed peer size: " + failedPeers.size());
-            
+            peerRegistry.addActivePeer(new Peer(this.networkParams.getNetwork().id()), future.channel());
+            LOGGER.info(" active peer size : " + peerRegistry.getActivePeers().size() + " pending peer size: " + peerRegistry.getPendingPeers().size() + " failed peer size: " + peerRegistry.getFailedPeers().size());
+
             // Reset attempt count on success
             attempt = 0;
 
         } else {
             attempt++;
             LOGGER.warning("Failed to connect to peer: " + peerId() + " (attempt " + attempt + ")");
-            pendingPeers.remove(peerId());
+//            peerRegistry.remove(peerId());
 
             if (attempt < maxRetries) {
                 // exponential backoff with jitter
@@ -81,14 +74,14 @@ public class PeerConnectListener implements ChannelFutureListener {
                 LOGGER.info("Retrying " + peerId() + " in " + delay + " seconds");
 
                 eventLoop.schedule(() -> {
-                    pendingPeers.add(peerId());
+//                    peerRegistry.addPendingPeer(peerId());
                     bootstrap.connect(networkParams.getNetwork().id(), networkParams.getPort())
                             .addListener(this); // reuse same listener
                 }, delay, TimeUnit.SECONDS);
 
             } else {
                 LOGGER.warning("Max retries reached for peer: " + peerId());
-                failedPeers.add(peerId());
+//                peerRegistry.markPeerFailed(peer, channel);
             }
         }
     }
