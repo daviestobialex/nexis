@@ -2,6 +2,8 @@
 
 # Network Exchange Integration System - Peer-to-Peer Protocol
 
+Link to [white paper](https://docs.google.com/document/d/1F-iJ1vNIZSe56MH7gDHZvyG6Clv4w0d2hrckXszotKI/edit?usp=sharing)
+
 **Nexis P2P** is a lightweight peer-to-peer networking and cryptographic toolkit designed to power decentralized marketplaces and financial systems.
 
 The concept draws inspiration from the African Continental Free Trade Area (AfCFTA) — a landmark African Union agreement to create a single, integrated market for goods and services across 54 nations. AfCFTA’s vision of breaking down barriers, fostering industrialization, and enabling seamless cross-border trade mirrors the technical challenge of building open, interoperable digital systems.
