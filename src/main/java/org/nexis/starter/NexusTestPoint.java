@@ -18,9 +18,7 @@ public class NexusTestPoint {
 
         NexusBootstrap peerManager = new NexusBootstrap(NexusNetwork.LOCALHOSTTEST);
 
-//        peerManager.start(9001, NexusNetwork.LOCALHOSTTEST, 5);
         peerManager.start(9000, 5, true);
-//        peerManager.start(9002, NexusNetwork.LOCALHOSTTEST, 5);
 
         // Keep the JVM alive
         Thread.currentThread().join();

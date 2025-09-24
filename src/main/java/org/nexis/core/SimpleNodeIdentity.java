@@ -5,15 +5,13 @@
 package org.nexis.core;
 
 import java.security.KeyPair;
-
-import java.nio.charset.StandardCharsets;
-import org.nexis.base.NodeIdentity;
+import org.nexis.base.Identity;
 
 /**
  *
  * @author daviestobialex
  */
-public class SimpleNodeIdentity implements NodeIdentity {
+public class SimpleNodeIdentity implements Identity {
 
     private final KeyPair keyPair;
 
@@ -60,8 +58,8 @@ public class SimpleNodeIdentity implements NodeIdentity {
      * @return a stable, unique identifier string for this node.
      */
     @Override
-    public NodeId getNodeId(String publicKey) {
-        return NodeId.fromPublicKey(publicKey.getBytes(StandardCharsets.UTF_8));
+    public NodeId getNodeId(byte[] publicKey) {
+        return NodeId.fromPublicKey(publicKey);
     }
 
     @Override

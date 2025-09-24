@@ -23,7 +23,7 @@ import java.security.KeyPair;
  *
  * @author daviestobialex
  */
-public interface NodeIdentity {
+public interface Identity {
 
     /**
      * Unique identifier for this node (derived from the public key).
@@ -31,7 +31,7 @@ public interface NodeIdentity {
      * @param pubkey
      * @return
      */
-    NodeId getNodeId(String pubkey);
+    NodeId getNodeId(byte[] pubkey);
 
     /**
      * The cryptographic keypair representing this node.
@@ -46,7 +46,7 @@ public interface NodeIdentity {
      * @param provider
      * @return
      */
-    static NodeIdentity loadOrCreate(NodeIdentityProvider provider) {
+    static Identity loadOrCreate(IdentityProvider provider) {
         return provider.loadOrCreateIdentity();
     }
 

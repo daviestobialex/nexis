@@ -17,17 +17,32 @@ Thanks to the pioneering work of Satoshi Nakamoto and projects like BitcoinJ
 
 ### Technologies
 
-* Java 21+ (needs Java 21 API) for `base` and `core` module
+* Java 21+
 * https://maven.org/[Maven]
-** Maven (version here) for building the whole project
+** Maven (17.0.13,) for building the whole project
 * https://github.com/google/protobuf[Google Protocol Buffers] - for use with serialization and hardware communications
-
+* Netty – Event-driven asynchronous I/O for peer communication
+* BouncyCastle – Cryptography provider (ED25519 signatures, SHA-256 hashing, secure randomness)
 ---
 
 ### Message Protocol
 
+The Nexis Messaging Protocol is a binary, Protobuf-based specification that governs how nodes exchange 
+information with guarantees of integrity, authenticity, and replay protection.
 
 ---
+
+## 🗂 Manifest
+
+The Manifest is a structured description of an entity joining the network. It contains metadata such as organization identity, available services, and intended interfaces.
+
+Over time, the Manifest will evolve into a programmable contract, enabling:
+
+Binding services to specific events or triggers
+
+Enforcing service-level rules (quotas, restrictions)
+
+External calls and integrations with smart-contract-like semantics
 
 ## 📦 Installation
 
@@ -64,7 +79,8 @@ mvn test
 ## 📚 Roadmap
 
 * [X] Base Architecture
-* [ ] Message and Signature Validation with ED25519
+* [X] Message and Signature Validation with (ED25519)[https://docs.oracle.com/en/java/javase/21/docs/specs/security/standard-names.html]
+* [ ] Manifest Parsing
 * [ ] Message protocol definitions
 * [ ] Persistent peer storage & address book using blockchain formats.
 * [ ] DHT integration for decentralized peer discovery.

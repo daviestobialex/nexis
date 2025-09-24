@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.nexis.internal;
+package org.nexis.utilities;
 
 /**
  * This class implements a subset of the functionality of the {@code HexFormat}

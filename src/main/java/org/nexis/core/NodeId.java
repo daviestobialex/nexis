@@ -9,13 +9,10 @@ package org.nexis.core;
  * @author daviestobialex
  */
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.PublicNodeProperties;
+import org.nexis.utilities.Sha256Hash;
 
 /**
  *
@@ -63,15 +60,7 @@ public final class NodeId implements PublicNodeProperties {
     }
 
     public static byte[] stableNodeId(byte[] input) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(input);
-            // TODO: ?Take the first 8 bytes of the hash
-            return ByteBuffer.wrap(hash).array();
-        } catch (NoSuchAlgorithmException ex) {
-            log.log(Level.SEVERE, "Node can not start without node id generation", ex);
-            return new byte[]{};
-        }
+        return Sha256Hash.hash(input);
     }
 
     @Override

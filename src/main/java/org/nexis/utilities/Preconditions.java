@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.nexis.internal;
+package org.nexis.utilities;
 
 import java.util.function.Supplier;
 

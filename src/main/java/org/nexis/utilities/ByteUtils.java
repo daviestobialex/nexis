@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.nexis.internal;
+package org.nexis.utilities;
 
 import com.google.common.io.BaseEncoding;
 
@@ -27,14 +27,18 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Comparator;
 import java.util.UUID;
-import static org.nexis.internal.Preconditions.check;
-import static org.nexis.internal.Preconditions.checkArgument;
+import static org.nexis.utilities.Preconditions.check;
+import static org.nexis.utilities.Preconditions.checkArgument;
 
 /**
  * Utility methods for bit, byte, and integer manipulation and conversion. Most
  * of these were moved here from {@code org.bitcoinj.core.Utils}.
  */
 public class ByteUtils {
+
+    private ByteUtils() {
+        throw new IllegalStateException("ByteUtils can not be instantiated");
+    }
 
     /**
      * Maximum unsigned value that can be expressed by 16 bits.

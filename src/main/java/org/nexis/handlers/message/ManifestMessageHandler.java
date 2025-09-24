@@ -6,7 +6,7 @@ package org.nexis.handlers.message;
 
 import io.netty.channel.ChannelHandlerContext;
 import java.util.logging.Logger;
-import org.nexis.base.MessageHandler;
+import org.nexis.internal.MessageHandler;
 import org.nexus.base.proto.NexusProtocol;
 
 /**

@@ -8,9 +8,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import java.io.IOException;
 import java.util.logging.Logger;
-import org.nexis.base.MessageDispatcher;
-import org.nexis.base.NexusEnvelopBuilder;
-import org.nexis.base.NodeIdentity;
+import org.nexis.internal.MessageDispatcher;
+import org.nexis.core.NexusEnvelopBuilder;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexis.core.ValidationPipeline;
 import org.nexis.handlers.message.ChallangeResponseHandler;
@@ -19,6 +18,7 @@ import org.nexis.handlers.message.ManifestMessageHandler;
 import org.nexis.handlers.message.PingMessageHandler;
 import org.nexis.validator.ChecksumValidator;
 import org.nexis.validator.SignatureValidator;
+import org.nexis.base.Identity;
 
 /**
  *
@@ -32,7 +32,7 @@ public class ProtoConnectionHandler extends SimpleChannelInboundHandler<NexusPro
 
     public ProtoConnectionHandler(
             org.nexis.base.NetworkConfiguration params,
-            NodeIdentity identity,
+            Identity identity,
             NexusEnvelopBuilder builder,
             ValidationPipeline pipeline,
             MessageDispatcher dispatcher) {
@@ -47,7 +47,7 @@ public class ProtoConnectionHandler extends SimpleChannelInboundHandler<NexusPro
         dispatcher.registerHandler(new ManifestMessageHandler());
         dispatcher.registerHandler(new HandshakeMessageHandler(identity, builder, params));
         dispatcher.registerHandler(new PingMessageHandler());
-        dispatcher.registerHandler(new ChallangeResponseHandler(identity, builder, params));
+        dispatcher.registerHandler(new ChallangeResponseHandler());
     }
 
     @Override

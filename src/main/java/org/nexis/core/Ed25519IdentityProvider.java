@@ -15,16 +15,16 @@ import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.security.Security;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.nexis.base.NodeIdentity;
-import org.nexis.base.NodeIdentityProvider;
-import static org.nexis.internal.CryptographyUtils.ED25519_ALGO;
-import static org.nexis.internal.CryptographyUtils.loadKeyPair;
+import static org.nexis.utilities.CryptographyUtils.ED25519_ALGO;
+import static org.nexis.utilities.CryptographyUtils.loadKeyPair;
+import org.nexis.base.IdentityProvider;
+import org.nexis.base.Identity;
 
 /**
  *
  * @author daviestobialex
  */
-public class Ed25519IdentityProvider implements NodeIdentityProvider {
+public class Ed25519IdentityProvider implements IdentityProvider {
 
     private final Path storageDir;
 
@@ -37,7 +37,7 @@ public class Ed25519IdentityProvider implements NodeIdentityProvider {
     }
 
     @Override
-    public NodeIdentity loadOrCreateIdentity() {
+    public Identity loadOrCreateIdentity() {
         try {
             // Check if key files exist
             Path privateKeyFile = storageDir.resolve("node.key");

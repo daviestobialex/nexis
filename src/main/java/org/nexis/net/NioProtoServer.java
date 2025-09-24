@@ -10,13 +10,13 @@ import io.netty.handler.codec.protobuf.ProtobufDecoder;
 import io.netty.handler.codec.protobuf.ProtobufEncoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
-import org.nexis.base.MessageDispatcher;
+import org.nexis.internal.MessageDispatcher;
 import org.nexis.base.NetworkConfiguration;
-import org.nexis.base.NexusEnvelopBuilder;
-import org.nexis.base.NodeIdentity;
+import org.nexis.core.NexusEnvelopBuilder;
 import org.nexis.handlers.ProtoConnectionHandler;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexis.core.ValidationPipeline;
+import org.nexis.base.Identity;
 
 /**
  *
@@ -28,9 +28,9 @@ public class NioProtoServer extends ChannelInitializer<SocketChannel> {
     /**
      * node credential identity of running node server
      */
-    private final NodeIdentity identity;
+    private final Identity identity;
 
-    public NioProtoServer(NetworkConfiguration params, NodeIdentity identity) {
+    public NioProtoServer(NetworkConfiguration params, Identity identity) {
         this.params = params;
         this.identity = identity;
     }

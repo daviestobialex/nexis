@@ -4,6 +4,8 @@
  */
 package org.nexis.core;
 
+import org.nexis.base.PeerAddress;
+
 /**
  *
  * @author daviestobialex

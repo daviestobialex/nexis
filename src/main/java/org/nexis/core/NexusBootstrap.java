@@ -15,12 +15,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.Manifest;
 import org.nexis.base.NetworkConfiguration;
-import org.nexis.base.NexusEnvelopBuilder;
 import org.nexis.base.NexusNetwork;
-import org.nexis.base.NodeIdentity;
-import org.nexis.base.NodeIdentityProvider;
 import org.nexis.net.NioProtoServer;
 import org.nexis.networks.NexusNetworkConfiguration;
+import org.nexis.base.IdentityProvider;
+import org.nexis.base.Identity;
 
 /**
  *
@@ -28,7 +27,7 @@ import org.nexis.networks.NexusNetworkConfiguration;
  */
 public class NexusBootstrap {
 
-    private final NodeIdentity identity;
+    private final Identity identity;
     private final Manifest manifest;
     private final ChannelInitializer connectionServer;
     private final NexusNetwork network;
@@ -37,7 +36,7 @@ public class NexusBootstrap {
     private final static Logger LOGGER = Logger.getLogger(NexusBootstrap.class.getName());
 
     public NexusBootstrap(NexusNetwork network) throws FileNotFoundException {
-        NodeIdentityProvider identityProvider = new Ed25519IdentityProvider();
+        IdentityProvider identityProvider = new Ed25519IdentityProvider();
         this.identity = identityProvider.loadOrCreateIdentity();
         this.manifest = Manifest.resolve("manifest.json");
         this.connectionServer = new NioProtoServer(NexusNetworkConfiguration.of(network), this.identity);

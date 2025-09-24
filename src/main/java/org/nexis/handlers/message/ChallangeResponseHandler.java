@@ -7,12 +7,10 @@ package org.nexis.handlers.message;
 import io.netty.channel.ChannelHandlerContext;
 import java.util.Arrays;
 import java.util.logging.Logger;
-import org.nexis.base.MessageHandler;
-import org.nexis.base.NetworkConfiguration;
-import org.nexis.base.NexusEnvelopBuilder;
-import org.nexis.base.NodeIdentity;
+import org.nexis.internal.MessageHandler;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexis.core.NodeId;
+import org.nexis.core.Peer;
 import org.nexis.core.PeerRegistry;
 
 /**
@@ -23,23 +21,13 @@ public class ChallangeResponseHandler implements MessageHandler {
 
     private static final Logger LOGGER = Logger.getLogger(ChallangeResponseHandler.class.getName());
 
-    private final NodeIdentity identity;
-    private final NexusEnvelopBuilder builder;
-    private final NetworkConfiguration params;
-
-    public ChallangeResponseHandler(NodeIdentity identity, NexusEnvelopBuilder builder, NetworkConfiguration params) {
-        this.identity = identity;
-        this.builder = builder;
-        this.params = params;
-    }
-
     @Override
     public boolean canHandle(NexusProtocol.NexusMessage message) {
         return message.hasChallenge();
     }
 
     @Override
-    public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) throws Exception {
+    public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
 //        NodeId nodeServerId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().toString());
         PeerRegistry registery = PeerRegistry.getInstance();
         LOGGER.info("challenge response received");
@@ -53,16 +41,17 @@ public class ChallangeResponseHandler implements MessageHandler {
         if (!Arrays.equals(computedNodeId, nodeId)) {
             throw new SecurityException("bad node actor detected");// TODO: maybe update network with bad node actor id?
         }
-
-        long registeredPeerNonce = registery.getNonceById(nodeId);// get nonce in registery
+        // get nonce in registery
         // ensure nonce matches
-        if (nonce != registeredPeerNonce) {
+        if (!registery.getNonceIndex().contains(nonce)) {
             throw new SecurityException("invalid nonce");
         }
 
         // remove nonce from registory
-        registery.removeNonceById(nodeId);
+        registery.getNonceIndex().remove(nonce);
         // make peer active from pending peers list if pass
+        String remoteAddress = ctx.channel().remoteAddress().toString();
+        registery.addActivePeer(new Peer(remoteAddress, nodeId, publicKey), ctx.channel());
         // populate node with public key
 //        ctx.writeAndFlush(builder.build(null));
     }

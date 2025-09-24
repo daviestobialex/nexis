@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.nexis.internal;
+package org.nexis.utilities;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,7 +26,7 @@ import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import static org.nexis.internal.Preconditions.checkArgument;
+import static org.nexis.utilities.Preconditions.checkArgument;
 
 /**
  * A {@code Sha256Hash} wraps a {@code byte[]} so that {@link #equals} and

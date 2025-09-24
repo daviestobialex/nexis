@@ -31,7 +31,7 @@ import java.util.stream.Stream;
  * <p>
  * Note that the name of each {@code enum} constant is defined in
  * <i>uppercase</i> as is the convention in Java. However, the <q>canonical</q>
- * representation in <b>nexusj</b> for user-facing display and input of Bitcoin
+ * representation in <b>nexusj</b> for user-facing display and input of Nexis
  * network names is <i>lowercase</i> (e.g. as a command-line parameter.)
  * Implementations should use the {@link #toString()} method for output and the
  * {@link #fromString(String)} method for input of network values.
@@ -55,7 +55,7 @@ public enum NexusNetwork implements Network {
     LOCALHOSTTEST("127.0.0.1", "localhost");
 
     /**
-     * Scheme part for Bitcoin URIs.
+     * Scheme part for Nexis URIs.
      */
     public static final String NEXUS_SCHEME = "nexus";
 
@@ -74,10 +74,10 @@ public enum NexusNetwork implements Network {
 
     private final String id;
 
-    // All supported names for this BitcoinNetwork
+    // All supported names for this NexisNetwork
     private final List<String> allNames;
 
-    // Maps from names and alternateNames to BitcoinNetwork
+    // Maps from names and alternateNames to NexisNetwork
     private static final Map<String, NexusNetwork> stringToEnum = mergedNameMap();
 
     NexusNetwork(String networkId, String... alternateNames) {
@@ -100,7 +100,7 @@ public enum NexusNetwork implements Network {
      * <dd>{@code regtest}</dd>
      * </dl>
      *
-     * @return canonical lowercase name for this Bitcoin network
+     * @return canonical lowercase name for this Nexis network
      */
     @Override
     public String toString() {
@@ -112,13 +112,13 @@ public enum NexusNetwork implements Network {
      * in {@code NetworkParameters})
      * <dl>
      * <dt>{@link #MAINNET}</dt>
-     * <dd>{@code org.bitcoin.production}</dd>
+     * <dd>{@code org.nexis.production}</dd>
      * <dt>{@link #TESTNET}</dt>
-     * <dd>{@code org.bitcoin.test}</dd>
+     * <dd>{@code org.nexis.test}</dd>
      * <dt>{@link #SIGNET}</dt>
-     * <dd>{@code org.bitcoin.signet}</dd>
+     * <dd>{@code org.nexis.signet}</dd>
      * <dt>{@link #REGTEST}</dt>
-     * <dd>{@code org.bitcoin.regtest}</dd>
+     * <dd>{@code org.nexis.regtest}</dd>
      * </dl>
      *
      * @return The network ID string
@@ -129,10 +129,10 @@ public enum NexusNetwork implements Network {
     }
 
     /**
-     * The URI scheme for Bitcoin.
+     * The URI scheme for Nexis.
      *
      * @see
-     * <a href="https://github.com/bitcoin/bips/blob/master/bip-0021.mediawiki">BIP
+     * <a href="https://github.com/nexis/bips/blob/master/bip-0021.mediawiki">BIP
      * 0021</a>
      * @return string containing the URI scheme
      */
@@ -142,7 +142,7 @@ public enum NexusNetwork implements Network {
     }
 
     /**
-     * Find the {@code BitcoinNetwork} from a name string, e.g. "mainnet",
+     * Find the {@code NexisNetwork} from a name string, e.g. "mainnet",
      * "testnet" or "signet". A number of common alternate names are allowed
      * too, e.g. "main" or "prod".
      *
@@ -154,7 +154,7 @@ public enum NexusNetwork implements Network {
     }
 
     /**
-     * Find the {@code BitcoinNetwork} from an ID String
+     * Find the {@code NexisNetwork} from an ID String
      *
      * @param idString specifies the network
      * @return An {@code Optional} containing the matching enum or empty

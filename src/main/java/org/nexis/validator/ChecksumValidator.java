@@ -7,17 +7,17 @@ package org.nexis.validator;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.logging.Logger;
-import org.nexis.base.MessageValidator;
 import org.nexis.base.NetworkConfiguration;
 import org.nexis.base.NexusMessage;
 import org.nexus.base.proto.NexusProtocol;
-import org.nexis.internal.ByteUtils;
+import org.nexis.utilities.ByteUtils;
+import org.nexis.base.Validator;
 
 /**
  *
  * @author daviestobialex
  */
-public class ChecksumValidator implements MessageValidator {
+public class ChecksumValidator implements Validator {
 
     private static final Logger LOGGER = Logger.getLogger(ChecksumValidator.class.getName());
     private final NetworkConfiguration params;

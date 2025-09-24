@@ -17,8 +17,8 @@ import java.security.Signature;
 import java.security.SignatureException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.Test;
-import static org.nexis.internal.CryptographyUtils.ED25519_ALGO;
-import org.nexis.internal.HexFormat;
+import static org.nexis.utilities.CryptographyUtils.ED25519_ALGO;
+import org.nexis.utilities.HexFormat;
 
 /**
  *

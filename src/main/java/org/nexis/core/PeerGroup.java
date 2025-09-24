@@ -4,6 +4,7 @@
  */
 package org.nexis.core;
 
+import org.nexis.base.PeerAddress;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -16,7 +17,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
-import org.nexis.base.NexusEnvelopBuilder;
 import org.nexis.base.NexusNetwork;
 import org.nexis.base.PublicNodeProperties;
 import org.nexus.base.proto.NexusProtocol;
@@ -113,7 +113,8 @@ public class PeerGroup {
 
     /**
      * node will not begin to initiate contact with other connected peers until
-     * this is called
+     * this is called, this would be the center where it determines what
+     * messages that are sent to other nodes/peers
      *
      * @param builder
      */
@@ -127,7 +128,7 @@ public class PeerGroup {
 
         LOGGER.info("PROPAGATING peer size: " + peers.size());
         peers.forEach((peer, activeChannel) -> {
-            NodeId nodeId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().toString());
+            NodeId nodeId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().getEncoded());
 //            // get peers and send all of them manifest messages
 //            NexusProtocol.Manifest manifest = NexusProtocol.Manifest.newBuilder()
 //                    .setOrgName("Fxbud Limited")
@@ -137,16 +138,17 @@ public class PeerGroup {
 //                    .build();
 //            ManifestRequestMessage manifestMessage = new ManifestRequestMessage(params, manifest, nodeId.getId());
             long nonce = ThreadLocalRandom.current().nextLong();
+            peerRegistry.getNonceIndex().add(nonce);// track nonce
             NexusProtocol.Handshake handshake = NexusProtocol.Handshake.newBuilder()
                     .setNonce(nonce)
                     .build();
-            HandshakeRequestMessage handshakeMessage = new HandshakeRequestMessage(params, handshake, nodeId.getId());
+            HandshakeRequestMessage handshakeMessage = new HandshakeRequestMessage(
+                    params, handshake, nodeId.getId());
 
             NexusProtocol.NexusEnvelop envelop = builder
                     .build(handshakeMessage);
 
             activeChannel.writeAndFlush(envelop);
-            // track response with message ids 
             // validate response and build request signatures to messages
         });
     }

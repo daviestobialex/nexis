@@ -4,7 +4,9 @@
  */
 package org.nexis.core;
 
+import org.nexis.base.PeerAddress;
 import io.netty.channel.Channel;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -22,7 +24,7 @@ public final class PeerRegistry {
     private final CopyOnWriteArraySet<PeerAddress> failedPeers;
     // secondary map to improve O(1) search, scarificing memory for performance
     private final ConcurrentMap<String, PeerAddress> peerIndex = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, Long> nonceIndex = new ConcurrentHashMap<>();
+    private final Set<Long> nonceIndex = ConcurrentHashMap.newKeySet();
     public static final int DEFAULT_MAX_CONNECTIONS = 10;
     private final AtomicInteger connectionCounter;
 
@@ -58,7 +60,7 @@ public final class PeerRegistry {
         return failedPeers;
     }
 
-    public ConcurrentMap<String, Long> getNonceIndex() {
+    public Set<Long> getNonceIndex() {
         return nonceIndex;
     }
 
@@ -100,14 +102,6 @@ public final class PeerRegistry {
 
     public PeerAddress getNodeById(byte[] id) {
         return peerIndex.get(idKey(id));
-    }
-
-    public long getNonceById(byte[] id) {
-        return nonceIndex.get(idKey(id));
-    }
-
-    public long removeNonceById(byte[] id) {
-        return nonceIndex.remove(idKey(id));
     }
 
     public Channel getActivePeerById(byte[] id) {
