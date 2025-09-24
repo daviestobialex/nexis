@@ -63,11 +63,14 @@ mvn test
 
 ## 📚 Roadmap
 
+* [X] Base Architecture
+* [ ] Message and Signature Validation with ED25519
 * [ ] Message protocol definitions
-* [ ] Persistent peer storage & address book.
+* [ ] Persistent peer storage & address book using blockchain formats.
 * [ ] DHT integration for decentralized peer discovery.
 * [ ] Gossip protocol for manifest propagation.
 * [ ] Block & transaction relay.
+* [ ] Downstream Peer Operation Call/Execution
 
 ---
 
