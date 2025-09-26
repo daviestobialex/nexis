@@ -13,12 +13,13 @@ import org.nexis.core.NexusEnvelopBuilder;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexis.core.ValidationPipeline;
 import org.nexis.handlers.message.ChallangeResponseHandler;
-import org.nexis.handlers.message.HandshakeMessageHandler;
+import org.nexis.handlers.message.ChallengeMessageHandler;
 import org.nexis.handlers.message.ManifestMessageHandler;
 import org.nexis.handlers.message.PingMessageHandler;
 import org.nexis.validator.ChecksumValidator;
 import org.nexis.validator.SignatureValidator;
 import org.nexis.base.Identity;
+import org.nexis.base.NetworkConfiguration;
 
 /**
  *
@@ -31,7 +32,7 @@ public class ProtoConnectionHandler extends SimpleChannelInboundHandler<NexusPro
     private final MessageDispatcher dispatcher;
 
     public ProtoConnectionHandler(
-            org.nexis.base.NetworkConfiguration params,
+            NetworkConfiguration params,
             Identity identity,
             NexusEnvelopBuilder builder,
             ValidationPipeline pipeline,
@@ -45,9 +46,9 @@ public class ProtoConnectionHandler extends SimpleChannelInboundHandler<NexusPro
 
         // add dispatchers
         dispatcher.registerHandler(new ManifestMessageHandler());
-        dispatcher.registerHandler(new HandshakeMessageHandler(identity, builder, params));
+        dispatcher.registerHandler(new ChallengeMessageHandler(identity, builder, params));
         dispatcher.registerHandler(new PingMessageHandler());
-        dispatcher.registerHandler(new ChallangeResponseHandler());
+        dispatcher.registerHandler(new ChallangeResponseHandler(params, builder));
     }
 
     @Override
@@ -57,9 +58,6 @@ public class ProtoConnectionHandler extends SimpleChannelInboundHandler<NexusPro
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, NexusProtocol.NexusEnvelop msg) throws IOException, Exception {
-        LOGGER.info("MESSAGE RECIVED== \n"
-                + "Handshake: " + msg.getMessage().hasHandshake()
-                + "\nChallenge Response:  " + msg.getMessage().hasChallenge());
 
 // Always validate before dispatch
         pipeline.validate(msg);

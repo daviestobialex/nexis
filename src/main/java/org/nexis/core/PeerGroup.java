@@ -22,7 +22,7 @@ import org.nexis.base.PublicNodeProperties;
 import org.nexus.base.proto.NexusProtocol;
 import static org.nexis.core.PeerRegistry.DEFAULT_MAX_CONNECTIONS;
 import org.nexis.listeners.PeerConnectListener;
-import org.nexis.messages.HandshakeRequestMessage;
+import org.nexis.messages.ChallengeRequestMessage;
 import org.nexis.networks.NexusNetworkConfiguration;
 
 /**
@@ -118,7 +118,7 @@ public class PeerGroup {
      *
      * @param builder
      */
-    public void beginMessagePropagation(NexusEnvelopBuilder builder) {
+    public void initiateHandshakeWithPeers(NexusEnvelopBuilder builder) {
         ConcurrentMap<PeerAddress, Channel> activePeers = peerRegistry.getActivePeers();
         ConcurrentMap<PeerAddress, Channel> pendingPeers = peerRegistry.getPendingPeers();
 
@@ -129,27 +129,18 @@ public class PeerGroup {
         LOGGER.info("PROPAGATING peer size: " + peers.size());
         peers.forEach((peer, activeChannel) -> {
             NodeId nodeId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().getEncoded());
-//            // get peers and send all of them manifest messages
-//            NexusProtocol.Manifest manifest = NexusProtocol.Manifest.newBuilder()
-//                    .setOrgName("Fxbud Limited")
-//                    .setOrgUrl("https://fxbud.com/")
-//                    .setPubkey(ByteString.copyFrom(nodeId.getId()))
-//                    .setProtocolVersion(1)
-//                    .build();
-//            ManifestRequestMessage manifestMessage = new ManifestRequestMessage(params, manifest, nodeId.getId());
             long nonce = ThreadLocalRandom.current().nextLong();
             peerRegistry.getNonceIndex().add(nonce);// track nonce
-            NexusProtocol.Handshake handshake = NexusProtocol.Handshake.newBuilder()
+            NexusProtocol.Challenge handshake = NexusProtocol.Challenge.newBuilder()
                     .setNonce(nonce)
                     .build();
-            HandshakeRequestMessage handshakeMessage = new HandshakeRequestMessage(
+            ChallengeRequestMessage handshakeMessage = new ChallengeRequestMessage(
                     params, handshake, nodeId.getId());
 
             NexusProtocol.NexusEnvelop envelop = builder
                     .build(handshakeMessage);
 
             activeChannel.writeAndFlush(envelop);
-            // validate response and build request signatures to messages
         });
     }
 }

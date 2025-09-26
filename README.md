@@ -30,6 +30,21 @@ Thanks to the pioneering work of Satoshi Nakamoto and projects like BitcoinJ
 The Nexis Messaging Protocol is a binary, Protobuf-based specification that governs how nodes exchange 
 information with guarantees of integrity, authenticity, and replay protection.
 
+# Peer Discovery and how it works
+
+````
+Peer A → HandshakeRequest  
+Peer B → HandshakeResponse  
+Peer A → Challenge(nonce)  
+Peer B → ChallengeResponse(signed nonce)  
+Peer A → ManifestRequest  
+Peer B → ManifestResponse(API spec + signature)  
+Peer A → GetPeersRequest  
+Peer B → GetPeersResponse(list of peers)  
+
+Repeat cycle for new peers
+```
+
 ---
 
 ## 🗂 Manifest
@@ -81,7 +96,7 @@ mvn test
 * [X] Base Architecture
 * [X] Message and Signature Validation with (ED25519)[https://docs.oracle.com/en/java/javase/21/docs/specs/security/standard-names.html]
 * [ ] Manifest Parsing
-* [ ] Message protocol definitions
+* [X] Message protocol definitions
 * [ ] Persistent peer storage & address book using blockchain formats.
 * [ ] DHT integration for decentralized peer discovery.
 * [ ] Gossip protocol for manifest propagation.

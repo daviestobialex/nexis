@@ -11,17 +11,18 @@ message Ping {
 }
 
 message Manifest {
-  bytes pubkey = 1;
   uint32 protocol_version = 2; // protobuf protocol version message id for nexus
   string org_name = 4;// name of organisation
   string org_url = 5;// name of organisation
   Contact contact = 7;// user to contact within organisation
+  Catalog catalog   = 3;
 }
 
 message Contact{
   string full_name = 1;
   string email = 2;
   string org_role = 3;
+  string mobile_number = 4;
 }
 
 // Merkle proof for an item included in a Merkle tree
@@ -46,7 +47,7 @@ message Catalog {
 message Specification {
   string description = 1;
   string category = 2;// API Specifications must fall under a single category, for separation of concerns purposes
-  repeated Call operations = 3;
+  Call operation = 3;
 }
 
 // still trying to understand this fully
@@ -73,21 +74,21 @@ message NexusMessage {
   oneof payload {
     Manifest manifest   = 1;
     Ping ping   = 2;
-    Catalog catalog   = 3;
     Call function_call = 4;
-    uint32 get_catalog = 6; 
     PeerDiscovery peer_discovery = 7;
-    Handshake handshake = 8; // handshake protocol
-    challengeResponse challenge = 9; // handshake challenge response
+    Challenge handshake = 8; // handshake protocol
+    ChallengeResponse handshakeResponse = 9; // handshake challenge response
    
   }
 }
 
-message Handshake {
+// initiate handshake with a nonce challenge
+message Challenge {
     fixed64 nonce = 1;
 }
 
-message challengeResponse {
+// handshake challenge response
+message ChallengeResponse {
     bytes public_key = 1;
     fixed64 nonce = 2;
 }

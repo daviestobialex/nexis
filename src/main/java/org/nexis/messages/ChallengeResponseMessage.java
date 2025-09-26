@@ -8,7 +8,6 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.nexis.base.NexusMessage;
 import org.nexus.base.proto.NexusProtocol;
-import org.nexis.utilities.ByteUtils;
 import org.nexis.networks.NexusNetworkConfiguration;
 
 /**
@@ -18,13 +17,13 @@ import org.nexis.networks.NexusNetworkConfiguration;
 public class ChallengeResponseMessage implements NexusMessage {
 
     protected final UUID id;
-    protected final NexusProtocol.challengeResponse challenge;
+    protected final NexusProtocol.ChallengeResponse challenge;
     protected final byte[] nodeId;
     protected final NexusNetworkConfiguration params;
 
     public ChallengeResponseMessage(
             NexusNetworkConfiguration params,
-            NexusProtocol.challengeResponse challenge,
+            NexusProtocol.ChallengeResponse challenge,
             byte[] nodeId) {
         id = UUID.randomUUID();
         this.challenge = challenge;
@@ -40,7 +39,7 @@ public class ChallengeResponseMessage implements NexusMessage {
     @Override
     public NexusProtocol.NexusMessage message() {
         return NexusProtocol.NexusMessage.newBuilder()
-                .setChallenge(challenge) // wrap challenge into NexusMessage
+                .setHandshakeResponse(challenge) // wrap challenge into NexusMessage
                 .build();
     }
 

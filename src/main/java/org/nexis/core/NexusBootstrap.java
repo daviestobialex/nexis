@@ -81,7 +81,7 @@ public class NexusBootstrap {
         }
 
         if (propagate) {
-            peer.beginMessagePropagation(new NexusEnvelopBuilder(identity));
+            peer.initiateHandshakeWithPeers(new NexusEnvelopBuilder(identity));
         }
     }
 }

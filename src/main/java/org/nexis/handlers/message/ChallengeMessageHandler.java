@@ -22,14 +22,14 @@ import org.nexis.base.Identity;
  *
  * @author daviestobialex
  */
-public class HandshakeMessageHandler implements MessageHandler {
+public class ChallengeMessageHandler implements MessageHandler {
 
     private final Identity identity;
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
     private final PeerRegistry registery = PeerRegistry.getInstance();
 
-    public HandshakeMessageHandler(Identity identity, NexusEnvelopBuilder builder, NetworkConfiguration params) {
+    public ChallengeMessageHandler(Identity identity, NexusEnvelopBuilder builder, NetworkConfiguration params) {
         this.identity = identity;
         this.builder = builder;
         this.params = params;
@@ -45,8 +45,8 @@ public class HandshakeMessageHandler implements MessageHandler {
         NodeId nodeServerId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().getEncoded());
         long nonce = envelop.getMessage().getHandshake().getNonce();
         byte[] nodeId = envelop.getNodeId().toByteArray();
-        NexusProtocol.challengeResponse challenge
-                = NexusProtocol.challengeResponse.newBuilder()
+        NexusProtocol.ChallengeResponse challenge
+                = NexusProtocol.ChallengeResponse.newBuilder()
                         .setPublicKey(ByteString.copyFrom(identity.getKeyPair().getPublic().getEncoded()))
                         .setNonce(nonce)
                         .build();

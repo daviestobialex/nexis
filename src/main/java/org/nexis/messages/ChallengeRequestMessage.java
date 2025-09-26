@@ -14,16 +14,16 @@ import org.nexis.networks.NexusNetworkConfiguration;
  *
  * @author daviestobialex
  */
-public class HandshakeRequestMessage implements NexusMessage {
+public class ChallengeRequestMessage implements NexusMessage {
 
     protected final UUID id;
-    protected final NexusProtocol.Handshake handshake;
+    protected final NexusProtocol.Challenge handshake;
     protected final byte[] nodeId;
     protected final NexusNetworkConfiguration params;
 
-    public HandshakeRequestMessage(
+    public ChallengeRequestMessage(
             NexusNetworkConfiguration params,
-            NexusProtocol.Handshake handshake,
+            NexusProtocol.Challenge handshake,
             byte[] nodeId) {
         id = UUID.randomUUID();
         this.handshake = handshake;

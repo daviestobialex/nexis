@@ -34,9 +34,8 @@ public class SignatureValidator implements Validator {
     @Override
     public boolean supports(NexusProtocol.NexusMessage message) {
         // Only messages that must be signed
-        return message.hasChallenge()
+        return message.hasHandshakeResponse()
                 || message.hasManifest()
-                || message.hasCatalog()
                 || message.hasFunctionCall();
     }
 
@@ -54,8 +53,8 @@ public class SignatureValidator implements Validator {
         buffer.put(nodeId);
         buffer.put(envelop.getChecksum().toByteArray());
 
-        if (envelop.getMessage().hasChallenge()) {
-            pubKey = envelop.getMessage().getChallenge().getPublicKey().toByteArray();
+        if (envelop.getMessage().hasHandshakeResponse()) {
+            pubKey = envelop.getMessage().getHandshakeResponse().getPublicKey().toByteArray();
         } else {
             PeerAddress nodeProps = peerRegistry.getNodeById(nodeId);
 

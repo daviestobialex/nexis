@@ -1,0 +1,26 @@
+{
+  "organizationName": "Fxbud Limited",
+  "organizationUrl": "https://fxbud.com",
+  "organizationCountryCodes": ["NG", "GB", "KE"],
+  "organizationRegistrationNumber": "RC1234567",
+  "contact": {
+        "fullName": "Alex Davies",
+        "email": "alex@fxbud.com",
+        "mobileNumber": "",
+       "organisationRole": ""
+  },  
+  "protocolVersion": "1.0.0",
+  "organizationPolicy": "https://fxbud.com/policy",
+  "organizationTermsAndConditions": "https://fxbud.com/terms",
+  "specifications": [
+        {
+            "description" : "",
+            "category": "",
+            "operation":  {
+                "apiId": "",
+                "exampleRequest":  "",
+                "exampleResponse": ""
+            }
+        }
+  ]
+}

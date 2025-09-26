@@ -5,7 +5,7 @@
 package org.nexis.messages;
 
 import java.nio.ByteBuffer;
-import java.util.UUID;
+import org.nexis.base.NetworkConfiguration;
 import org.nexis.base.NexusMessage;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexis.networks.NexusNetworkConfiguration;
@@ -16,16 +16,14 @@ import org.nexis.networks.NexusNetworkConfiguration;
  */
 public class ManifestRequestMessage implements NexusMessage {
 
-    protected final UUID id;
     protected final NexusProtocol.Manifest manifest;
     protected final byte[] nodeId;
-    protected final NexusNetworkConfiguration params;
+    protected final NetworkConfiguration params;
 
     public ManifestRequestMessage(
             NexusNetworkConfiguration params,
             NexusProtocol.Manifest manifest,
             byte[] nodeId) {
-        id = UUID.randomUUID();
         this.manifest = manifest;
         this.nodeId = nodeId;
         this.params = params;
