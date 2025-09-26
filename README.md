@@ -1,6 +1,6 @@
-## Welcome to Nexis
+# Welcome to Nexis
 
-# Network Exchange Integration System - Peer-to-Peer Protocol
+## Network Exchange Integration System - Peer-to-Peer Protocol
 
 Link to [white paper](https://docs.google.com/document/d/1F-iJ1vNIZSe56MH7gDHZvyG6Clv4w0d2hrckXszotKI/edit?usp=sharing)
 
@@ -15,7 +15,7 @@ Thanks to the pioneering work of Satoshi Nakamoto and projects like BitcoinJ
 
 ---
 
-### Technologies
+## Technologies
 
 * Java 21+
 * https://maven.org/[Maven]
@@ -25,12 +25,12 @@ Thanks to the pioneering work of Satoshi Nakamoto and projects like BitcoinJ
 * BouncyCastle – Cryptography provider (ED25519 signatures, SHA-256 hashing, secure randomness)
 ---
 
-### Message Protocol
+## Message Protocol
 
 The Nexis Messaging Protocol is a binary, Protobuf-based specification that governs how nodes exchange 
 information with guarantees of integrity, authenticity, and replay protection.
 
-# Peer Discovery and how it works
+### Peer Discovery and how it works
 
 ````
 Peer A → HandshakeRequest  
@@ -43,7 +43,7 @@ Peer A → GetPeersRequest
 Peer B → GetPeersResponse(list of peers)  
 
 Repeat cycle for new peers
-```
+````
 
 ---
 
