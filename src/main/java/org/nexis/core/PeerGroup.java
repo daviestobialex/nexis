@@ -18,7 +18,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 import org.nexis.base.NexusNetwork;
-import org.nexis.base.PublicNodeProperties;
 import org.nexus.base.proto.NexusProtocol;
 import static org.nexis.core.PeerRegistry.DEFAULT_MAX_CONNECTIONS;
 import org.nexis.listeners.PeerConnectListener;
@@ -37,7 +36,7 @@ public class PeerGroup {
     private final NexusNetworkConfiguration params;
     private final EventLoopGroup group;
     private final ChannelInitializer connectionServer;
-    private static final Logger LOGGER = Logger.getLogger(PeerConnectListener.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(PeerGroup.class.getName());
 
     /**
      * Creates a PeerGroup for the given network.No chain is provided so this
@@ -123,7 +122,7 @@ public class PeerGroup {
         ConcurrentMap<PeerAddress, Channel> pendingPeers = peerRegistry.getPendingPeers();
 
         // Merge into one
-        ConcurrentMap<PublicNodeProperties, Channel> peers = new ConcurrentHashMap<>(activePeers);
+        ConcurrentMap<PeerAddress, Channel> peers = new ConcurrentHashMap<>(activePeers);
         peers.putAll(pendingPeers);
 
         LOGGER.info("PROPAGATING peer size: " + peers.size());
@@ -131,16 +130,28 @@ public class PeerGroup {
             NodeId nodeId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().getEncoded());
             long nonce = ThreadLocalRandom.current().nextLong();
             peerRegistry.getNonceIndex().add(nonce);// track nonce
-            NexusProtocol.Challenge handshake = NexusProtocol.Challenge.newBuilder()
-                    .setNonce(nonce)
-                    .build();
-            ChallengeRequestMessage handshakeMessage = new ChallengeRequestMessage(
-                    params, handshake, nodeId.getId());
-
-            NexusProtocol.NexusEnvelop envelop = builder
-                    .build(handshakeMessage);
-
-            activeChannel.writeAndFlush(envelop);
+            doHandshake(nonce, activeChannel, nodeId, builder);
         });
+    }
+
+    /**
+     * writes handshake message to channel
+     *
+     * @param nonce
+     * @param activeChannel
+     * @param nodeId
+     * @param builder
+     */
+    private void doHandshake(long nonce, Channel activeChannel, NodeId nodeId, NexusEnvelopBuilder builder) {
+        NexusProtocol.Challenge handshake = NexusProtocol.Challenge.newBuilder()
+                .setNonce(nonce)
+                .build();
+        ChallengeRequestMessage handshakeMessage = new ChallengeRequestMessage(
+                params, handshake, nodeId.getId());
+
+        NexusProtocol.NexusEnvelop envelop = builder
+                .build(handshakeMessage);
+
+        activeChannel.writeAndFlush(envelop);
     }
 }

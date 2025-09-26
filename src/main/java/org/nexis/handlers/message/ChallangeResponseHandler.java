@@ -4,9 +4,12 @@
  */
 package org.nexis.handlers.message;
 
+import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandlerContext;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.logging.Logger;
+import org.nexis.base.Manifest;
 import org.nexis.base.NetworkConfiguration;
 import org.nexis.core.NexusEnvelopBuilder;
 import org.nexis.internal.MessageHandler;
@@ -25,13 +28,16 @@ public class ChallangeResponseHandler implements MessageHandler {
 
     private static final Logger LOGGER = Logger.getLogger(ChallangeResponseHandler.class.getName());
     private final NexusEnvelopBuilder builder;
-    protected final NetworkConfiguration params;
+    private final NetworkConfiguration params;
+    private final Manifest manifest;
 
     public ChallangeResponseHandler(
             NetworkConfiguration params,
-            NexusEnvelopBuilder builder) {
+            NexusEnvelopBuilder builder,
+            Manifest manifest) {
         this.builder = builder;
         this.params = params;
+        this.manifest = manifest;
     }
 
     @Override
@@ -66,17 +72,14 @@ public class ChallangeResponseHandler implements MessageHandler {
         String remoteAddress = ctx.channel().remoteAddress().toString();
         registery.addActivePeer(new Peer(remoteAddress, nodeId, publicKey), ctx.channel());
         // load and parse manifest and populate manifest fields
-        NexusProtocol.Manifest manifest = NexusProtocol.Manifest.newBuilder()
-                .setOrgName("Fxbud Limited")
-//                .setCatalog(builderForValue)
-                .setOrgUrl("https://fxbud.com/")
-                .setProtocolVersion(1)
+        NexusProtocol.Manifest manifestRequest = NexusProtocol.Manifest.newBuilder()
+                .setRaw(ByteString.copyFrom(manifest.getRaw().getBytes(StandardCharsets.UTF_8)))
                 .build();
 
         ManifestRequestMessage manifestMessage
                 = new ManifestRequestMessage(
                         NexusNetworkConfiguration.of(params.getNetwork()),
-                        manifest, nodeServerId.getId());
+                        manifestRequest, nodeServerId.getId());
 
         ctx.writeAndFlush(builder.build(manifestMessage));
     }

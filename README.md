@@ -37,10 +37,10 @@ Peer A → HandshakeRequest
 Peer B → HandshakeResponse  
 Peer A → Challenge(nonce)  
 Peer B → ChallengeResponse(signed nonce)  
-Peer A → ManifestRequest  
-Peer B → ManifestResponse(API spec + signature)  
+Peer A → ManifestRequest (API spec + signature) 
+Peer B → ManifestResponse (API spec + signature)  
 Peer A → GetPeersRequest  
-Peer B → GetPeersResponse(list of peers)  
+Peer B → GetPeersResponse (list of peers)  
 
 Repeat cycle for new peers
 ````

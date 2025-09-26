@@ -14,7 +14,6 @@ import java.time.Duration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.Manifest;
-import org.nexis.base.NetworkConfiguration;
 import org.nexis.base.NexusNetwork;
 import org.nexis.net.NioProtoServer;
 import org.nexis.networks.NexusNetworkConfiguration;
@@ -39,8 +38,9 @@ public class NexusBootstrap {
         IdentityProvider identityProvider = new Ed25519IdentityProvider();
         this.identity = identityProvider.loadOrCreateIdentity();
         this.manifest = Manifest.resolve("manifest.json");
-        this.connectionServer = new NioProtoServer(NexusNetworkConfiguration.of(network), this.identity);
         this.network = network;
+        this.connectionServer = new NioProtoServer(
+                NexusNetworkConfiguration.of(network), this.identity, manifest);
     }
 
     /**
@@ -72,7 +72,8 @@ public class NexusBootstrap {
     private void seedPeers(NexusNetwork network, int maxConnections, boolean propagate) {
 
         // connect to peers and seed
-        PeerGroup peer = new PeerGroup(network, group, maxConnections, connectionServer);
+        PeerGroup peer = new PeerGroup(
+                network, group, maxConnections, connectionServer);
         try {
             // begin message propagagtions to active peers, a class would handle this
             Thread.sleep(Duration.ofSeconds(10));

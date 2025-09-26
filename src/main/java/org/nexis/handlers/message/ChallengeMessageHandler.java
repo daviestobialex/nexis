@@ -45,6 +45,7 @@ public class ChallengeMessageHandler implements MessageHandler {
         NodeId nodeServerId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().getEncoded());
         long nonce = envelop.getMessage().getHandshake().getNonce();
         byte[] nodeId = envelop.getNodeId().toByteArray();
+        
         NexusProtocol.ChallengeResponse challenge
                 = NexusProtocol.ChallengeResponse.newBuilder()
                         .setPublicKey(ByteString.copyFrom(identity.getKeyPair().getPublic().getEncoded()))
@@ -56,13 +57,12 @@ public class ChallengeMessageHandler implements MessageHandler {
                 challenge,
                 nodeServerId.getId()
         );
+        
         PeerAddress nodeById = registery.getNodeById(nodeId);
         // update peer registery with node id
         if (nodeById == null) {
             String remoteAddress = ctx.channel().remoteAddress().toString();
             registery.addPendingPeer(new Peer(remoteAddress, nodeId), ctx.channel());
-        } else {
-            System.out.println("ALREADY PENDING PEER " + nodeById.id() + " " + nodeById.toString());
         }
 
         ctx.writeAndFlush(builder.build(challengeMessage));

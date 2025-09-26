@@ -9,7 +9,7 @@
         "mobileNumber": "",
        "organisationRole": ""
   },  
-  "protocolVersion": "1.0.0",
+  "version": "1.0.0",
   "organizationPolicy": "https://fxbud.com/policy",
   "organizationTermsAndConditions": "https://fxbud.com/terms",
   "specifications": [

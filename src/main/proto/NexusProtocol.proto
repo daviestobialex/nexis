@@ -11,18 +11,7 @@ message Ping {
 }
 
 message Manifest {
-  uint32 protocol_version = 2; // protobuf protocol version message id for nexus
-  string org_name = 4;// name of organisation
-  string org_url = 5;// name of organisation
-  Contact contact = 7;// user to contact within organisation
-  Catalog catalog   = 3;
-}
-
-message Contact{
-  string full_name = 1;
-  string email = 2;
-  string org_role = 3;
-  string mobile_number = 4;
+  bytes raw = 1; // manifest 
 }
 
 // Merkle proof for an item included in a Merkle tree
@@ -40,14 +29,8 @@ message ManifestAnchor {
   bytes block_header = 5;       // serialized header bytes (client uses header parser to validate)
 }
 
-message Catalog {
-  repeated Specification interfaces = 1;
-}
-
-message Specification {
-  string description = 1;
-  string category = 2;// API Specifications must fall under a single category, for separation of concerns purposes
-  Call operation = 3;
+message GetPeers {
+      uint32 size = 2; // get required number of actives peers from a peer, protects system from flooding from bad actors
 }
 
 // still trying to understand this fully
@@ -63,22 +46,14 @@ message Result {
   bytes response_data = 3;
 }
 
-message PeerDiscovery {
-   oneof payload {
-      bool addr = 1;// get network peer information
-      bool  addrs = 2; // get all peers from a peer
-  }
-}
-
 message NexusMessage {
   oneof payload {
     Manifest manifest   = 1;
     Ping ping   = 2;
     Call function_call = 4;
-    PeerDiscovery peer_discovery = 7;
+    GetPeers peer_discovery = 7;
     Challenge handshake = 8; // handshake protocol
     ChallengeResponse handshakeResponse = 9; // handshake challenge response
-   
   }
 }
 

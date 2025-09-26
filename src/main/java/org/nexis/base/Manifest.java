@@ -155,7 +155,7 @@ public final class Manifest {
      *
      * @return
      */
-    public String raw() {
+    public String getRaw() {
         return raw;
     }
 
