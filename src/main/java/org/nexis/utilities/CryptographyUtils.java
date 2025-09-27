@@ -7,14 +7,20 @@ package org.nexis.utilities;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.Security;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /**
  *
@@ -58,5 +64,27 @@ public class CryptographyUtils {
         X509EncodedKeySpec keySpec = new X509EncodedKeySpec(pubKeyBytes);
         KeyFactory keyFactory = KeyFactory.getInstance(algorithm, "BC");
         return keyFactory.generatePublic(keySpec);
+    }
+    
+    /**
+     * Signs a serialized message with the provided private key using Ed25519.
+     *
+     * @param toSign the serialized message bytes
+     * @param privateKey the private key to sign with
+     * @return a raw signature byte array
+     * @throws NoSuchAlgorithmException if Ed25519 is unavailable
+     * @throws NoSuchProviderException if Bouncy Castle provider is not
+     * available
+     * @throws InvalidKeyException if the key is not valid for signing
+     * @throws SignatureException if the signing operation fails
+     */
+    public static byte[] sign(byte[] toSign, PrivateKey privateKey) throws NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, SignatureException {
+
+        // Add the Bouncy Castle provider
+        Security.addProvider(new BouncyCastleProvider());
+        Signature sig = Signature.getInstance(ED25519_ALGO, "BC");
+        sig.initSign(privateKey);
+        sig.update(toSign);
+        return sig.sign();
     }
 }

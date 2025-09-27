@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package org.nexis.handlers.message;
+package org.nexis.messages.handlers;
 
 import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandlerContext;

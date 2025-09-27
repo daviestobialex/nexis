@@ -3,11 +3,12 @@
   "organizationUrl": "https://fxbud.com",
   "organizationCountryCodes": ["NG", "GB", "KE"],
   "organizationRegistrationNumber": "RC1234567",
+  "category": "payments",
   "contact": {
         "fullName": "Alex Davies",
         "email": "alex@fxbud.com",
-        "mobileNumber": "",
-       "organisationRole": ""
+        "mobileNumber": "2348124500619",
+       "organisationRole": "CTO"
   },  
   "version": "1.0.0",
   "organizationPolicy": "https://fxbud.com/policy",

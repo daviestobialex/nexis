@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package org.nexis.handlers.message;
+package org.nexis.messages.handlers;
 
 import io.netty.channel.ChannelHandlerContext;
 import java.util.logging.Logger;
@@ -43,7 +43,7 @@ public class ManifestMessageHandler implements MessageHandler {
         NodeId nodeServerId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().getEncoded());
 
         //handle received manifest 
-        // persist manifest to chain so local web viewers can retrieve from local chain all peers, peers by categories etc
+        // persist manifest to category against CID(IPFS) manifest registry
         //send out get peers request
         NexusProtocol.GetPeers getPeers
                 = NexusProtocol.GetPeers.newBuilder()

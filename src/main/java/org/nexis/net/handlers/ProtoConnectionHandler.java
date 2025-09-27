@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.nexis.handlers;
+package org.nexis.net.handlers;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -23,10 +23,10 @@ import org.nexis.internal.MessageDispatcher;
 import org.nexis.core.NexusEnvelopBuilder;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexis.core.ValidationPipeline;
-import org.nexis.handlers.message.ChallangeResponseHandler;
-import org.nexis.handlers.message.ChallengeMessageHandler;
-import org.nexis.handlers.message.ManifestMessageHandler;
-import org.nexis.handlers.message.PingMessageHandler;
+import org.nexis.messages.handlers.ChallangeResponseHandler;
+import org.nexis.messages.handlers.ChallengeMessageHandler;
+import org.nexis.messages.handlers.ManifestMessageHandler;
+import org.nexis.messages.handlers.PingMessageHandler;
 import org.nexis.validator.ChecksumValidator;
 import org.nexis.validator.SignatureValidator;
 import org.nexis.base.Identity;

@@ -11,7 +11,8 @@ message Ping {
 }
 
 message Manifest {
-  bytes raw = 1; // manifest 
+  bytes cid = 1; // manifest 
+  string category = 2; // manifest category
 }
 
 // Merkle proof for an item included in a Merkle tree
@@ -31,6 +32,7 @@ message ManifestAnchor {
 
 message GetPeers {
       uint32 size = 2; // get required number of actives peers from a peer, protects system from flooding from bad actors
+     // fixed64 request_id = 3; // not sure might stop spamming, needs some more research controlling GetPeers DoS attack
 }
 
 // still trying to understand this fully

@@ -15,6 +15,9 @@
  */
 package org.nexis.base;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,6 +26,8 @@ import java.nio.file.Paths;
 import java.security.Security;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.nexis.utilities.ByteUtils;
 import org.nexis.utilities.HexFormat;
@@ -85,6 +90,7 @@ public final class Manifest {
     }
 
     private Manifest(String raw, String manifestId, Instant loadedAt) {
+        // TODO: validate json schema 
         this.raw = Objects.requireNonNull(raw, "raw manifest cannot be null");
         this.manifestId = Objects.requireNonNull(manifestId, "manifestId cannot be null");
         this.loadedAt = Objects.requireNonNull(loadedAt, "loadedAt cannot be null");
@@ -189,4 +195,15 @@ public final class Manifest {
         return raw;
     }
 
+    public String getCategory() {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode rootNode = objectMapper.readValue(raw, JsonNode.class);
+            return rootNode.get("category").asText();
+        } catch (JsonProcessingException ex) {
+            Logger.getLogger(Manifest.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException("category not found in manifest file");
+        }
+
+    }
 }

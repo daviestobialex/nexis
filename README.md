@@ -95,8 +95,9 @@ mvn test
 
 * [X] Base Architecture
 * [X] Message and Signature Validation with (ED25519)[https://docs.oracle.com/en/java/javase/21/docs/specs/security/standard-names.html]
-* [ ] Manifest Parsing
+* [X] Manifest Structure and Parsing
 * [X] Message protocol definitions
+* [ ] Manifest Propagation Using IPFS and CID (Version 2 will involve Markel DAG chunking for larger manifest files)
 * [ ] Persistent peer storage & address book using blockchain formats.
 * [ ] DHT integration for decentralized peer discovery.
 * [ ] Gossip protocol for manifest propagation.

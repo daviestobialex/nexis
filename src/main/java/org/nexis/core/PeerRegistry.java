@@ -18,17 +18,18 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class PeerRegistry {
 
-    // === Peer sets ===
     private final ConcurrentMap<PeerAddress, Channel> activePeers;
     private final ConcurrentMap<PeerAddress, Channel> pendingPeers;// oter states
-    private final CopyOnWriteArraySet<PeerAddress> failedPeers;
+    private final CopyOnWriteArraySet<PeerAddress> failedPeers;// will contain bad actors, banned actors and failed or disconnected actors
     // secondary map to improve O(1) search, scarificing memory for performance
     private final ConcurrentMap<String, PeerAddress> peerIndex = new ConcurrentHashMap<>();
     private final Set<Long> nonceIndex = ConcurrentHashMap.newKeySet();
     public static final int DEFAULT_MAX_CONNECTIONS = 10;
     private final AtomicInteger connectionCounter;
 
-    // === Singleton instance (lazy-loaded, thread-safe) ===
+    /**
+     * Singleton instance (lazy-loaded, thread-safe)
+     */
     private static class Holder {
 
         private static final PeerRegistry INSTANCE = new PeerRegistry();

@@ -20,15 +20,12 @@ import com.google.protobuf.Timestamp;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.security.Security;
-import java.security.Signature;
 import java.security.SignatureException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.nexis.base.Identity;
 import org.nexis.base.NexusMessage;
-import static org.nexis.utilities.CryptographyUtils.ED25519_ALGO;
+import org.nexis.utilities.CryptographyUtils;
 import org.nexus.base.proto.NexusProtocol;
 
 /**
@@ -55,7 +52,7 @@ import org.nexus.base.proto.NexusProtocol;
  * <h3>Design Notes</h3>
  * <ul>
  * <li>This class is {@code final} to guarantee immutability and to prevent
- * subclassing that might compromise signature generation.</li>
+ * sub-classing that might compromise signature generation.</li>
  * <li>All cryptographic operations use the Ed25519 algorithm via the Bouncy
  * Castle provider ({@code "BC"}).</li>
  * <li>Exception handling currently logs errors and returns {@code null};
@@ -64,15 +61,15 @@ import org.nexus.base.proto.NexusProtocol;
  *
  * <h3>Example</h3>
  * <pre>{@code
- Identity identity = ...; // contains key pair
- NexusEnvelopBuilder builder = new NexusEnvelopBuilder(identity);
-
- NexusMessage msg = NexusMessage.ping(...);
- NexusProtocol.NexusEnvelop envelop = builder.build(msg);
-
- // Send over network via Netty channel
- channel.writeAndFlush(envelop);
- }</pre>
+ * Identity identity = ...; // contains key pair
+ * NexusEnvelopBuilder builder = new NexusEnvelopBuilder(identity);
+ *
+ * NexusMessage msg = NexusMessage.ping(...);
+ * NexusProtocol.NexusEnvelop envelop = builder.build(msg);
+ *
+ * // Send over network via Netty channel
+ * channel.writeAndFlush(envelop);
+ * }</pre>
  *
  * @author daviestobialex
  */
@@ -112,12 +109,14 @@ public final class NexusEnvelopBuilder {
      */
     public NexusProtocol.NexusEnvelop build(NexusMessage message) {
         try {
+            byte[] signature = CryptographyUtils.sign(message.serialize(), node.getKeyPair().getPrivate());
+
             NexusProtocol.NexusEnvelop envelop = NexusProtocol.NexusEnvelop.newBuilder()
                     .setChecksum(ByteString.copyFrom(message.checkSum()))
                     .setNodeId(ByteString.copyFrom(message.nodeId()))
                     .setMessage(message.message())
                     .setTimeStamp(now())
-                    .setSignature(ByteString.copyFrom(sign(message.serialize())))
+                    .setSignature(ByteString.copyFrom(signature))
                     .build();
             return envelop;
         } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | SignatureException ex) {
@@ -125,28 +124,6 @@ public final class NexusEnvelopBuilder {
         }
 
         return null;
-    }
-
-    /**
-     * Signs a serialized message with the provided private key using Ed25519.
-     *
-     * @param toSign the serialized message bytes
-     * @param privateKey the private key to sign with
-     * @return a raw signature byte array
-     * @throws NoSuchAlgorithmException if Ed25519 is unavailable
-     * @throws NoSuchProviderException if Bouncy Castle provider is not
-     * available
-     * @throws InvalidKeyException if the key is not valid for signing
-     * @throws SignatureException if the signing operation fails
-     */
-    public byte[] sign(byte[] toSign) throws NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, SignatureException {
-
-        // Add the Bouncy Castle provider
-        Security.addProvider(new BouncyCastleProvider());
-        Signature sig = Signature.getInstance(ED25519_ALGO, "BC");
-        sig.initSign(node.getKeyPair().getPrivate());
-        sig.update(toSign);
-        return sig.sign();
     }
 
     /**

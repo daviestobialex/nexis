@@ -13,7 +13,7 @@ import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 import org.nexis.internal.MessageDispatcher;
 import org.nexis.base.NetworkConfiguration;
 import org.nexis.core.NexusEnvelopBuilder;
-import org.nexis.handlers.ProtoConnectionHandler;
+import org.nexis.net.handlers.ProtoConnectionHandler;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexis.core.ValidationPipeline;
 import org.nexis.base.Identity;

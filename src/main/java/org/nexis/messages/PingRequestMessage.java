@@ -5,26 +5,25 @@
 package org.nexis.messages;
 
 import java.nio.ByteBuffer;
-import java.util.UUID;
 import org.nexis.base.NexusMessage;
-import org.nexus.base.proto.NexusProtocol;
 import org.nexis.networks.NexusNetworkConfiguration;
+import org.nexus.base.proto.NexusProtocol;
 
 /**
  *
  * @author daviestobialex
  */
-public class ChallengeRequestMessage implements NexusMessage {
+public class PingRequestMessage implements NexusMessage{
 
-    protected final NexusProtocol.Challenge handshake;
+    protected final NexusProtocol.Ping ping;
     protected final byte[] nodeId;
     protected final NexusNetworkConfiguration params;
 
-    public ChallengeRequestMessage(
+    public PingRequestMessage(
             NexusNetworkConfiguration params,
-            NexusProtocol.Challenge handshake,
+            NexusProtocol.Ping ping,
             byte[] nodeId) {
-        this.handshake = handshake;
+        this.ping = ping;
         this.nodeId = nodeId;
         this.params = params;
     }
@@ -37,7 +36,7 @@ public class ChallengeRequestMessage implements NexusMessage {
     @Override
     public NexusProtocol.NexusMessage message() {
         return NexusProtocol.NexusMessage.newBuilder()
-                .setHandshake(handshake) // wrap Manifest into NexusMessage
+                .setPing(ping) // wrap Manifest into NexusMessage
                 .build();
     }
 
