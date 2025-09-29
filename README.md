@@ -18,54 +18,127 @@ Thanks to the pioneering work of Satoshi Nakamoto and projects like BitcoinJ
 ## Technologies
 
 * Java 21+
-* https://maven.org/[Maven]
-** Maven (17.0.13,) for building the whole project
+* (https://maven.org/)[ Maven (17.0.13) ] Build and dependency management
 * https://github.com/google/protobuf[Google Protocol Buffers] - for use with serialization and hardware communications
 * Netty – Event-driven asynchronous I/O for peer communication
 * BouncyCastle – Cryptography provider (ED25519 signatures, SHA-256 hashing, secure randomness)
+
 ---
 
-## Message Protocol
+## ✨ Key Features
 
-The Nexis Messaging Protocol is a binary, Protobuf-based specification that governs how nodes exchange 
-information with guarantees of integrity, authenticity, and replay protection.
+* **Peer-to-Peer Networking**
+  Secure, asynchronous communication between nodes using Netty.
 
-### Peer Discovery and how it works
+* **Manifest System**
+  Every node publishes a signed **Manifest** (organization identity, services, API spec).
 
-````
+  * Verifiable via SHA-256 + ED25519 signatures.
+  * Cached locally with efficient indexing and compression.
+  * Addressed by CID (Content Identifier).
+
+* **Cryptography**
+
+  * ED25519 signatures (BouncyCastle provider).
+  * SHA-256 hashing.
+  * Signed envelopes to guarantee authenticity and integrity.
+
+* **Validation Pipeline**
+  Modular message validation via pluggable validators.
+
+* **Extensible Message Protocol**
+  Protobuf definitions for all messages.
+  Support for replay protection, structured request/response, and message dispatch.
+
+---
+
+## 🏗 Architecture Overview
+
+### 🔹 Message Flow
+
+```
 Peer A → HandshakeRequest  
 Peer B → HandshakeResponse  
+
 Peer A → Challenge(nonce)  
 Peer B → ChallengeResponse(signed nonce)  
-Peer A → ManifestRequest (API spec + signature) 
-Peer B → ManifestResponse (API spec + signature)  
-Peer A → GetPeersRequest  
-Peer B → GetPeersResponse (list of peers)  
 
-Repeat cycle for new peers
-````
+Peer A → ManifestRequest (CID + signature)  
+Peer B → ManifestResponse (Manifest JSON + signature)  
+
+Peer A → GetPeersRequest  
+Peer B → GetPeersResponse (peer list)  
+
+Cycle repeats as new peers are discovered.
+```
+
+### 🔹 Core Modules
+
+* **`org.nexis.base`**
+  Base abstractions: `Identity`, `Manifest`, `SignedManifest`, `ContentRegistry`.
+
+* **`org.nexis.core`**
+  Protocol logic, Netty integration, Protobuf message handlers, ValidationPipeline.
+
+* **`org.nexis.net`**
+  Networking (NIO server/client setup, connection handlers, message dispatch).
+
+* **`org.nexis.store`**
+  Persistent storage for manifests and content:
+
+  * `ManifestIndex` (sorted `.idx` file for O(log n) lookup).
+  * `ManifestDataFile` (`.dat` file with offsets for O(1) retrieval).
+  * `LruCache` (bounded in-memory cache).
+  * `ManifestStore` (composite store implementing `Storage`).
+
+* **`org.nexis.utilities`**
+  Utility classes for cryptography, encoding, compression.
 
 ---
 
-## 🗂 Manifest
+## 📂 Manifest
 
-The Manifest is a structured description of an entity joining the network. It contains metadata such as organization identity, available services, and intended interfaces.
+The **Manifest** is a structured JSON file describing an entity on the network.
+It is signed by the node’s private key, producing a verifiable **SignedManifest**.
 
-Over time, the Manifest will evolve into a programmable contract, enabling:
+### Example Fields
 
-Binding services to specific events or triggers
+* `organizationName`
+* `organizationUrl`
+* `registrationNumber`
+* `countries` (list of ISO-3166-1 alpha-2 country codes)
+* `services` (API endpoints, capabilities)
+* `publicKey`
+* `manifestVersion`
+* `timestamp`
 
-Enforcing service-level rules (quotas, restrictions)
+### Example JSON
 
-External calls and integrations with smart-contract-like semantics
+```json
+{
+  "organizationName": "FXBud Ltd",
+  "organizationUrl": "https://fxbud.com",
+  "registrationNumber": "RC123456",
+  "countries": ["NG", "KE", "GB"],
+  "services": {
+    "fxRates": "/api/v1/rates",
+    "trading": "/api/v1/trade"
+  },
+  "publicKey": "ed25519:abc123...",
+  "manifestVersion": 1,
+  "timestamp": 1738234823
+}
+```
+
+---
 
 ## 📦 Installation
 
 Clone the repo:
 
 ```bash
-git clone https://github.com/your-org/nexus-p2p.git
-cd nexus-p2p
+git clone https://github.com/your-org/nexis-p2p.git
+cd nexis-p2p
 ```
 
 Build with Maven:
@@ -78,6 +151,11 @@ mvn clean install
 
 ## 🚀 Getting Started
 
+### Start a Node
+
+```java
+ 
+```
 
 ---
 
@@ -93,28 +171,33 @@ mvn test
 
 ## 📚 Roadmap
 
-* [X] Base Architecture
+* [x] Base architecture
+* [x] Identity & Manifest structures
+* [x] SignedManifest & CID handling
+* [x] Storage (LRU + Index/Data files)
 * [X] Message and Signature Validation with (ED25519)[https://docs.oracle.com/en/java/javase/21/docs/specs/security/standard-names.html]
-* [X] Manifest Structure and Parsing
-* [X] Message protocol definitions
-* [ ] Manifest Propagation Using IPFS and CID (Version 2 will involve Markel DAG chunking for larger manifest files)
-* [ ] Persistent peer storage & address book using blockchain formats.
-* [ ] DHT integration for decentralized peer discovery.
-* [ ] Gossip protocol for manifest propagation.
-* [ ] Block & transaction relay.
+* [ ] Manifest propagation across peers
+* [ ] Persistent peer address book (blockchain format)
+* [ ] DHT integration for discovery
+* [ ] Gossip protocol for manifest relay
+* [ ] Block & transaction relay
+* [ ] Peer RPC / downstream operation execution
 * [ ] Downstream Peer Operation Call/Execution
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please fork the repo and open a PR.
-Check the [issues](https://github.com/your-org/nexus-p2p/issues) page for open tasks.
+We welcome contributions!
+
+* Fork the repo
+* Create a feature branch
+* Submit a PR
+
+Check the [issues](https://github.com/your-org/nexis-p2p/issues) for open tasks.
 
 ---
 
 ## 📜 License
 
 Licensed under the [Apache 2.0 License](LICENSE).
-
----
