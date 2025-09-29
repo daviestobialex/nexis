@@ -99,10 +99,11 @@ public class ChallangeResponseHandler implements MessageHandler {
     protected void sendSignedManifest(NexusProtocol.NexusEnvelop envelop,
             ChannelHandlerContext ctx,
             NodeId nodeServerId) {
-        // load and parse manifest and populate manifest fields
+        // load, parse and sign manifest and populate manifest fields
 
         try {
             SignedManifest signedManifest = new SignedManifest(manifest, builder.getNode());
+            
             NexusProtocol.Manifest manifestRequest = NexusProtocol.Manifest.newBuilder()
                     .setCategory(manifest.getCategory())
                     .setCid(ByteString.copyFrom(signedManifest.getSignature()))

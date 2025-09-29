@@ -37,6 +37,7 @@ public class PeerGroup {
     private final EventLoopGroup group;
     private final ChannelInitializer connectionServer;
     private static final Logger LOGGER = Logger.getLogger(PeerGroup.class.getName());
+    private int maxConnections;
 
     /**
      * Creates a PeerGroup for the given network.No chain is provided so this
@@ -69,18 +70,15 @@ public class PeerGroup {
         int port = params.getPort();
         this.group = group;
         this.connectionServer = connectionServer;
+        this.maxConnections = maxConnections;
 
         connectToPeer(host, port);
-
-        seed(maxConnections);
     }
 
     /**
-     * connect to static dns seeds
-     *
-     * @param maxConnections
+     * connects to static DNS seeds
      */
-    private void seed(int maxConnections) {
+    public void seed() {
 
         String[] dnsSeeds = params.getDnsSeeds();
 

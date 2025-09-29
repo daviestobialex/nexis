@@ -35,7 +35,6 @@ public final class PeerRegistry {
         private static final PeerRegistry INSTANCE = new PeerRegistry();
     }
 
-    // === Private constructor prevents outside instantiation ===
     private PeerRegistry() {
         this.activePeers = new ConcurrentHashMap<>();
         this.pendingPeers = new ConcurrentHashMap<>();
@@ -43,12 +42,10 @@ public final class PeerRegistry {
         this.connectionCounter = new AtomicInteger(0);
     }
 
-    // === Access point ===
     public static PeerRegistry getInstance() {
         return Holder.INSTANCE;
     }
 
-    // === Getters (you can add add/remove helpers too) ===
     public ConcurrentMap<PeerAddress, Channel> getActivePeers() {
         return activePeers;
     }
@@ -65,7 +62,6 @@ public final class PeerRegistry {
         return nonceIndex;
     }
 
-    // === Utility methods ===
     /**
      *
      * @param peer

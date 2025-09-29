@@ -5,7 +5,6 @@
 package org.nexis.messages;
 
 import java.nio.ByteBuffer;
-import java.util.UUID;
 import org.nexis.base.NexusMessage;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexis.networks.NexusNetworkConfiguration;
@@ -16,7 +15,6 @@ import org.nexis.networks.NexusNetworkConfiguration;
  */
 public class ChallengeResponseMessage implements NexusMessage {
 
-    protected final UUID id;
     protected final NexusProtocol.ChallengeResponse challenge;
     protected final byte[] nodeId;
     protected final NexusNetworkConfiguration params;
@@ -25,7 +23,6 @@ public class ChallengeResponseMessage implements NexusMessage {
             NexusNetworkConfiguration params,
             NexusProtocol.ChallengeResponse challenge,
             byte[] nodeId) {
-        id = UUID.randomUUID();
         this.challenge = challenge;
         this.nodeId = nodeId;
         this.params = params;

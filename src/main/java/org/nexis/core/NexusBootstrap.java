@@ -10,8 +10,6 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.io.FileNotFoundException;
-import java.time.Duration;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.Manifest;
 import org.nexis.base.NexusNetwork;
@@ -19,6 +17,7 @@ import org.nexis.net.NioProtoServer;
 import org.nexis.networks.NexusNetworkConfiguration;
 import org.nexis.base.IdentityProvider;
 import org.nexis.base.Identity;
+import org.nexis.net.DnsDiscovery;
 
 /**
  *
@@ -30,7 +29,6 @@ public class NexusBootstrap {
     private final Manifest manifest;
     private final ChannelInitializer connectionServer;
     private final NexusNetwork network;
-
     private final EventLoopGroup group = new NioEventLoopGroup();
     private final static Logger LOGGER = Logger.getLogger(NexusBootstrap.class.getName());
 
@@ -57,9 +55,16 @@ public class NexusBootstrap {
 
         // create or load existing block chain
         // start seeding based on network
-        seedPeers(network, maxConnections, propagate);
+        DnsDiscovery dnsDiscovery = new DnsDiscovery(network, group, connectionServer, identity);
+        dnsDiscovery.seedPeers(maxConnections, propagate);
     }
 
+    /**
+     * opens a port to receive connections
+     *
+     * @param port
+     * @throws InterruptedException
+     */
     private void bind(int port) throws InterruptedException {
         ServerBootstrap b = new ServerBootstrap();
         b.group(group)
@@ -69,20 +74,4 @@ public class NexusBootstrap {
         LOGGER.info("Listening on port " + port);
     }
 
-    private void seedPeers(NexusNetwork network, int maxConnections, boolean propagate) {
-
-        // connect to peers and seed
-        PeerGroup peer = new PeerGroup(
-                network, group, maxConnections, connectionServer);
-        try {
-            // begin message propagagtions to active peers, a class would handle this
-            Thread.sleep(Duration.ofSeconds(10));
-        } catch (InterruptedException ex) {
-            Logger.getLogger(NexusBootstrap.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
-        if (propagate) {
-            peer.initiateHandshakeWithPeers(new NexusEnvelopBuilder(identity));
-        }
-    }
 }

@@ -5,6 +5,7 @@
 package org.nexis.net;
 
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.protobuf.ProtobufDecoder;
 import io.netty.handler.codec.protobuf.ProtobufEncoder;
@@ -83,11 +84,19 @@ public class NioProtoServer extends ChannelInitializer<SocketChannel> {
      */
     private final Identity identity;
     private final Manifest manifest;
+    protected EventLoopGroup group;
 
     public NioProtoServer(NetworkConfiguration params, Identity identity, Manifest manifest) {
         this.params = params;
         this.identity = identity;
         this.manifest = manifest;
+    }
+
+    public NioProtoServer(NetworkConfiguration params, Identity identity, Manifest manifest, EventLoopGroup group) {
+        this.params = params;
+        this.identity = identity;
+        this.manifest = manifest;
+        this.group = group;
     }
 
     @Override
@@ -103,7 +112,8 @@ public class NioProtoServer extends ChannelInitializer<SocketChannel> {
                         new NexusEnvelopBuilder(identity),
                         new ValidationPipeline(),
                         new MessageDispatcher(),
-                        manifest)
+                        manifest,
+                        group)
         );
     }
 

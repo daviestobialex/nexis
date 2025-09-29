@@ -15,13 +15,50 @@
  */
 package org.nexis.core;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.nexis.base.ContentRegistry;
 
 /**
  *
  * @author daviestobialex
  */
-public final class ManifestRegistry implements ContentRegistry{
+public final class ManifestRegistry implements ContentRegistry<String, String> {
+
+    /**
+     * contains categories and CIDs
+     */
+    private final ConcurrentHashMap<String, Set<String>> manifests;
+
+    /**
+     * Singleton instance (lazy-loaded, thread-safe)
+     */
+    private static class Holder {
+
+        private static final ManifestRegistry INSTANCE = new ManifestRegistry();
+    }
+
+    private ManifestRegistry() {
+        this.manifests = new ConcurrentHashMap<>();
+    }
+
+    public static ManifestRegistry getInstance() {
+        return ManifestRegistry.Holder.INSTANCE;
+    }
+
+    @Override
+    public void put(String category, String cid) {
+
+        Set<String> cids = manifests.get(category);
+        if (cids == null) {
+            cids = new HashSet();
+            cids.add(cid);
+        } else {
+            cids.add(cid);
+        }
+        manifests.put(category, cids);
+    }
 
     @Override
     public boolean hasContent(String cid) {
@@ -38,4 +75,18 @@ public final class ManifestRegistry implements ContentRegistry{
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
+    /**
+     * get all CID by category
+     *
+     * @param category
+     * @return
+     */
+    public Set<String> getByCategory(String category) {
+        return manifests.get(category);
+    }
+
+    @Override
+    public void save(byte[] content) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
 }

@@ -16,6 +16,7 @@
 package org.nexis.net.handlers;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -32,6 +33,8 @@ import org.nexis.validator.SignatureValidator;
 import org.nexis.base.Identity;
 import org.nexis.base.Manifest;
 import org.nexis.base.NetworkConfiguration;
+import org.nexis.messages.handlers.GetPeersMessageHandler;
+import org.nexis.messages.handlers.GetPeersResponseHandler;
 
 /**
  * {@code ProtoConnectionHandler} is the primary inbound handler for processing
@@ -112,6 +115,7 @@ public class ProtoConnectionHandler extends SimpleChannelInboundHandler<NexusPro
      * @param dispatcher The message dispatcher responsible for routing
      * validated messages to the correct handler.
      * @param manifest
+     * @param group
      */
     public ProtoConnectionHandler(
             NetworkConfiguration params,
@@ -119,7 +123,8 @@ public class ProtoConnectionHandler extends SimpleChannelInboundHandler<NexusPro
             NexusEnvelopBuilder builder,
             ValidationPipeline pipeline,
             MessageDispatcher dispatcher,
-            Manifest manifest) {
+            Manifest manifest,
+            EventLoopGroup group) {
         this.pipeline = pipeline;
         this.dispatcher = dispatcher;
 
@@ -132,6 +137,8 @@ public class ProtoConnectionHandler extends SimpleChannelInboundHandler<NexusPro
         dispatcher.registerHandler(new ChallengeMessageHandler(identity, builder, params));
         dispatcher.registerHandler(new PingMessageHandler());
         dispatcher.registerHandler(new ChallangeResponseHandler(params, builder, manifest));
+        dispatcher.registerHandler(new GetPeersMessageHandler(builder, params));
+        dispatcher.registerHandler(new GetPeersResponseHandler(builder, params, group, manifest));
     }
 
     @Override

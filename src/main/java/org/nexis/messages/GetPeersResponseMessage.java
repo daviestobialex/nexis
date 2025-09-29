@@ -1,41 +1,29 @@
 /*
- * Copyright by the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package org.nexis.messages;
 
 import java.nio.ByteBuffer;
-import org.nexis.base.NetworkConfiguration;
 import org.nexis.base.NexusMessage;
-import org.nexus.base.proto.NexusProtocol;
 import org.nexis.networks.NexusNetworkConfiguration;
+import org.nexus.base.proto.NexusProtocol;
 
 /**
  *
  * @author daviestobialex
  */
-public class ManifestRequestMessage implements NexusMessage {
+public class GetPeersResponseMessage  implements NexusMessage {
 
-    protected final NexusProtocol.Manifest manifest;
+    protected final NexusProtocol.GetPeersResponse peers;
     protected final byte[] nodeId;
-    protected final NetworkConfiguration params;
+    protected final NexusNetworkConfiguration params;
 
-    public ManifestRequestMessage(
+    public GetPeersResponseMessage(
             NexusNetworkConfiguration params,
-            NexusProtocol.Manifest manifest,
+            NexusProtocol.GetPeersResponse getPeers,
             byte[] nodeId) {
-        this.manifest = manifest;
+        this.peers = getPeers;
         this.nodeId = nodeId;
         this.params = params;
     }
@@ -48,7 +36,7 @@ public class ManifestRequestMessage implements NexusMessage {
     @Override
     public NexusProtocol.NexusMessage message() {
         return NexusProtocol.NexusMessage.newBuilder()
-                .setManifest(manifest) // wrap Manifest into NexusMessage
+                .setPeers(peers) // wrap Manifest into NexusMessage
                 .build();
     }
 
@@ -58,6 +46,7 @@ public class ManifestRequestMessage implements NexusMessage {
 
         byte[] payload = getByteConcatenatedPayload(params.getPacketMagic());
         byte[] checksum = NexusMessage.computeChecksum(payload);
+        System.out.println("PAYOAD  " + java.util.Base64.getEncoder().encodeToString(payload));
         System.out.println("PAYOAD LEN " + payload.length + " checksum " + checksum.length);
         ByteBuffer buffer = ByteBuffer.allocate(payload.length + checksum.length);
         buffer.put(payload);

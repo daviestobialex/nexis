@@ -16,6 +16,7 @@
 package org.nexis.utilities;
 
 import com.google.common.io.BaseEncoding;
+import java.io.ByteArrayOutputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,6 +28,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Comparator;
 import java.util.UUID;
+import java.util.zip.DataFormatException;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
 import static org.nexis.utilities.Preconditions.check;
 import static org.nexis.utilities.Preconditions.checkArgument;
 
@@ -808,5 +812,52 @@ public class ByteUtils {
         long high = bb.getLong();
         long low = bb.getLong();
         return new UUID(high, low);
+    }
+
+    /**
+     * Compresses the given input bytes using zlib (Deflater).
+     *
+     * @param data the raw input bytes
+     * @return compressed byte array
+     * @throws IOException if compression fails
+     */
+    public static byte[] compress(byte[] data) throws IOException {
+        Deflater deflater = new Deflater(Deflater.BEST_COMPRESSION);
+        deflater.setInput(data);
+        deflater.finish();
+
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length)) {
+            byte[] buffer = new byte[1024];
+            while (!deflater.finished()) {
+                int count = deflater.deflate(buffer);
+                bos.write(buffer, 0, count);
+            }
+            return bos.toByteArray();
+        }
+    }
+
+    /**
+     * Decompresses the given compressed bytes using zlib (Inflater).
+     *
+     * @param compressed the compressed byte array
+     * @return the original uncompressed bytes
+     * @throws IOException if decompression fails
+     */
+    public static byte[] decompress(byte[] compressed) throws IOException {
+        Inflater inflater = new Inflater();
+        inflater.setInput(compressed);
+
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream(compressed.length)) {
+            byte[] buffer = new byte[1024];
+            while (!inflater.finished()) {
+                try {
+                    int count = inflater.inflate(buffer);
+                    bos.write(buffer, 0, count);
+                } catch (DataFormatException e) {
+                    throw new IOException("Failed to decompress data", e);
+                }
+            }
+            return bos.toByteArray();
+        }
     }
 }

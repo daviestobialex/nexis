@@ -34,8 +34,18 @@ package org.nexis.base;
  * storage layer.
  *
  * @author daviestobialex
+ * @param <K> the key type, used as a unique identifier for content
+ * @param <V> the content type, representing the stored or retrieved data
  */
-public interface ContentRegistry {
+public interface ContentRegistry<K, V> {
+
+    /**
+     * Stores a new content entry in the local registry.
+     *
+     * @param key the content identifier
+     * @param value the content associated with the key
+     */
+    void put(K key, V value);
 
     /**
      * Checks whether the specified content is already stored locally.
@@ -44,7 +54,7 @@ public interface ContentRegistry {
      * @return {@code true} if the content is available locally, {@code false}
      * otherwise
      */
-    boolean hasContent(String cid);
+    boolean hasContent(V cid);
 
     /**
      * Retrieves the locally stored content for the given CID.
@@ -53,17 +63,20 @@ public interface ContentRegistry {
      * @return the raw content bytes if present, or {@code null} if the content
      * is not available locally
      */
-    byte[] getContent(String cid);
+    byte[] getContent(V cid);
 
     /**
-     * Issues a request to peers for the specified CID.
-     * <p>
-     * Implementations should enqueue a "GetContent" message to connected peers
-     * that are known to provide or advertise this CID. If successful, the
-     * content will eventually be retrieved, validated against the CID, and
-     * stored locally.
+     * Issues a request to peers for the specified CID, since content is not
+     * stored locally
      *
      * @param cid the content identifier to fetch from peers
      */
-    void requestContent(String cid);
+    void requestContent(V cid);
+
+    /**
+     * save cid content locally
+     *
+     * @param content
+     */
+    void save(byte[] content);
 }

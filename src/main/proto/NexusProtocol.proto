@@ -11,28 +11,26 @@ message Ping {
 }
 
 message Manifest {
-  bytes cid = 1; // manifest 
+  bytes cid = 1; // manifest id
   string category = 2; // manifest category
 }
 
-// Merkle proof for an item included in a Merkle tree
-message MerkleBranch {
-  repeated bytes siblings = 1;   // sibling hashes up to root (ordered)
-  bool leafOnLeft = 2;          // optional hint for reconstruction (or include position bits)
+message GetManifestContent { // request a manifest content based on CID
+    bytes cid = 1; // manifest id used to ask the network 
 }
 
-// anchor info included in block or special transaction
-message ManifestAnchor {
-  bytes manifest_hash = 1;      // leaf value that was anchored
-  uint32 block_height = 2;      // block height where root was stored
-  bytes merkle_root = 3;        // merkle root stored in block
-  MerkleBranch branch = 4;      // inclusion proof for manifest_hash
-  bytes block_header = 5;       // serialized header bytes (client uses header parser to validate)
+message ManifestContent {// actual content
+    bytes cid = 1;  // owner manifest cid
+    bytes raw = 2; // raw manifest content
 }
 
 message GetPeers {
       uint32 size = 2; // get required number of actives peers from a peer, protects system from flooding from bad actors
      // fixed64 request_id = 3; // not sure might stop spamming, needs some more research controlling GetPeers DoS attack
+}
+
+message GetPeersResponse {
+      repeated string addresses = 3;
 }
 
 // still trying to understand this fully
@@ -52,10 +50,14 @@ message NexusMessage {
   oneof payload {
     Manifest manifest   = 1;
     Ping ping   = 2;
-    Call function_call = 4;
-    GetPeers peer_discovery = 7;
+    GetPeersResponse peers = 3;
+    Call functionCall = 4;
+    GetManifestContent getManifestContent = 5;
+    ManifestContent manifestContent = 6;
+    GetPeers peersDiscovery = 7;
     Challenge handshake = 8; // handshake protocol
     ChallengeResponse handshakeResponse = 9; // handshake challenge response
+  
   }
 }
 

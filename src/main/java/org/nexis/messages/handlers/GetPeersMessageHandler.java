@@ -5,56 +5,66 @@
 package org.nexis.messages.handlers;
 
 import io.netty.channel.ChannelHandlerContext;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import org.nexis.base.NetworkConfiguration;
-import org.nexis.core.ManifestRegistry;
+import org.nexis.base.PeerAddress;
 import org.nexis.core.NexusEnvelopBuilder;
 import org.nexis.core.NodeId;
+import org.nexis.core.PeerRegistry;
 import org.nexis.internal.MessageHandler;
-import org.nexis.messages.GetPeersRequestMessage;
+import org.nexis.messages.GetPeersResponseMessage;
 import org.nexis.networks.NexusNetworkConfiguration;
 import org.nexus.base.proto.NexusProtocol;
 
 /**
+ * uses get peers discovery to respond wit available peers to this node
  *
  * @author daviestobialex
  */
-public class ManifestMessageHandler implements MessageHandler {
+public class GetPeersMessageHandler implements MessageHandler {
 
     private static final Logger LOGGER = Logger.getLogger(ManifestMessageHandler.class.getName());
 
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
-    public static final int NUMBER_OF_PEERS_TO_GET = 10;
 
-    public ManifestMessageHandler(NexusEnvelopBuilder builder, NetworkConfiguration params) {
+    public GetPeersMessageHandler(NexusEnvelopBuilder builder, NetworkConfiguration params) {
         this.builder = builder;
         this.params = params;
     }
 
     @Override
     public boolean canHandle(NexusProtocol.NexusMessage message) {
-        return message.hasManifest();
+        return message.hasPeersDiscovery();
     }
 
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
-        LOGGER.info("Received manifest message");
-
         NodeId nodeServerId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().getEncoded());
 
-        // persist manifest CID to category against CID(IPFS) manifest registry
-        String category = envelop.getMessage().getManifest().getCategory();
-        String cid = envelop.getMessage().getManifest().getCid().toString();
-        ManifestRegistry.getInstance().put(category, cid);
+        int requestedPeerSize = envelop.getMessage().getPeersDiscovery().getSize();
+        LOGGER.log(Level.INFO, "Received get peers message of size {}", requestedPeerSize);
+        Set<PeerAddress> activePeers = PeerRegistry.getInstance()
+                .getActivePeers()
+                .keySet();
 
-        //send out get peers request
-        NexusProtocol.GetPeers getPeers
-                = NexusProtocol.GetPeers.newBuilder()
-                        .setSize(NUMBER_OF_PEERS_TO_GET)
+        int limit = Math.min(requestedPeerSize, activePeers.size());
+
+        List<String> addresses = activePeers.stream()
+                .limit(limit)
+                .map(PeerAddress::id)
+                .collect(Collectors.toList());
+
+        NexusProtocol.GetPeersResponse getPeers
+                = NexusProtocol.GetPeersResponse.newBuilder()
+                        .addAllAddresses(addresses)
                         .build();
 
-        GetPeersRequestMessage getPeersRequest = new GetPeersRequestMessage(
+        GetPeersResponseMessage getPeersRequest = new GetPeersResponseMessage(
                 NexusNetworkConfiguration.of(params.getNetwork()),
                 getPeers,
                 nodeServerId.getId()
@@ -62,4 +72,5 @@ public class ManifestMessageHandler implements MessageHandler {
 
         ctx.writeAndFlush(builder.build(getPeersRequest));
     }
+
 }

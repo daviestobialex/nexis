@@ -5,7 +5,6 @@
 package org.nexis.messages;
 
 import java.nio.ByteBuffer;
-import java.util.UUID;
 import org.nexis.base.NexusMessage;
 import org.nexis.networks.NexusNetworkConfiguration;
 import org.nexus.base.proto.NexusProtocol;
@@ -16,7 +15,6 @@ import org.nexus.base.proto.NexusProtocol;
  */
 public class GetPeersRequestMessage implements NexusMessage {
 
-    protected final UUID id;
     protected final NexusProtocol.GetPeers getPeers;
     protected final byte[] nodeId;
     protected final NexusNetworkConfiguration params;
@@ -25,7 +23,6 @@ public class GetPeersRequestMessage implements NexusMessage {
             NexusNetworkConfiguration params,
             NexusProtocol.GetPeers getPeers,
             byte[] nodeId) {
-        id = UUID.randomUUID();
         this.getPeers = getPeers;
         this.nodeId = nodeId;
         this.params = params;
@@ -39,7 +36,7 @@ public class GetPeersRequestMessage implements NexusMessage {
     @Override
     public NexusProtocol.NexusMessage message() {
         return NexusProtocol.NexusMessage.newBuilder()
-                .setPeerDiscovery(getPeers) // wrap Manifest into NexusMessage
+                .setPeersDiscovery(getPeers) // wrap Manifest into NexusMessage
                 .build();
     }
 
