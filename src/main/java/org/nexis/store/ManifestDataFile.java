@@ -19,6 +19,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import org.nexis.utilities.ByteUtils;
 
 /**
  *
@@ -43,7 +44,7 @@ class ManifestDataFile implements Closeable {
         file.seek(offset);
         byte[] buf = new byte[length];
         file.readFully(buf);
-        return buf;
+        return ByteUtils.decompress(buf);
     }
 
     @Override

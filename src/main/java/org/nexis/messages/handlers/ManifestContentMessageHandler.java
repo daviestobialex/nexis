@@ -19,7 +19,6 @@ import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandlerContext;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.NetworkConfiguration;
 import org.nexis.core.NexusEnvelopBuilder;
@@ -36,13 +35,13 @@ import org.nexus.base.proto.NexusProtocol;
  * @author daviestobialex
  */
 public class ManifestContentMessageHandler implements MessageHandler {
-    
+
     private static final Logger LOGGER = Logger.getLogger(ManifestMessageHandler.class.getName());
-    
+
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
     private final Storage manifestStore;
-    
+
     public ManifestContentMessageHandler(
             NexusEnvelopBuilder builder,
             NetworkConfiguration params,
@@ -51,20 +50,21 @@ public class ManifestContentMessageHandler implements MessageHandler {
         this.params = params;
         this.manifestStore = store;
     }
-    
+
     @Override
     public boolean canHandle(NexusProtocol.NexusMessage message) {
         return message.hasManifestContent();
     }
-    
+
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
         NodeId nodeServerId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().getEncoded());
-        
+
         ByteString cid = envelop.getMessage().getManifestContent().getCid();
         ByteString rawJson = envelop.getMessage().getManifestContent().getRaw();
-        // update manifest store
+        // validate CID
         try {
+            // update manifest store
             manifestStore.put(new BigInteger(cid.toByteArray()), ByteUtils.compress(rawJson.toByteArray()));
         } catch (IOException ex) {
             throw new RuntimeException("failed to store received manifest");
@@ -73,5 +73,5 @@ public class ManifestContentMessageHandler implements MessageHandler {
         // forward manifest content to request if current node is not the requesting node
         ctx.writeAndFlush(builder.build(null));
     }
-    
+
 }

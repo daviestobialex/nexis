@@ -7,7 +7,7 @@
     <groupId>org.nexis-point</groupId>
     <artifactId>core</artifactId>
     <version>0.0.1</version>
-    <name>nexus-core</name>
+    <name>nexis-core</name>
     <description>nexus core</description>
 
     <properties>
