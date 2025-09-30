@@ -11,16 +11,16 @@ message Ping {
 }
 
 message Manifest {
-  bytes cid = 1; // manifest id
+  bytes cid = 1; // signed manifest id
   string category = 2; // manifest category
 }
 
 message GetManifestContent { // request a manifest content based on CID
-    bytes cid = 1; // manifest id used to ask the network 
+    bytes cid = 1; // signed manifest id used to ask the network 
 }
 
 message ManifestContent {// actual content
-    bytes cid = 1;  // owner manifest cid
+    bytes cid = 1;  // signed owner manifest cid
     bytes raw = 2; // raw manifest content
 }
 

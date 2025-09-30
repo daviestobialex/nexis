@@ -18,7 +18,10 @@ package org.nexis.net.handlers;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.logging.Logger;
 import org.nexis.internal.MessageDispatcher;
 import org.nexis.core.NexusEnvelopBuilder;
@@ -33,8 +36,11 @@ import org.nexis.validator.SignatureValidator;
 import org.nexis.base.Identity;
 import org.nexis.base.Manifest;
 import org.nexis.base.NetworkConfiguration;
+import org.nexis.messages.handlers.GetManifestContentMessageHandler;
 import org.nexis.messages.handlers.GetPeersMessageHandler;
 import org.nexis.messages.handlers.GetPeersResponseHandler;
+import org.nexis.messages.handlers.ManifestContentMessageHandler;
+import org.nexis.store.ManifestStore;
 
 /**
  * {@code ProtoConnectionHandler} is the primary inbound handler for processing
@@ -127,18 +133,29 @@ public class ProtoConnectionHandler extends SimpleChannelInboundHandler<NexusPro
             EventLoopGroup group) {
         this.pipeline = pipeline;
         this.dispatcher = dispatcher;
+        Path index = Paths.get("src/main/resources/nexus", "manifest.idx");
+        Path store = Paths.get("src/main/resources/nexus", "manifest.dat");
 
-        // add pipeline validators
-        pipeline.addValidator(new ChecksumValidator(params));
-        pipeline.addValidator(new SignatureValidator(params));
+        try {
+            ManifestStore manifestStore = new ManifestStore(index.toFile(), store.toFile(), 10);
 
-        // add dispatchers
-        dispatcher.registerHandler(new ManifestMessageHandler(builder, params));
-        dispatcher.registerHandler(new ChallengeMessageHandler(identity, builder, params));
-        dispatcher.registerHandler(new PingMessageHandler());
-        dispatcher.registerHandler(new ChallangeResponseHandler(params, builder, manifest));
-        dispatcher.registerHandler(new GetPeersMessageHandler(builder, params));
-        dispatcher.registerHandler(new GetPeersResponseHandler(builder, params, group, manifest));
+            // add pipeline validators
+            pipeline.addValidator(new ChecksumValidator(params));
+            pipeline.addValidator(new SignatureValidator(params));
+
+            // add dispatchers
+            dispatcher.registerHandler(new ManifestMessageHandler(builder, params));
+            dispatcher.registerHandler(new ChallengeMessageHandler(identity, builder, params));
+            dispatcher.registerHandler(new PingMessageHandler());
+            dispatcher.registerHandler(new ChallangeResponseHandler(params, builder, manifest));
+            dispatcher.registerHandler(new GetPeersMessageHandler(builder, params));
+            dispatcher.registerHandler(new GetPeersResponseHandler(builder, params, group, manifest));
+            dispatcher.registerHandler(new GetManifestContentMessageHandler(builder, params, manifestStore));
+            dispatcher.registerHandler(new ManifestContentMessageHandler(builder, params, manifestStore, manifest));
+        } catch (IOException ex) {
+            throw new RuntimeException("error loading manifest index and store");
+        }
+
     }
 
     @Override

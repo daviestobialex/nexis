@@ -57,13 +57,10 @@ Thanks to the pioneering work of Satoshi Nakamoto and projects like BitcoinJ
 ### 🔹 Message Flow
 
 ```
-Peer A → HandshakeRequest  
-Peer B → HandshakeResponse  
+Peer A → HandshakeRequest  (nonce)
+Peer B → HandshakeResponse/ChallengeResponse   (public key exchange) 
 
-Peer A → Challenge(nonce)  
-Peer B → ChallengeResponse(signed nonce)  
-
-Peer A → ManifestRequest (CID + signature)  
+Peer A → ManifestRequest (CID + category)  
 Peer B → ManifestResponse (Manifest JSON + signature)  
 
 Peer A → GetPeersRequest  
@@ -182,7 +179,6 @@ mvn test
 * [ ] Gossip protocol for manifest relay
 * [ ] Block & transaction relay
 * [ ] Peer RPC / downstream operation execution
-* [ ] Downstream Peer Operation Call/Execution
 
 ---
 

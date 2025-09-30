@@ -60,7 +60,7 @@ public class ChallangeResponseHandler implements MessageHandler {
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
         NodeId nodeServerId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().getEncoded());
         PeerRegistry registery = PeerRegistry.getInstance();
-        LOGGER.info("challenge response received");
+        LOGGER.info("challenge/handshake response received");
         // validate node id 
         byte[] nodeId = envelop.getNodeId().toByteArray();
         byte[] publicKey = envelop.getMessage().getHandshakeResponse().getPublicKey().toByteArray();
@@ -99,7 +99,6 @@ public class ChallangeResponseHandler implements MessageHandler {
     protected void sendSignedManifest(NexusProtocol.NexusEnvelop envelop,
             ChannelHandlerContext ctx,
             NodeId nodeServerId) {
-        // load, parse and sign manifest and populate manifest fields
 
         try {
             SignedManifest signedManifest = new SignedManifest(manifest, builder.getNode());

@@ -21,6 +21,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.io.FileNotFoundException;
+import java.util.Set;
 import java.util.logging.Logger;
 import org.nexis.base.Manifest;
 import org.nexis.base.NexusNetwork;
@@ -85,4 +86,29 @@ public class NexusBootstrap {
         LOGGER.info("Listening on port " + port);
     }
 
+    /**
+     * request manifest from store or active peers
+     *
+     * @param cid
+     */
+    public void requestManifestContent(String cid) {
+
+    }
+
+    /**
+     * get
+     *
+     * @param category
+     * @return
+     */
+    public Set<String> getCidsByCategory(String category) {
+        throw new UnsupportedOperationException("operation not currently supported");
+    }
+
+    /**
+     * Remote Procedural Call
+     */
+    public void rpc() {
+
+    }
 }

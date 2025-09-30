@@ -36,6 +36,8 @@ public class SignatureValidator implements Validator {
         // Only messages that must be signed
         return message.hasHandshakeResponse()
                 || message.hasManifest()
+                || message.hasManifestContent()
+                || message.hasGetManifestContent()
                 || message.hasFunctionCall();
     }
 
