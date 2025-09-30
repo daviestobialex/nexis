@@ -18,7 +18,6 @@ package org.nexis.net.handlers;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -144,8 +143,8 @@ public class ProtoConnectionHandler extends SimpleChannelInboundHandler<NexusPro
             pipeline.addValidator(new SignatureValidator(params));
 
             // add dispatchers
-            dispatcher.registerHandler(new ManifestMessageHandler(builder, params));
-            dispatcher.registerHandler(new ChallengeMessageHandler(identity, builder, params));
+            dispatcher.registerHandler(new ManifestMessageHandler(builder, params, manifest));
+            dispatcher.registerHandler(new ChallengeMessageHandler(builder, params));
             dispatcher.registerHandler(new PingMessageHandler());
             dispatcher.registerHandler(new ChallangeResponseHandler(params, builder, manifest));
             dispatcher.registerHandler(new GetPeersMessageHandler(builder, params));

@@ -13,20 +13,22 @@ message Ping {
 message Manifest {
   bytes cid = 1; // signed manifest id
   string category = 2; // manifest category
+  bytes public_key = 3;
 }
 
 message GetManifestContent { // request a manifest content based on CID
     bytes cid = 1; // signed manifest id used to ask the network 
 }
 
-message ManifestContent {// actual content
+message ManifestContent { // actual content
     bytes cid = 1;  // signed owner manifest cid
     bytes raw = 2; // raw manifest content
 }
 
 message GetPeers {
-      uint32 size = 2; // get required number of actives peers from a peer, protects system from flooding from bad actors
-     // fixed64 request_id = 3; // not sure might stop spamming, needs some more research controlling GetPeers DoS attack
+  uint32 size = 2; // get required number of actives peers from a peer, protects system from flooding from bad actors
+  bytes cid = 1; // signed manifest id
+  string category = 3; // manifest category      
 }
 
 message GetPeersResponse {

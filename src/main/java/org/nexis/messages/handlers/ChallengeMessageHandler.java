@@ -16,7 +16,6 @@ import org.nexis.base.PeerAddress;
 import org.nexis.core.PeerRegistry;
 import org.nexis.messages.ChallengeResponseMessage;
 import org.nexis.networks.NexusNetworkConfiguration;
-import org.nexis.base.Identity;
 
 /**
  *
@@ -24,13 +23,11 @@ import org.nexis.base.Identity;
  */
 public class ChallengeMessageHandler implements MessageHandler {
 
-    private final Identity identity;
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
     private final PeerRegistry registery = PeerRegistry.getInstance();
 
-    public ChallengeMessageHandler(Identity identity, NexusEnvelopBuilder builder, NetworkConfiguration params) {
-        this.identity = identity;
+    public ChallengeMessageHandler(NexusEnvelopBuilder builder, NetworkConfiguration params) {
         this.builder = builder;
         this.params = params;
     }
@@ -48,7 +45,7 @@ public class ChallengeMessageHandler implements MessageHandler {
         
         NexusProtocol.ChallengeResponse challenge
                 = NexusProtocol.ChallengeResponse.newBuilder()
-                        .setPublicKey(ByteString.copyFrom(identity.getKeyPair().getPublic().getEncoded()))
+                        .setPublicKey(ByteString.copyFrom( builder.getNode().getKeyPair().getPublic().getEncoded()))
                         .setNonce(nonce)
                         .build();
 

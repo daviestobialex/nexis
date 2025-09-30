@@ -15,12 +15,22 @@
  */
 package org.nexis.messages.handlers;
 
+import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandlerContext;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SignatureException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.nexis.base.Manifest;
 import org.nexis.base.NetworkConfiguration;
+import org.nexis.base.SignedManifest;
 import org.nexis.core.ManifestRegistry;
 import org.nexis.core.NexusEnvelopBuilder;
 import org.nexis.core.NodeId;
+import org.nexis.core.Peer;
+import org.nexis.core.PeerRegistry;
 import org.nexis.internal.MessageHandler;
 import org.nexis.messages.GetPeersRequestMessage;
 import org.nexis.networks.NexusNetworkConfiguration;
@@ -36,11 +46,16 @@ public class ManifestMessageHandler implements MessageHandler {
 
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
+    private final Manifest manifest;
     public static final int NUMBER_OF_PEERS_TO_GET = 10;
 
-    public ManifestMessageHandler(NexusEnvelopBuilder builder, NetworkConfiguration params) {
+    public ManifestMessageHandler(
+            NexusEnvelopBuilder builder,
+            NetworkConfiguration params,
+            Manifest manifest) {
         this.builder = builder;
         this.params = params;
+        this.manifest = manifest;
     }
 
     @Override
@@ -53,24 +68,41 @@ public class ManifestMessageHandler implements MessageHandler {
         LOGGER.info("Received manifest message");
 
         NodeId nodeServerId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().getEncoded());
+        PeerRegistry registery = PeerRegistry.getInstance();
+        byte[] nodeId = envelop.getNodeId().toByteArray();
 
         // persist manifest CID to category against CID(IPFS) manifest registry
         String category = envelop.getMessage().getManifest().getCategory();
         String cid = envelop.getMessage().getManifest().getCid().toString();
+        byte[] publicKey = envelop.getMessage().getManifest().getPublicKey().toByteArray();
         ManifestRegistry.getInstance().put(category, cid);
 
-        //send out get peers request
-        NexusProtocol.GetPeers getPeers
-                = NexusProtocol.GetPeers.newBuilder()
-                        .setSize(NUMBER_OF_PEERS_TO_GET)
-                        .build();
+        // save public key
+        String remoteAddress = ctx.channel().remoteAddress().toString();
+        registery.getPendingPeers().remove(new Peer(remoteAddress, nodeId));
+        registery.addActivePeer(new Peer(remoteAddress, nodeId, publicKey), ctx.channel());
 
-        GetPeersRequestMessage getPeersRequest = new GetPeersRequestMessage(
-                NexusNetworkConfiguration.of(params.getNetwork()),
-                getPeers,
-                nodeServerId.getId()
-        );
+        try {
+            SignedManifest signedManifest = new SignedManifest(manifest, builder.getNode());
 
-        ctx.writeAndFlush(builder.build(getPeersRequest));
+            //send out get peers request
+            NexusProtocol.GetPeers getPeers
+                    = NexusProtocol.GetPeers.newBuilder()
+                            .setSize(NUMBER_OF_PEERS_TO_GET)
+                            .setCid(ByteString.copyFrom(signedManifest.getSignature()))
+                            .setCategory(manifest.getCategory())
+                            .build();
+
+            GetPeersRequestMessage getPeersRequest = new GetPeersRequestMessage(
+                    NexusNetworkConfiguration.of(params.getNetwork()),
+                    getPeers,
+                    nodeServerId.getId()
+            );
+
+            ctx.writeAndFlush(builder.build(getPeersRequest));
+        } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | SignatureException ex) {
+            throw new RuntimeException("unable to sign manifest");
+        }
+
     }
 }

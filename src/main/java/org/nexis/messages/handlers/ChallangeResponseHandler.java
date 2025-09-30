@@ -102,10 +102,11 @@ public class ChallangeResponseHandler implements MessageHandler {
 
         try {
             SignedManifest signedManifest = new SignedManifest(manifest, builder.getNode());
-            
+
             NexusProtocol.Manifest manifestRequest = NexusProtocol.Manifest.newBuilder()
                     .setCategory(manifest.getCategory())
                     .setCid(ByteString.copyFrom(signedManifest.getSignature()))
+                    .setPublicKey(ByteString.copyFrom(builder.getNode().getKeyPair().getPublic().getEncoded()))
                     .build();
 
             ManifestRequestMessage manifestMessage
@@ -115,7 +116,7 @@ public class ChallangeResponseHandler implements MessageHandler {
 
             ctx.writeAndFlush(builder.build(manifestMessage));
         } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | SignatureException ex) {
-            Logger.getLogger(ChallangeResponseHandler.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RuntimeException("unable to sign manifest");
         }
 
     }

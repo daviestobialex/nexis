@@ -12,6 +12,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.nexis.base.NetworkConfiguration;
 import org.nexis.base.PeerAddress;
+import org.nexis.core.ManifestRegistry;
 import org.nexis.core.NexusEnvelopBuilder;
 import org.nexis.core.NodeId;
 import org.nexis.core.PeerRegistry;
@@ -47,6 +48,9 @@ public class GetPeersMessageHandler implements MessageHandler {
         NodeId nodeServerId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().getEncoded());
 
         int requestedPeerSize = envelop.getMessage().getPeersDiscovery().getSize();
+        String category = envelop.getMessage().getManifest().getCategory();
+        String cid = envelop.getMessage().getManifest().getCid().toString();
+
         LOGGER.log(Level.INFO, "Received get peers message of size {}", requestedPeerSize);
         Set<PeerAddress> activePeers = PeerRegistry.getInstance()
                 .getActivePeers()
@@ -69,6 +73,8 @@ public class GetPeersMessageHandler implements MessageHandler {
                 getPeers,
                 nodeServerId.getId()
         );
+
+        ManifestRegistry.getInstance().put(category, cid);
 
         ctx.writeAndFlush(builder.build(getPeersRequest));
     }
