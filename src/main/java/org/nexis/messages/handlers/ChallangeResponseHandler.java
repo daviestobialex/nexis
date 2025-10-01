@@ -11,7 +11,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SignatureException;
 import java.util.Arrays;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.Manifest;
 import org.nexis.base.NetworkConfiguration;
@@ -35,6 +34,7 @@ public class ChallangeResponseHandler implements MessageHandler {
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
     private final Manifest manifest;
+    private final PeerRegistry registery;
 
     public ChallangeResponseHandler(
             NetworkConfiguration params,
@@ -43,6 +43,19 @@ public class ChallangeResponseHandler implements MessageHandler {
         this.builder = builder;
         this.params = params;
         this.manifest = manifest;
+        this.registery = PeerRegistry.getInstance();
+    }
+
+    // for test
+    public ChallangeResponseHandler(
+            NetworkConfiguration params,
+            NexusEnvelopBuilder builder,
+            Manifest manifest,
+            PeerRegistry registery) {
+        this.builder = builder;
+        this.params = params;
+        this.manifest = manifest;
+        this.registery = registery;
     }
 
     @Override
@@ -59,7 +72,7 @@ public class ChallangeResponseHandler implements MessageHandler {
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
         NodeId nodeServerId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().getEncoded());
-        PeerRegistry registery = PeerRegistry.getInstance();
+
         LOGGER.info("challenge/handshake response received");
         // validate node id 
         byte[] nodeId = envelop.getNodeId().toByteArray();
@@ -116,6 +129,7 @@ public class ChallangeResponseHandler implements MessageHandler {
 
             ctx.writeAndFlush(builder.build(manifestMessage));
         } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | SignatureException ex) {
+            ex.printStackTrace();
             throw new RuntimeException("unable to sign manifest");
         }
 

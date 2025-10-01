@@ -4,7 +4,7 @@
  */
 package org.nexis.starter;
 
-import org.nexis.core.NexusBootstrap;
+import org.nexis.core.NexusNode;
 import org.nexis.base.NexusNetwork;
 
 /**
@@ -16,7 +16,7 @@ public class NexusTestPoint {
     // for test purposes alone and will be removed
     public static void main(String[] args) throws Exception {
 
-        NexusBootstrap peerManager = new NexusBootstrap(NexusNetwork.LOCALHOSTTEST);
+        NexusNode peerManager = new NexusNode(NexusNetwork.LOCALHOSTTEST);
 
         peerManager.start(9000, 5, true);
 

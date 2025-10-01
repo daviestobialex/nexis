@@ -32,10 +32,19 @@ public class GetPeersMessageHandler implements MessageHandler {
 
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
+    private final PeerRegistry registery;
 
     public GetPeersMessageHandler(NexusEnvelopBuilder builder, NetworkConfiguration params) {
         this.builder = builder;
         this.params = params;
+        this.registery = PeerRegistry.getInstance();
+    }
+
+    // for test
+    public GetPeersMessageHandler(NexusEnvelopBuilder builder, NetworkConfiguration params, PeerRegistry registery) {
+        this.builder = builder;
+        this.params = params;
+        this.registery = registery;
     }
 
     @Override
@@ -52,7 +61,7 @@ public class GetPeersMessageHandler implements MessageHandler {
         String cid = envelop.getMessage().getManifest().getCid().toString();
 
         LOGGER.log(Level.INFO, "Received get peers message of size {}", requestedPeerSize);
-        Set<PeerAddress> activePeers = PeerRegistry.getInstance()
+        Set<PeerAddress> activePeers = registery
                 .getActivePeers()
                 .keySet();
 

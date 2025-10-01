@@ -11,7 +11,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.Identity;
 import org.nexis.base.NexusNetwork;
-import org.nexis.core.NexusBootstrap;
+import org.nexis.core.NexusNode;
 import org.nexis.core.NexusEnvelopBuilder;
 import org.nexis.core.PeerGroup;
 
@@ -47,7 +47,7 @@ public class DnsDiscovery {
             // begin message propagagtions to active peers, a class would handle this
             Thread.sleep(Duration.ofSeconds(10));
         } catch (InterruptedException ex) {
-            Logger.getLogger(NexusBootstrap.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(NexusNode.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         if (propagate) {

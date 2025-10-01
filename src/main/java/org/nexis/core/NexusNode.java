@@ -35,16 +35,16 @@ import org.nexis.net.DnsDiscovery;
  *
  * @author daviestobialex
  */
-public class NexusBootstrap {
+public class NexusNode {
 
     private final Identity identity;
     private final Manifest manifest;
     private final ChannelInitializer connectionServer;
     private final NexusNetwork network;
     private final EventLoopGroup group = new NioEventLoopGroup();
-    private final static Logger LOGGER = Logger.getLogger(NexusBootstrap.class.getName());
+    private final static Logger LOGGER = Logger.getLogger(NexusNode.class.getName());
 
-    public NexusBootstrap(NexusNetwork network) throws FileNotFoundException {
+    public NexusNode(NexusNetwork network) throws FileNotFoundException {
         IdentityProvider identityProvider = new Ed25519IdentityProvider();
         this.identity = identityProvider.loadOrCreateIdentity();
         this.manifest = Manifest.resolve("manifest.json");

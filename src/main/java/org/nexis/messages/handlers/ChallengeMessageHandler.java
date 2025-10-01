@@ -25,11 +25,19 @@ public class ChallengeMessageHandler implements MessageHandler {
 
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
-    private final PeerRegistry registery = PeerRegistry.getInstance();
+    private final PeerRegistry registery;
 
     public ChallengeMessageHandler(NexusEnvelopBuilder builder, NetworkConfiguration params) {
         this.builder = builder;
         this.params = params;
+        this.registery = PeerRegistry.getInstance();
+    }
+
+    // for testing
+    public ChallengeMessageHandler(NexusEnvelopBuilder builder, NetworkConfiguration params, PeerRegistry registery) {
+        this.builder = builder;
+        this.params = params;
+        this.registery = registery;
     }
 
     @Override
@@ -42,10 +50,10 @@ public class ChallengeMessageHandler implements MessageHandler {
         NodeId nodeServerId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().getEncoded());
         long nonce = envelop.getMessage().getHandshake().getNonce();
         byte[] nodeId = envelop.getNodeId().toByteArray();
-        
+
         NexusProtocol.ChallengeResponse challenge
                 = NexusProtocol.ChallengeResponse.newBuilder()
-                        .setPublicKey(ByteString.copyFrom( builder.getNode().getKeyPair().getPublic().getEncoded()))
+                        .setPublicKey(ByteString.copyFrom(builder.getNode().getKeyPair().getPublic().getEncoded()))
                         .setNonce(nonce)
                         .build();
 
@@ -54,7 +62,7 @@ public class ChallengeMessageHandler implements MessageHandler {
                 challenge,
                 nodeServerId.getId()
         );
-        
+
         PeerAddress nodeById = registery.getNodeById(nodeId);
         // update peer registery with node id
         if (nodeById == null) {

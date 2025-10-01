@@ -22,7 +22,7 @@ public final class PeerRegistry {
     private final ConcurrentMap<PeerAddress, Channel> pendingPeers;// oter states
     private final CopyOnWriteArraySet<PeerAddress> failedPeers;// will contain bad actors, banned actors and failed or disconnected actors
     // secondary map to improve O(1) search, scarificing memory for performance
-    private final ConcurrentMap<String, PeerAddress> peerIndex = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, PeerAddress> peerIndex;
     private final Set<Long> nonceIndex = ConcurrentHashMap.newKeySet();
     public static final int DEFAULT_MAX_CONNECTIONS = 10;
     private final AtomicInteger connectionCounter;
@@ -40,6 +40,7 @@ public final class PeerRegistry {
         this.pendingPeers = new ConcurrentHashMap<>();
         this.failedPeers = new CopyOnWriteArraySet<>();
         this.connectionCounter = new AtomicInteger(0);
+        this.peerIndex = new ConcurrentHashMap<>();
     }
 
     public static PeerRegistry getInstance() {
@@ -98,6 +99,9 @@ public final class PeerRegistry {
     }
 
     public PeerAddress getNodeById(byte[] id) {
+        if (id == null) {
+            return null;
+        }
         return peerIndex.get(idKey(id));
     }
 
