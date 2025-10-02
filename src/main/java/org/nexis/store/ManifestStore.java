@@ -15,7 +15,6 @@
  */
 package org.nexis.store;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -117,6 +116,7 @@ public class ManifestStore implements Storage {
      * @param compressedData the compressed manifest blob
      * @throws IOException if writing to the data or index file fails
      */
+    @Override
     public void put(BigInteger cid, byte[] compressedData) throws IOException {
         long offset = dataFile.append(compressedData);
         index.addEntry(cid, offset, compressedData.length);
@@ -139,6 +139,7 @@ public class ManifestStore implements Storage {
      * @return the manifest data, or {@code null} if no entry exists for the CID
      * @throws IOException if reading from the index or data file fails
      */
+    @Override
     public byte[] get(BigInteger cid) throws IOException {
         // 1. Check in-memory cache
         if (cache.containsKey(cid)) {

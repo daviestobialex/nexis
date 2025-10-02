@@ -49,7 +49,7 @@ public final class ManifestRegistry implements ContentRegistry<String, String> {
 
     @Override
     public void put(String category, String cid) {
-
+        System.out.println("ADDING TO MANIFEST :: category : " + category + " cid :" + cid);
         Set<String> cids = manifests.get(category);
         if (cids == null) {
             cids = new HashSet();
@@ -88,5 +88,10 @@ public final class ManifestRegistry implements ContentRegistry<String, String> {
     @Override
     public void save(byte[] content) {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    @Override
+    public ConcurrentHashMap<String, Set<String>> getManifests() {
+        return manifests;
     }
 }

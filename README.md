@@ -151,7 +151,20 @@ mvn clean install
 ### Start a Node
 
 ```java
- 
+       public class NexusTestPoint {
+
+    // for test purposes alone and will be removed
+    public static void main(String[] args) throws Exception {
+
+        NexusNode node = new NexusNode(NexusNetwork.LOCALHOSTTEST);
+
+        node.start(9000, 5, true);
+
+        // Keep the JVM alive
+        Thread.currentThread().join();
+    }
+   }
+
 ```
 
 ---
@@ -173,7 +186,7 @@ mvn test
 * [x] SignedManifest & CID handling
 * [x] Storage (LRU + Index/Data files)
 * [X] Message and Signature Validation with (ED25519)[https://docs.oracle.com/en/java/javase/21/docs/specs/security/standard-names.html]
-* [ ] Manifest propagation across peers
+* [X] Manifest propagation across peers
 * [ ] Persistent peer address book (blockchain format)
 * [ ] DHT integration for discovery
 * [ ] Gossip protocol for manifest relay

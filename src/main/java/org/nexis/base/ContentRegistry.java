@@ -15,6 +15,9 @@
  */
 package org.nexis.base;
 
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * ContentRegistry provides an IPFS-like interface for managing content
  * addressed by CIDs (Content Identifiers).
@@ -79,4 +82,6 @@ public interface ContentRegistry<K, V> {
      * @param content
      */
     void save(byte[] content);
+    
+    ConcurrentHashMap<String, Set<String>> getManifests();
 }

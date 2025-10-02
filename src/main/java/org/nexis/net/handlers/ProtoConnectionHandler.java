@@ -132,7 +132,7 @@ public class ProtoConnectionHandler extends SimpleChannelInboundHandler<NexusPro
             EventLoopGroup group) {
         this.pipeline = pipeline;
         this.dispatcher = dispatcher;
-        Path index = Paths.get("src/main/nexus/", "manifest.idx");
+        Path index = Paths.get("src/main/nexus/", "manifest .idx");
         Path store = Paths.get("src/main/nexus/", "manifest.dat");
 
         try {

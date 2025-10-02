@@ -15,13 +15,16 @@
  */
 package org.nexis.core;
 
+import com.google.protobuf.ByteString;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.io.FileNotFoundException;
+import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 import org.nexis.base.Manifest;
 import org.nexis.base.NexusNetwork;
@@ -29,7 +32,9 @@ import org.nexis.net.NioProtoServer;
 import org.nexis.networks.NexusNetworkConfiguration;
 import org.nexis.base.IdentityProvider;
 import org.nexis.base.Identity;
+import org.nexis.messages.GetManifestContentMessage;
 import org.nexis.net.DnsDiscovery;
+import org.nexus.base.proto.NexusProtocol;
 
 /**
  *
@@ -88,12 +93,39 @@ public class NexusNode {
     }
 
     /**
-     * request manifest from store or active peers
-     *
-     * @param cid
+     * request manifest from active peers
      */
-    public void requestManifestContent(String cid) {
+    public void requestManifestContent() {
+        // periodically request manifets from all active peers
 
+        PeerRegistry.getInstance().getActivePeers()
+                .forEach((peer, channel) -> {
+
+                    ConcurrentHashMap<String, Set<String>> manifests
+                            = ManifestRegistry.getInstance().getManifests();
+
+                    manifests.forEach((category, cmanifests) -> {
+
+                        for (String cmanifest : cmanifests) {
+                            NexusProtocol.GetManifestContent getContent = NexusProtocol.GetManifestContent.newBuilder()
+                                    .setCid(ByteString.copyFrom(cmanifest.getBytes()))
+                                    .build();
+
+                            NexusEnvelopBuilder builder = new NexusEnvelopBuilder(identity);
+                            NodeId nodeId = builder.getNode().getNodeId();
+
+                            GetManifestContentMessage getManifestContentMessage
+                                    = new GetManifestContentMessage(NexusNetworkConfiguration.of(network),
+                                            getContent, nodeId.getId());
+
+                            channel.writeAndFlush(builder.build(getManifestContentMessage)
+                            );
+                        }
+
+                    }
+                    );
+
+                });
     }
 
     /**
@@ -102,8 +134,12 @@ public class NexusNode {
      * @param category
      * @return
      */
-    public Set<String> getCidsByCategory(String category) {
+    public Iterator<String> getCidsByCategory(String category) {
         throw new UnsupportedOperationException("operation not currently supported");
+    }
+
+    public Iterator<String> categories() {
+        return ManifestRegistry.getInstance().getManifests().keys().asIterator();
     }
 
     /**
