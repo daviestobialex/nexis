@@ -30,8 +30,6 @@ public class PeerGroup {
 
     // Currently active peers. This is an ordered list rather than a set to make unit tests predictable.
     private final NexusNetworkConfiguration params;
-    private final EventLoopGroup group;
-    private final ChannelInitializer connectionServer;
     private static final Logger LOGGER = Logger.getLogger(PeerGroup.class.getName());
     private int maxConnections;
     private final StreamConnection connection;
@@ -62,23 +60,19 @@ public class PeerGroup {
             ChannelInitializer connectionServer,
             StreamConnection connection) {
         this(NexusNetworkConfiguration.of(Objects.requireNonNull(network)),
-                group,
                 maxConnections, connectionServer, connection);
     }
 
     protected PeerGroup(NexusNetworkConfiguration params, EventLoopGroup group,
             ChannelInitializer channelInitializer, StreamConnection connection) {
-        this(params, group, DEFAULT_MAX_CONNECTIONS, channelInitializer, connection);
+        this(params, DEFAULT_MAX_CONNECTIONS, channelInitializer, connection);
     }
 
-    protected PeerGroup(NexusNetworkConfiguration params,
-            EventLoopGroup group, int maxConnections,
+    protected PeerGroup(NexusNetworkConfiguration params, int maxConnections,
             ChannelInitializer channelInitializer,
             StreamConnection connection) {
 
         this.params = params;
-        this.group = group;
-        this.connectionServer = channelInitializer;
         this.maxConnections = maxConnections;
         this.connection = connection;
     }
