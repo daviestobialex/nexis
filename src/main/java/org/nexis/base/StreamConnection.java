@@ -1,5 +1,5 @@
 /*
- * Copyright by the original author or authors.
+ * Copyright 2013 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,38 +15,26 @@
  */
 package org.nexis.base;
 
-import org.nexis.core.NodeId;
-import java.security.KeyPair;
-
 /**
- * Interface for a generic Nexus-like node. See
+ * A generic handler which is used in {@link NioServer}, {@link NioClient} and
+ * {@link BlockingClient} to handle incoming data streams.
  *
- * @author daviestobialex
+ * Used to be called StreamParser.
  */
-public interface Identity {
+public interface StreamConnection {
 
     /**
-     * Unique identifier for this node (derived from the public key).
+     * Called when the connection socket is closed
+     */
+    void connectionClosed();
+
+    /**
+     * Called when the connection socket is first opened
      *
      * @return
      */
-    NodeId getNodeId();
-
-    /**
-     * The cryptographic keypair representing this node.
-     *
-     * @return
-     */
-    KeyPair getKeyPair();
-
-    /**
-     * Load keypair from disk (throws if not found or invalid).
-     *
-     * @param provider
-     * @return
-     */
-    static Identity loadOrCreate(IdentityProvider provider) {
-        return provider.loadOrCreateIdentity();
-    }
+    StreamConnection connectionOpened();
+    
+    StreamConnection connectionOpened(String host, int port);
 
 }

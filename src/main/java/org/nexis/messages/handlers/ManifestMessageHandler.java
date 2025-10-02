@@ -65,9 +65,9 @@ public class ManifestMessageHandler implements MessageHandler {
 
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
-        LOGGER.info("Received manifest message");
+        LOGGER.info("Received manifest message step 3");
 
-        NodeId nodeServerId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().getEncoded());
+        NodeId nodeServerId = builder.getNode().getNodeId();
         PeerRegistry registery = PeerRegistry.getInstance();
         byte[] nodeId = envelop.getNodeId().toByteArray();
 

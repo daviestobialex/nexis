@@ -8,12 +8,12 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.EventLoop;
+import java.net.InetSocketAddress;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import org.nexis.core.Peer;
 import org.nexis.core.PeerRegistry;
-import org.nexis.networks.NexusNetworkConfiguration;
 
 /**
  *
@@ -23,7 +23,7 @@ public class PeerConnectListener implements ChannelFutureListener {
 
     private static final Logger LOGGER = Logger.getLogger(PeerConnectListener.class.getName());
 
-    private final NexusNetworkConfiguration networkParams;
+    private final InetSocketAddress socketAddress;
     private final Bootstrap bootstrap;
     private final EventLoop eventLoop;
     private final Peer peer;
@@ -36,13 +36,13 @@ public class PeerConnectListener implements ChannelFutureListener {
     private final Random random = new Random();
 
     public PeerConnectListener(
-            NexusNetworkConfiguration networkParams,
+            InetSocketAddress socketAddress,
             Bootstrap bootstrap,
             EventLoop eventLoop,
             int maxRetries,
             long maxBackoffSeconds,
             Peer peer) {
-        this.networkParams = networkParams;
+        this.socketAddress = socketAddress;
         this.bootstrap = bootstrap;
         this.eventLoop = eventLoop;
         this.maxRetries = maxRetries;
@@ -55,7 +55,7 @@ public class PeerConnectListener implements ChannelFutureListener {
 
     @Override
     public void operationComplete(ChannelFuture future) {
-       
+
         if (future.isSuccess()) {
             LOGGER.info(" Connected to peer: " + peerId());
             peerRegistry.addPendingPeer(peer, future.channel());
@@ -74,7 +74,7 @@ public class PeerConnectListener implements ChannelFutureListener {
                 LOGGER.info("Retrying " + peerId() + " in " + delay + " seconds");
 
                 eventLoop.schedule(() -> {
-                    bootstrap.connect(networkParams.getNetwork().id(), networkParams.getPort())
+                    bootstrap.connect(socketAddress)
                             .addListener(this); // reuse same listener
                 }, delay, TimeUnit.SECONDS);
 
@@ -88,6 +88,6 @@ public class PeerConnectListener implements ChannelFutureListener {
     }
 
     private String peerId() {
-        return this.networkParams.getNetwork().id() + ":" + networkParams.getPort();
+        return this.socketAddress.getHostName() + ":" + socketAddress.getPort();
     }
 }

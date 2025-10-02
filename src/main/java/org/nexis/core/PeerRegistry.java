@@ -71,6 +71,7 @@ public final class PeerRegistry {
     public void addPendingPeer(PeerAddress peer, Channel channel) {
         pendingPeers.put(peer, channel);
         if (peer.getId() != null) {
+            System.out.println("adding to peer index " + peer.getId().length);
             peerIndex.put(idKey(peer.getId()), peer);
         }
     }
@@ -101,7 +102,7 @@ public final class PeerRegistry {
     public PeerAddress getNodeById(byte[] id) {
         if (id == null) {
             return null;
-        }
+        }System.out.println("SEE PEER INDEX SIZE BEFORE RETRIVAL{}"+ peerIndex.size());
         return peerIndex.get(idKey(id));
     }
 

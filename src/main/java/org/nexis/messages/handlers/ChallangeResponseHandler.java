@@ -1,6 +1,17 @@
 /*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ * Copyright by the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.nexis.messages.handlers;
 
@@ -71,9 +82,9 @@ public class ChallangeResponseHandler implements MessageHandler {
      */
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
-        NodeId nodeServerId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().getEncoded());
+        NodeId nodeServerId = builder.getNode().getNodeId();
 
-        LOGGER.info("challenge/handshake response received");
+        LOGGER.info("challenge/handshake response received step 2");
         // validate node id 
         byte[] nodeId = envelop.getNodeId().toByteArray();
         byte[] publicKey = envelop.getMessage().getHandshakeResponse().getPublicKey().toByteArray();
@@ -116,6 +127,8 @@ public class ChallangeResponseHandler implements MessageHandler {
         try {
             SignedManifest signedManifest = new SignedManifest(manifest, builder.getNode());
 
+            System.out.println("pub key LEN" + builder.getNode().getKeyPair().getPublic().getEncoded().length);
+            
             NexusProtocol.Manifest manifestRequest = NexusProtocol.Manifest.newBuilder()
                     .setCategory(manifest.getCategory())
                     .setCid(ByteString.copyFrom(signedManifest.getSignature()))
@@ -126,6 +139,7 @@ public class ChallangeResponseHandler implements MessageHandler {
                     = new ManifestRequestMessage(
                             NexusNetworkConfiguration.of(params.getNetwork()),
                             manifestRequest, nodeServerId.getId());
+            LOGGER.info("sending signed manifed");
 
             ctx.writeAndFlush(builder.build(manifestMessage));
         } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | SignatureException ex) {

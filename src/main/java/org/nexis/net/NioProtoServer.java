@@ -84,13 +84,7 @@ public class NioProtoServer extends ChannelInitializer<SocketChannel> {
      */
     private final Identity identity;
     private final Manifest manifest;
-    protected EventLoopGroup group;
-
-    public NioProtoServer(NetworkConfiguration params, Identity identity, Manifest manifest) {
-        this.params = params;
-        this.identity = identity;
-        this.manifest = manifest;
-    }
+    protected final EventLoopGroup group;
 
     public NioProtoServer(NetworkConfiguration params, Identity identity, Manifest manifest, EventLoopGroup group) {
         this.params = params;

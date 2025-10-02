@@ -50,7 +50,7 @@ public class NexusNode {
         this.manifest = Manifest.resolve("manifest.json");
         this.network = network;
         this.connectionServer = new NioProtoServer(
-                NexusNetworkConfiguration.of(network), this.identity, manifest);
+                NexusNetworkConfiguration.of(network), this.identity, manifest, group);
     }
 
     /**
@@ -67,7 +67,8 @@ public class NexusNode {
 
         // create or load existing block chain
         // start seeding based on network
-        DnsDiscovery dnsDiscovery = new DnsDiscovery(network, group, connectionServer, identity);
+        DnsDiscovery dnsDiscovery = new DnsDiscovery(NexusNetworkConfiguration.of(network),
+                group, connectionServer, identity);
         dnsDiscovery.seedPeers(maxConnections, propagate);
     }
 

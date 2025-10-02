@@ -54,12 +54,11 @@ public class SimpleNodeIdentity implements Identity {
      * In short, the NodeId is not just an identifier but the anchor for
      * authentication, routing, and data placement in the peer-to-peer system.
      *
-     * @param publicKey
      * @return a stable, unique identifier string for this node.
      */
     @Override
-    public NodeId getNodeId(byte[] publicKey) {
-        return NodeId.fromPublicKey(publicKey);
+    public NodeId getNodeId() {
+        return NodeId.fromPublicKey(keyPair.getPublic().getEncoded());
     }
 
     @Override

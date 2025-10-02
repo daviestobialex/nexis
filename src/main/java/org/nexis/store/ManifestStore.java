@@ -91,6 +91,12 @@ public class ManifestStore implements Storage {
      * @throws IOException if the index or data file cannot be created or opened
      */
     public ManifestStore(File idxFile, File datFile, int cacheSize) throws IOException {
+        if (!idxFile.exists()) {
+            idxFile.createNewFile();
+        }
+        if (!datFile.exists()) {
+            datFile.createNewFile();
+        }
         this.index = new ManifestIndex(idxFile);
         this.dataFile = new ManifestDataFile(datFile);
         this.cache = new LruCache<>(cacheSize);

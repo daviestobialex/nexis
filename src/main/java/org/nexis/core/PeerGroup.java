@@ -5,22 +5,18 @@
 package org.nexis.core;
 
 import org.nexis.base.PeerAddress;
-import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import java.net.InetSocketAddress;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 import org.nexis.base.NexusNetwork;
+import org.nexis.base.StreamConnection;
 import org.nexus.base.proto.NexusProtocol;
 import static org.nexis.core.PeerRegistry.DEFAULT_MAX_CONNECTIONS;
-import org.nexis.listeners.PeerConnectListener;
 import org.nexis.messages.ChallengeRequestMessage;
 import org.nexis.networks.NexusNetworkConfiguration;
 
@@ -38,6 +34,7 @@ public class PeerGroup {
     private final ChannelInitializer connectionServer;
     private static final Logger LOGGER = Logger.getLogger(PeerGroup.class.getName());
     private int maxConnections;
+    private final StreamConnection connection;
 
     /**
      * Creates a PeerGroup for the given network.No chain is provided so this
@@ -48,31 +45,42 @@ public class PeerGroup {
      * @param network the P2P network to connect to
      * @param group
      * @param connectionServer
+     * @param connection
      */
-    public PeerGroup(NexusNetwork network, EventLoopGroup group, ChannelInitializer connectionServer) {
-        this(NexusNetworkConfiguration.of(Objects.requireNonNull(network)), group, connectionServer);
+    public PeerGroup(
+            NexusNetwork network,
+            EventLoopGroup group,
+            ChannelInitializer connectionServer,
+            StreamConnection connection) {
+        this(NexusNetworkConfiguration.of(Objects.requireNonNull(network)), group, connectionServer, connection);
     }
 
-    public PeerGroup(NexusNetwork network, EventLoopGroup group, int maxConnections, ChannelInitializer connectionServer) {
+    public PeerGroup(
+            NexusNetwork network,
+            EventLoopGroup group,
+            int maxConnections,
+            ChannelInitializer connectionServer,
+            StreamConnection connection) {
         this(NexusNetworkConfiguration.of(Objects.requireNonNull(network)),
                 group,
-                maxConnections, connectionServer);
+                maxConnections, connectionServer, connection);
     }
 
-    protected PeerGroup(NexusNetworkConfiguration params, EventLoopGroup group, ChannelInitializer connectionServer) {
-        this(params, group, DEFAULT_MAX_CONNECTIONS, connectionServer);
+    protected PeerGroup(NexusNetworkConfiguration params, EventLoopGroup group,
+            ChannelInitializer channelInitializer, StreamConnection connection) {
+        this(params, group, DEFAULT_MAX_CONNECTIONS, channelInitializer, connection);
     }
 
-    protected PeerGroup(NexusNetworkConfiguration params, EventLoopGroup group, int maxConnections, ChannelInitializer connectionServer) {
+    protected PeerGroup(NexusNetworkConfiguration params,
+            EventLoopGroup group, int maxConnections,
+            ChannelInitializer channelInitializer,
+            StreamConnection connection) {
 
         this.params = params;
-        String host = params.getNetwork().id();
-        int port = params.getPort();
         this.group = group;
-        this.connectionServer = connectionServer;
+        this.connectionServer = channelInitializer;
         this.maxConnections = maxConnections;
-
-        connectToPeer(host, port);
+        this.connection = connection;
     }
 
     /**
@@ -86,26 +94,8 @@ public class PeerGroup {
             if (peerRegistry.getActivePeerSize() > maxConnections) {
                 break;
             }
-            connectToPeer(address, params.getPort());
+            connection.connectionOpened(address, params.getPort());
         }
-    }
-
-    private void connectToPeer(String host, int port) {
-        Bootstrap b = new Bootstrap();
-        b.group(group)
-                .channel(NioSocketChannel.class)
-                .handler(connectionServer);
-
-        EventLoop eventLoop = group.next();
-
-        b.connect(new InetSocketAddress(host, port))
-                .addListener(new PeerConnectListener(
-                        params,
-                        b,
-                        eventLoop,
-                        10,
-                        10,
-                        new Peer(this.params.getNetwork().id())));
     }
 
     /**
@@ -125,7 +115,7 @@ public class PeerGroup {
 
         LOGGER.info("PROPAGATING peer size: " + peers.size());
         peers.forEach((peer, activeChannel) -> {
-            NodeId nodeId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().getEncoded());
+            NodeId nodeId = builder.getNode().getNodeId();
             long nonce = ThreadLocalRandom.current().nextLong();
             peerRegistry.getNonceIndex().add(nonce);// track nonce
             doHandshake(nonce, activeChannel, nodeId, builder);

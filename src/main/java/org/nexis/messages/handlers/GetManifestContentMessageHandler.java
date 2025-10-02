@@ -63,7 +63,7 @@ public class GetManifestContentMessageHandler implements MessageHandler {
 
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
-        NodeId nodeServerId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().getEncoded());
+        NodeId nodeServerId = builder.getNode().getNodeId();
 
         // check manifest index for cid
         BigInteger cid = new BigInteger(envelop.getMessage().getGetManifestContent().getCid().toByteArray());

@@ -5,6 +5,7 @@
 package org.nexis.networks;
 
 import java.time.Instant;
+import org.nexis.base.Network;
 import org.nexis.base.NetworkConfiguration;
 import org.nexis.base.NexusNetwork;
 import org.nexis.utilities.Sha256Hash;

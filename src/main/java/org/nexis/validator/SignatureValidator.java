@@ -23,6 +23,10 @@ import org.nexis.base.Validator;
  */
 public class SignatureValidator implements Validator {
 
+    static {
+        Security.addProvider(new BouncyCastleProvider());
+    }
+
     private final PeerRegistry peerRegistry;
     private final NetworkConfiguration params;
 
@@ -57,6 +61,8 @@ public class SignatureValidator implements Validator {
 
         if (envelop.getMessage().hasHandshakeResponse()) {
             pubKey = envelop.getMessage().getHandshakeResponse().getPublicKey().toByteArray();
+        } else if (envelop.getMessage().hasManifest()) {
+            pubKey = envelop.getMessage().getManifest().getPublicKey().toByteArray();
         } else {
             PeerAddress nodeProps = peerRegistry.getNodeById(nodeId);
 
@@ -64,10 +70,11 @@ public class SignatureValidator implements Validator {
                 throw new SecurityException("Unknown node or missing public key");
             }
             pubKey = nodeProps.getPublicKey();
-        }
 
+        }
+        System.out.println("PUB KEY GOTTEN LEN " + pubKey.length);
         try {
-            Security.addProvider(new BouncyCastleProvider());
+
             Signature sig = Signature.getInstance(ED25519_ALGO, "BC");
             sig.initVerify(bytesToPublicKey(pubKey, ED25519_ALGO));
             sig.update(buffer.array());
@@ -76,7 +83,8 @@ public class SignatureValidator implements Validator {
                 throw new SecurityException("Invalid signature from node ID: " + envelop.getNodeId());
             }
         } catch (Exception e) {
-            throw new SecurityException("Signature validation failed", e);
+            e.printStackTrace();
+            throw new SecurityException("Signature validation failed " + envelop.getNodeId(), e);
         }
     }
 }

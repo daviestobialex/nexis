@@ -18,13 +18,16 @@ package org.nexis.messages.handlers;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
+import java.time.Duration;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.Manifest;
 import org.nexis.base.NetworkConfiguration;
-import org.nexis.base.NexusNetwork;
 import org.nexis.core.NexusEnvelopBuilder;
+import org.nexis.core.NexusNode;
 import org.nexis.core.PeerGroup;
 import org.nexis.internal.MessageHandler;
+import org.nexis.net.NioProducer;
 import org.nexis.net.NioProtoServer;
 import org.nexus.base.proto.NexusProtocol;
 
@@ -34,10 +37,12 @@ import org.nexus.base.proto.NexusProtocol;
  */
 public class GetPeersResponseHandler implements MessageHandler {
 
-    private static final Logger LOGGER = Logger.getLogger(ManifestMessageHandler.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(GetPeersResponseHandler.class.getName());
 
     private final EventLoopGroup group;
     private final ChannelInitializer connectionServer;
+    private final NexusEnvelopBuilder builder;
+    private final NetworkConfiguration params;
 
     public GetPeersResponseHandler(
             NexusEnvelopBuilder builder,
@@ -45,7 +50,9 @@ public class GetPeersResponseHandler implements MessageHandler {
             EventLoopGroup group,
             Manifest manifest) {
         this.group = group;
-        this.connectionServer = new NioProtoServer(params, builder.getNode(), manifest);
+        this.builder = builder;
+        this.params = params;
+        this.connectionServer = new NioProtoServer(params, builder.getNode(), manifest, group);
     }
 
     @Override
@@ -55,13 +62,20 @@ public class GetPeersResponseHandler implements MessageHandler {
 
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
-
+        System.out.println("Gotten PEERS LIST and starting connection step 5");
         // trigger connection to peers functions
         envelop.getMessage().getPeers().getAddressesList().stream()
                 .forEach(address -> {
                     PeerGroup peer = new PeerGroup(
-                            NexusNetwork.fromIdString(address).get(),
-                            group, connectionServer);
+                            params.getNetwork(),
+                            group, connectionServer, new NioProducer(connectionServer, group, address, params.getPort()));
+                    try {
+                        // begin message propagagtions to active peers, a class would handle this
+                        Thread.sleep(Duration.ofSeconds(10));
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(NexusNode.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    peer.initiateHandshakeWithPeers(new NexusEnvelopBuilder(builder.getNode()));
                 });
 
     }

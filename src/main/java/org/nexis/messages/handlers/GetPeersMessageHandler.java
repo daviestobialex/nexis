@@ -54,7 +54,8 @@ public class GetPeersMessageHandler implements MessageHandler {
 
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
-        NodeId nodeServerId = builder.getNode().getNodeId(builder.getNode().getKeyPair().getPublic().getEncoded());
+        System.out.println("recieved Get Peers hasPeersDiscovery step 4");
+        NodeId nodeServerId = builder.getNode().getNodeId();
 
         int requestedPeerSize = envelop.getMessage().getPeersDiscovery().getSize();
         String category = envelop.getMessage().getManifest().getCategory();

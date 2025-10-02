@@ -80,7 +80,7 @@ public final class MessageDispatcher {
         for (MessageHandler handler : handlers) {
             if (handler.canHandle(envelop.getMessage())) {
                 handler.handle(envelop, ctx);
-//                return; // stop at first capable handler
+                return; // stop at first capable handler
             }
         }
         throw new UnsupportedOperationException(

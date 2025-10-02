@@ -11,9 +11,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.Identity;
 import org.nexis.base.NexusNetwork;
+import org.nexis.base.StreamConnection;
 import org.nexis.core.NexusNode;
 import org.nexis.core.NexusEnvelopBuilder;
 import org.nexis.core.PeerGroup;
+import org.nexis.networks.NexusNetworkConfiguration;
 
 /**
  *
@@ -25,23 +27,30 @@ public class DnsDiscovery {
     private final ChannelInitializer connectionServer;
     private final EventLoopGroup group;
     private final Identity identity;
+    private final StreamConnection connection;
 
     public DnsDiscovery(
-            NexusNetwork network,
+            NexusNetworkConfiguration network,
             EventLoopGroup group,
             ChannelInitializer connectionServer,
             Identity identity) {
-        this.network = network;
+        this.network = network.getNetwork();
         this.group = group;
         this.connectionServer = connectionServer;
         this.identity = identity;
+        this.connection = new NioProducer(connectionServer, group,
+                network.getNetwork().id(), network.getPort()).connectionOpened();
     }
 
     public void seedPeers(int maxConnections, boolean propagate) {
 
         // connect to peers and seed
         PeerGroup peer = new PeerGroup(
-                network, group, maxConnections, connectionServer);
+                network,
+                group,
+                maxConnections,
+                connectionServer,
+                connection);
         peer.seed();
         try {
             // begin message propagagtions to active peers, a class would handle this

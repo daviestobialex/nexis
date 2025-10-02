@@ -82,7 +82,7 @@ public class ChallangeResponseHandlerTets {
 
         node = mock(Identity.class);
         when(node.getKeyPair()).thenReturn(keyPair);
-        when(node.getNodeId(any(byte[].class))).thenAnswer(inv -> new NodeId((byte[]) inv.getArgument(0)));
+        when(node.getNodeId()).thenAnswer(inv -> new NodeId((byte[]) inv.getArgument(0)));
 
         // Mock builder
         builder = mock(NexusEnvelopBuilder.class);
