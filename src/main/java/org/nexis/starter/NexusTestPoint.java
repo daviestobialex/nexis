@@ -18,7 +18,9 @@ public class NexusTestPoint {
 
         NexisInstance businessInstance = new NexisInstance(NexusNetwork.LOCALHOSTTEST);
 
-        businessInstance.start(9004, 5, false);
+        businessInstance
+                .start(9004)
+                .connect(5, false);
 
         // Keep the JVM alive
         Thread.currentThread().join();

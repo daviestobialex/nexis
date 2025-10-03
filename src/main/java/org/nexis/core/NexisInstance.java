@@ -152,6 +152,7 @@ public class NexisInstance {
      * Outbound connection client for peer discovery and propagation.
      */
     private final StreamConnection connectionClient;
+    private DnsDiscovery dnsDiscovery;
 
     /**
      * Constructs a new {@code NexisInstance}.
@@ -206,25 +207,32 @@ public class NexisInstance {
     }
 
     /**
-     * Starts the node by binding a listening port and initiating peer
-     * discovery.
+     * Starts the node by binding a listening port
      *
      * @param port the port to bind the server socket
-     * @param maxConnections maximum number of peer connections allowed
-     * @param propagate if true, initiates handshake propagation when peers
-     * connect
+     * @return
      * @throws InterruptedException if the server binding is interrupted
      */
-    public void start(int port, int maxConnections, boolean propagate) throws InterruptedException {
+    public NexisInstance start(int port) throws InterruptedException {
         bind(port);
 
         // Begin DNS discovery / seeding
-        DnsDiscovery dnsDiscovery = new DnsDiscovery(
+        dnsDiscovery = new DnsDiscovery(
                 NexusNetworkConfiguration.of(network),
                 group,
                 connectionClient,
                 identity);
 
+        return this;
+    }
+
+    /**
+     * initiating peer discovery.
+     *
+     * @param maxConnections
+     * @param propagate
+     */
+    public void connect(int maxConnections, boolean propagate) {
         dnsDiscovery.seedPeers(maxConnections, propagate);
     }
 
@@ -307,8 +315,13 @@ public class NexisInstance {
 
     /**
      * Placeholder for Remote Procedure Call (RPC) implementation.
+     *
+     * @param CID
+     * @param rpcId
+     * @param request
      */
-    public void rpc() {
+    public void rpc(String CID, String rpcId, byte[] request) {
         // Future work
+        throw new UnsupportedOperationException("operation not supported yet");
     }
 }

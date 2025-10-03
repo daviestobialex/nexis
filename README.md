@@ -146,7 +146,30 @@ mvn clean install
 
 ---
 
-## 🚀 Getting Started
+# 🚀 Getting Started
+
+## How to install
+### Maven
+
+```maven
+<dependency>
+    <groupId>org.nexis</groupId>
+    <artifactId>instance-core</artifactId>
+    <version>0.0.1</version>
+</dependency>
+````
+#### Gradle
+
+- Groovy DSL
+    ```groovy
+    implementation 'org.nexis:insatnce-core:0.0.1'
+    ```
+
+- Kotlin DSL
+    ```groovy
+    implementation("org.nexis:insatnce-core:0.0.1")
+    ```
+
 
 ### Start a Node
 
@@ -158,7 +181,9 @@ mvn clean install
 
         NexisInstance businessInstance = new NexisInstance(NexusNetwork.LOCALHOSTTEST);
 
-        node.start(9000, 5, true);
+        businessInstance
+                .start(9004)
+                .connect(5, false);
 
         // Keep the JVM alive
         Thread.currentThread().join();
@@ -167,6 +192,25 @@ mvn clean install
 
 ```
 
+# How to Interact with the Network
+
+## Get Instances by category
+
+```java
+var instances = busienssInstance.getByCategory("payments", "logistics");
+````
+
+## Get Manifest by CID
+
+```java
+var contentJson = busienssInstance.getCIDContent("content identification");
+````
+
+## Make an RPC
+
+```java
+var contentJson = busienssInstance.rpc("content identification", rpc_id, rpc_request);
+````
 ---
 
 ## 🧪 Testing
@@ -187,11 +231,13 @@ mvn test
 * [x] Storage (LRU + Index/Data files)
 * [X] Message and Signature Validation with (ED25519)[https://docs.oracle.com/en/java/javase/21/docs/specs/security/standard-names.html]
 * [X] Manifest propagation across peers
-* [ ] Persistent peer address book (blockchain format)
+* [ ] Persistent peer address and peer interaction (blockchain format)
 * [ ] DHT integration for discovery
 * [ ] Gossip protocol for manifest relay
 * [ ] Block & transaction relay
 * [ ] Peer RPC / downstream operation execution
+* [ ] Instance Reputations Computations
+* [ ] Governance
 
 ---
 

@@ -4,8 +4,8 @@
                              http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.nexis-point</groupId>
-    <artifactId>core</artifactId>
+    <groupId>org.nexis</groupId>
+    <artifactId>instance-core</artifactId>
     <version>0.0.1</version>
     <name>nexis-core</name>
     <description>nexus core</description>
