@@ -20,14 +20,12 @@ import org.nexis.listeners.PeerConnectListener;
  */
 public class NioProducer implements StreamConnection {
 
-    private final ChannelInitializer channelInitializer;
     private final EventLoopGroup group;
     private String host;
     private int port;
     private final Bootstrap b;
 
     public NioProducer(ChannelInitializer channelInitializer, EventLoopGroup group, String host, int port) {
-        this.channelInitializer = channelInitializer;
         this.group = group;
         this.host = host;
         this.port = port;
@@ -39,7 +37,6 @@ public class NioProducer implements StreamConnection {
     }
 
     public NioProducer(ChannelInitializer channelInitializer, EventLoopGroup group) {
-        this.channelInitializer = channelInitializer;
         this.group = group;
         b = new Bootstrap();
 
@@ -59,7 +56,7 @@ public class NioProducer implements StreamConnection {
     }
 
     private StreamConnection connectToNetwork() {
-
+        System.out.println("===connectToNetwork default====");
         EventLoop eventLoop = group.next();
 
         InetSocketAddress inetSocketAddress = new InetSocketAddress(host, port);

@@ -22,6 +22,9 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,30 +35,69 @@ import org.nexis.net.NioProtoServer;
 import org.nexis.networks.NexusNetworkConfiguration;
 import org.nexis.base.IdentityProvider;
 import org.nexis.base.Identity;
+import org.nexis.internal.MessageDispatcher;
 import org.nexis.messages.GetManifestContentMessage;
+import org.nexis.messages.handlers.ChallangeResponseHandler;
+import org.nexis.messages.handlers.ChallengeMessageHandler;
+import org.nexis.messages.handlers.GetManifestContentMessageHandler;
+import org.nexis.messages.handlers.GetPeersMessageHandler;
+import org.nexis.messages.handlers.GetPeersResponseHandler;
+import org.nexis.messages.handlers.ManifestContentMessageHandler;
+import org.nexis.messages.handlers.ManifestMessageHandler;
+import org.nexis.messages.handlers.PingMessageHandler;
 import org.nexis.net.DnsDiscovery;
+import org.nexis.store.ManifestStore;
+import org.nexis.validator.ChecksumValidator;
+import org.nexis.validator.SignatureValidator;
 import org.nexus.base.proto.NexusProtocol;
 
 /**
  *
  * @author daviestobialex
  */
-public class NexusNode {
+public class NexisInstance {
 
     private final Identity identity;
     private final Manifest manifest;
     private final ChannelInitializer connectionServer;
     private final NexusNetwork network;
     private final EventLoopGroup group = new NioEventLoopGroup();
-    private final static Logger LOGGER = Logger.getLogger(NexusNode.class.getName());
+    private final static Logger LOGGER = Logger.getLogger(NexisInstance.class.getName());
+    private final ValidationPipeline pipeline = new ValidationPipeline();
+    private final MessageDispatcher dispatcher = new MessageDispatcher();
+    private final NexusEnvelopBuilder builder;
 
-    public NexusNode(NexusNetwork network) throws FileNotFoundException {
+    public NexisInstance(NexusNetwork network) throws FileNotFoundException {
         IdentityProvider identityProvider = new Ed25519IdentityProvider();
         this.identity = identityProvider.loadOrCreateIdentity();
         this.manifest = Manifest.resolve("manifest.json");
         this.network = network;
-        this.connectionServer = new NioProtoServer(
-                NexusNetworkConfiguration.of(network), this.identity, manifest, group);
+        this.builder = new NexusEnvelopBuilder(identity);
+        NexusNetworkConfiguration params = NexusNetworkConfiguration.of(this.network);
+        Path index = Paths.get("src/main/nexus/", "manifest .idx");
+        Path store = Paths.get("src/main/nexus/", "manifest.dat");
+
+        try {
+            ManifestStore manifestStore = new ManifestStore(index.toFile(), store.toFile(), 10);
+
+            // add pipeline validators
+            pipeline.addValidator(new ChecksumValidator(params));
+            pipeline.addValidator(new SignatureValidator(params));
+
+            // add dispatchers
+            dispatcher.registerHandler(new ManifestMessageHandler(builder, params, manifest));
+            dispatcher.registerHandler(new ChallengeMessageHandler(builder, params));
+            dispatcher.registerHandler(new PingMessageHandler());
+            dispatcher.registerHandler(new ChallangeResponseHandler(params, builder, manifest));
+            dispatcher.registerHandler(new GetPeersMessageHandler(builder, params));
+            dispatcher.registerHandler(new GetPeersResponseHandler(builder, params, group, manifest));
+            dispatcher.registerHandler(new GetManifestContentMessageHandler(builder, params, manifestStore));
+            dispatcher.registerHandler(new ManifestContentMessageHandler(builder, params, manifestStore, manifest));
+        } catch (IOException ex) {
+            throw new RuntimeException("error loading manifest index and store");
+        }
+
+        this.connectionServer = new NioProtoServer(group, pipeline, dispatcher);
     }
 
     /**
@@ -111,8 +153,7 @@ public class NexusNode {
                                     .setCid(ByteString.copyFrom(cmanifest.getBytes()))
                                     .build();
 
-                            NexusEnvelopBuilder builder = new NexusEnvelopBuilder(identity);
-                            NodeId nodeId = builder.getNode().getNodeId();
+                            NodeId nodeId = new NexusEnvelopBuilder(identity).getNode().getNodeId();
 
                             GetManifestContentMessage getManifestContentMessage
                                     = new GetManifestContentMessage(NexusNetworkConfiguration.of(network),

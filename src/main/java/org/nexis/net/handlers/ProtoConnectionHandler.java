@@ -19,27 +19,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.logging.Logger;
 import org.nexis.internal.MessageDispatcher;
-import org.nexis.core.NexusEnvelopBuilder;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexis.core.ValidationPipeline;
-import org.nexis.messages.handlers.ChallangeResponseHandler;
-import org.nexis.messages.handlers.ChallengeMessageHandler;
-import org.nexis.messages.handlers.ManifestMessageHandler;
-import org.nexis.messages.handlers.PingMessageHandler;
-import org.nexis.validator.ChecksumValidator;
-import org.nexis.validator.SignatureValidator;
-import org.nexis.base.Identity;
 import org.nexis.base.Manifest;
-import org.nexis.base.NetworkConfiguration;
-import org.nexis.messages.handlers.GetManifestContentMessageHandler;
-import org.nexis.messages.handlers.GetPeersMessageHandler;
-import org.nexis.messages.handlers.GetPeersResponseHandler;
-import org.nexis.messages.handlers.ManifestContentMessageHandler;
-import org.nexis.store.ManifestStore;
 
 /**
  * {@code ProtoConnectionHandler} is the primary inbound handler for processing
@@ -110,51 +94,18 @@ public class ProtoConnectionHandler extends SimpleChannelInboundHandler<NexusPro
     /**
      * Constructs a new {@code ProtoConnectionHandler} for a peer connection.
      *
-     * @param params Network-wide configuration (e.g., protocol params, chain
-     * ID).
-     * @param identity Local node identity, used for cryptographic operations.
-     * @param builder Utility for constructing envelopes/messages with the local
-     * node’s identity and keys.
      * @param pipeline The validation pipeline responsible for enforcing
      * security and integrity checks.
      * @param dispatcher The message dispatcher responsible for routing
      * validated messages to the correct handler.
-     * @param manifest
      * @param group
      */
     public ProtoConnectionHandler(
-            NetworkConfiguration params,
-            Identity identity,
-            NexusEnvelopBuilder builder,
             ValidationPipeline pipeline,
             MessageDispatcher dispatcher,
-            Manifest manifest,
             EventLoopGroup group) {
         this.pipeline = pipeline;
         this.dispatcher = dispatcher;
-        Path index = Paths.get("src/main/nexus/", "manifest .idx");
-        Path store = Paths.get("src/main/nexus/", "manifest.dat");
-
-        try {
-            ManifestStore manifestStore = new ManifestStore(index.toFile(), store.toFile(), 10);
-
-            // add pipeline validators
-            pipeline.addValidator(new ChecksumValidator(params));
-            pipeline.addValidator(new SignatureValidator(params));
-
-            // add dispatchers
-            dispatcher.registerHandler(new ManifestMessageHandler(builder, params, manifest));
-            dispatcher.registerHandler(new ChallengeMessageHandler(builder, params));
-            dispatcher.registerHandler(new PingMessageHandler());
-            dispatcher.registerHandler(new ChallangeResponseHandler(params, builder, manifest));
-            dispatcher.registerHandler(new GetPeersMessageHandler(builder, params));
-            dispatcher.registerHandler(new GetPeersResponseHandler(builder, params, group, manifest));
-            dispatcher.registerHandler(new GetManifestContentMessageHandler(builder, params, manifestStore));
-            dispatcher.registerHandler(new ManifestContentMessageHandler(builder, params, manifestStore, manifest));
-        } catch (IOException ex) {
-            throw new RuntimeException("error loading manifest index and store");
-        }
-
     }
 
     @Override

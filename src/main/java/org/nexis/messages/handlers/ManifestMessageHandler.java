@@ -21,7 +21,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SignatureException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.Manifest;
 import org.nexis.base.NetworkConfiguration;
@@ -49,6 +48,9 @@ public class ManifestMessageHandler implements MessageHandler {
     private final Manifest manifest;
     public static final int NUMBER_OF_PEERS_TO_GET = 10;
 
+    private final PeerRegistry registery;
+    private final ManifestRegistry manifestRegistry;
+
     public ManifestMessageHandler(
             NexusEnvelopBuilder builder,
             NetworkConfiguration params,
@@ -56,6 +58,22 @@ public class ManifestMessageHandler implements MessageHandler {
         this.builder = builder;
         this.params = params;
         this.manifest = manifest;
+        this.registery = PeerRegistry.getInstance();
+        this.manifestRegistry = ManifestRegistry.getInstance();
+    }
+
+    // for test purposes
+    public ManifestMessageHandler(
+            NexusEnvelopBuilder builder,
+            NetworkConfiguration params,
+            Manifest manifest,
+            PeerRegistry registry, 
+            ManifestRegistry manifestRegistry) {
+        this.builder = builder;
+        this.params = params;
+        this.manifest = manifest;
+        this.registery = registry;
+        this.manifestRegistry = manifestRegistry;
     }
 
     @Override
@@ -68,14 +86,13 @@ public class ManifestMessageHandler implements MessageHandler {
         LOGGER.info("Received manifest message step 3");
 
         NodeId nodeServerId = builder.getNode().getNodeId();
-        PeerRegistry registery = PeerRegistry.getInstance();
         byte[] nodeId = envelop.getNodeId().toByteArray();
 
         // persist manifest CID to category against CID(IPFS) manifest registry
         String category = envelop.getMessage().getManifest().getCategory();
         String cid = envelop.getMessage().getManifest().getCid().toString();
         byte[] publicKey = envelop.getMessage().getManifest().getPublicKey().toByteArray();
-        ManifestRegistry.getInstance().put(category, cid);
+        manifestRegistry.put(category, cid);
 
         // save public key
         String remoteAddress = ctx.channel().remoteAddress().toString();
@@ -101,7 +118,7 @@ public class ManifestMessageHandler implements MessageHandler {
 
             ctx.writeAndFlush(builder.build(getPeersRequest));
         } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | SignatureException ex) {
-            throw new RuntimeException("unable to sign manifest");
+            throw new RuntimeException("unable to sign manifest", ex);
         }
 
     }

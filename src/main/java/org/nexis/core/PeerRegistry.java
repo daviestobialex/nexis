@@ -6,11 +6,14 @@ package org.nexis.core;
 
 import org.nexis.base.PeerAddress;
 import io.netty.channel.Channel;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 /**
  *
@@ -26,6 +29,7 @@ public final class PeerRegistry {
     private final Set<Long> nonceIndex = ConcurrentHashMap.newKeySet();
     public static final int DEFAULT_MAX_CONNECTIONS = 10;
     private final AtomicInteger connectionCounter;
+    private final List<Consumer<Channel>> activePeerListeners = new CopyOnWriteArrayList<>();
 
     /**
      * Singleton instance (lazy-loaded, thread-safe)
@@ -74,6 +78,8 @@ public final class PeerRegistry {
             System.out.println("adding to peer index " + peer.getId().length);
             peerIndex.put(idKey(peer.getId()), peer);
         }
+
+        notifyActivePeerListeners(channel);
     }
 
     public void addActivePeer(PeerAddress peer, Channel channel) {
@@ -86,6 +92,18 @@ public final class PeerRegistry {
             // safely incremented, now add peer
             peerIndex.put(idKey(peer.getId()), peer);
             activePeers.put(peer, channel);
+        }
+
+    }
+
+    // Register a listener
+    public void onActivePeerConnected(Consumer<Channel> listener) {
+        activePeerListeners.add(listener);
+    }
+
+    private void notifyActivePeerListeners(Channel channel) {
+        for (Consumer<Channel> listener : activePeerListeners) {
+            listener.accept(channel);
         }
     }
 
@@ -102,7 +120,8 @@ public final class PeerRegistry {
     public PeerAddress getNodeById(byte[] id) {
         if (id == null) {
             return null;
-        }System.out.println("SEE PEER INDEX SIZE BEFORE RETRIVAL{}"+ peerIndex.size());
+        }
+        System.out.println("SEE PEER INDEX SIZE BEFORE RETRIVAL{}" + peerIndex.size());
         return peerIndex.get(idKey(id));
     }
 

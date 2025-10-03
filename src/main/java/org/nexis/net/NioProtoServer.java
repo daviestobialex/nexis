@@ -12,8 +12,6 @@ import io.netty.handler.codec.protobuf.ProtobufEncoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 import org.nexis.internal.MessageDispatcher;
-import org.nexis.base.NetworkConfiguration;
-import org.nexis.core.NexusEnvelopBuilder;
 import org.nexis.net.handlers.ProtoConnectionHandler;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexis.core.ValidationPipeline;
@@ -78,19 +76,14 @@ import org.nexis.base.Manifest;
  */
 public class NioProtoServer extends ChannelInitializer<SocketChannel> {
 
-    private final NetworkConfiguration params;
-    /**
-     * node credential identity of running node server
-     */
-    private final Identity identity;
-    private final Manifest manifest;
     protected final EventLoopGroup group;
+    private final ValidationPipeline pipeline;
+    private final MessageDispatcher dispatcher;
 
-    public NioProtoServer(NetworkConfiguration params, Identity identity, Manifest manifest, EventLoopGroup group) {
-        this.params = params;
-        this.identity = identity;
-        this.manifest = manifest;
+    public NioProtoServer(EventLoopGroup group, ValidationPipeline pipeline, MessageDispatcher dispatcher) {
         this.group = group;
+        this.dispatcher = dispatcher;
+        this.pipeline = pipeline;
     }
 
     @Override
@@ -101,12 +94,8 @@ public class NioProtoServer extends ChannelInitializer<SocketChannel> {
                 new ProtobufVarint32LengthFieldPrepender(),
                 new ProtobufEncoder(),
                 new ProtoConnectionHandler(
-                        params,
-                        identity,
-                        new NexusEnvelopBuilder(identity),
-                        new ValidationPipeline(),
-                        new MessageDispatcher(),
-                        manifest,
+                        pipeline,
+                        dispatcher,
                         group)
         );
     }

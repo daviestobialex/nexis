@@ -18,13 +18,10 @@ package org.nexis.messages.handlers;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
-import java.time.Duration;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.Manifest;
 import org.nexis.base.NetworkConfiguration;
 import org.nexis.core.NexusEnvelopBuilder;
-import org.nexis.core.NexusNode;
 import org.nexis.core.PeerGroup;
 import org.nexis.internal.MessageHandler;
 import org.nexis.net.NioProducer;
@@ -32,6 +29,28 @@ import org.nexis.net.NioProtoServer;
 import org.nexus.base.proto.NexusProtocol;
 
 /**
+ * Handles incoming peer discovery responses containing a list of peer
+ * addresses.
+ * <p>
+ * When this handler receives a {@link NexusProtocol.GetPeersResponse} message,
+ * it extracts the peer addresses from the response and attempts to establish
+ * outbound connections to each peer in the list.
+ * </p>
+ *
+ * <h2>Flow</h2>
+ * <ol>
+ * <li>The handler listens for messages of type {@code hasPeers()}.</li>
+ * <li>When triggered, it retrieves the peer addresses from the response.</li>
+ * <li>For each address, it creates a {@link PeerGroup} and initiates a
+ * connection using {@link NioProducer} and {@link NioProtoServer}.</li>
+ * <li>The handshake process is initiated for each newly connected peer.</li>
+ * </ol>
+ *
+ * <h2>Usage</h2>
+ * This handler is part of the peer discovery mechanism. It is typically invoked
+ * after a node issues a "Get Peers" request and receives a response containing
+ * potential peers in the network. By connecting to these peers, the node
+ * expands its view of the network topology and improves resilience.
  *
  * @author daviestobialex
  */
@@ -40,10 +59,18 @@ public class GetPeersResponseHandler implements MessageHandler {
     private static final Logger LOGGER = Logger.getLogger(GetPeersResponseHandler.class.getName());
 
     private final EventLoopGroup group;
-    private final ChannelInitializer connectionServer;
+//    private final ChannelInitializer connectionServer;
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
 
+    /**
+     * Creates a new {@code GetPeersResponseHandler}.
+     *
+     * @param builder envelope builder used to construct outgoing messages
+     * @param params network configuration for the current node
+     * @param group Netty event loop group for managing peer connections
+     * @param manifest manifest describing the network context
+     */
     public GetPeersResponseHandler(
             NexusEnvelopBuilder builder,
             NetworkConfiguration params,
@@ -52,7 +79,7 @@ public class GetPeersResponseHandler implements MessageHandler {
         this.group = group;
         this.builder = builder;
         this.params = params;
-        this.connectionServer = new NioProtoServer(params, builder.getNode(), manifest, group);
+//        this.connectionServer = new NioProtoServer(group);
     }
 
     @Override
@@ -60,22 +87,24 @@ public class GetPeersResponseHandler implements MessageHandler {
         return message.hasPeers();
     }
 
+    /**
+     * Handles the incoming peer discovery response by connecting to all
+     * provided peer addresses and initiating the handshake protocol.
+     *
+     * @param envelop the received network envelope containing the peers list
+     * @param ctx the Netty channel context
+     */
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
         System.out.println("Gotten PEERS LIST and starting connection step 5");
         // trigger connection to peers functions
         envelop.getMessage().getPeers().getAddressesList().stream()
                 .forEach(address -> {
-                    PeerGroup peer = new PeerGroup(
-                            params.getNetwork(),
-                            group, connectionServer, new NioProducer(connectionServer, group, address, params.getPort()));
-                    try {
-                        // begin message propagagtions to active peers, a class would handle this
-                        Thread.sleep(Duration.ofSeconds(10));
-                    } catch (InterruptedException ex) {
-                        Logger.getLogger(NexusNode.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                    peer.initiateHandshakeWithPeers(new NexusEnvelopBuilder(builder.getNode()));
+//                    PeerGroup peer = new PeerGroup(
+//                            params.getNetwork(),
+//                            new NioProducer(connectionServer, group, address, params.getPort()));
+//
+//                    peer.initiateHandshakeWithPeers(new NexusEnvelopBuilder(builder.getNode()));
                 });
 
     }

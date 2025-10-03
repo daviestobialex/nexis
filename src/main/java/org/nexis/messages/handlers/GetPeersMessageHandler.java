@@ -1,6 +1,17 @@
 /*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ * Copyright by the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS"
+ * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.nexis.messages.handlers;
 
@@ -19,10 +30,37 @@ import org.nexis.core.PeerRegistry;
 import org.nexis.internal.MessageHandler;
 import org.nexis.messages.GetPeersResponseMessage;
 import org.nexis.networks.NexusNetworkConfiguration;
+
 import org.nexus.base.proto.NexusProtocol;
 
 /**
- * uses get peers discovery to respond wit available peers to this node
+ * {@code GetPeersMessageHandler} processes incoming "GetPeers" discovery
+ * requests and responds with a list of available peers known to this node.
+ * <p>
+ * Peer discovery is a fundamental part of the Nexis P2P protocol. It allows
+ * nodes to share knowledge of other peers in the network, ensuring that
+ * participants can bootstrap connections and maintain a healthy, decentralized
+ * topology.
+ *
+ * <h3>Responsibilities</h3>
+ * <ul>
+ * <li>Validates whether the incoming message is a peer discovery request.</li>
+ * <li>Retrieves a list of active peers from the {@link PeerRegistry}.</li>
+ * <li>Respects the requested size limit for peers.</li>
+ * <li>Builds and sends back a {@link GetPeersResponseMessage} containing peer
+ * addresses.</li>
+ * <li>Updates the {@link ManifestRegistry} with category/CID metadata carried
+ * in the request.</li>
+ * </ul>
+ *
+ * <h3>Protocol Step</h3>
+ * This handler corresponds to the "GetPeers → GetPeersResponse" exchange within
+ * the peer discovery sequence.
+ *
+ * <pre>
+ * Peer A → GetPeersRequest (asks for N peers)
+ * Peer B → GetPeersResponse (returns up to N peers)
+ * </pre>
  *
  * @author daviestobialex
  */
@@ -33,39 +71,84 @@ public class GetPeersMessageHandler implements MessageHandler {
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
     private final PeerRegistry registery;
+    private final ManifestRegistry manifestRegistry;
 
+    /**
+     * Creates a handler for responding to "GetPeers" messages.
+     *
+     * @param builder builder used to construct signed protocol envelopes
+     * @param params the network configuration for this node
+     */
     public GetPeersMessageHandler(NexusEnvelopBuilder builder, NetworkConfiguration params) {
         this.builder = builder;
         this.params = params;
         this.registery = PeerRegistry.getInstance();
+        this.manifestRegistry = ManifestRegistry.getInstance();
     }
 
-    // for test
-    public GetPeersMessageHandler(NexusEnvelopBuilder builder, NetworkConfiguration params, PeerRegistry registery) {
+    /**
+     * Test constructor allowing injection of a custom {@link PeerRegistry}.
+     *
+     * @param builder envelope builder
+     * @param params network configuration
+     * @param registery peer registry (test double or singleton)
+     * @param manifestRegistry
+     */
+    public GetPeersMessageHandler(
+            NexusEnvelopBuilder builder,
+            NetworkConfiguration params,
+            PeerRegistry registery,
+            ManifestRegistry manifestRegistry) {
         this.builder = builder;
         this.params = params;
         this.registery = registery;
+        this.manifestRegistry = manifestRegistry;
     }
 
+    /**
+     * Determines whether this handler can process the given message.
+     *
+     * @param message the protocol message to inspect
+     * @return {@code true} if it is a "peersDiscovery" message
+     */
     @Override
     public boolean canHandle(NexusProtocol.NexusMessage message) {
         return message.hasPeersDiscovery();
     }
 
+    /**
+     * Handles a "GetPeers" request and responds with a limited list of known
+     * peers.
+     * <p>
+     * The method:
+     * <ol>
+     * <li>Extracts the requested peer count and manifest info from the
+     * message.</li>
+     * <li>Collects up to {@code requestedPeerSize} peers from the active
+     * registry.</li>
+     * <li>Builds a {@link GetPeersResponseMessage} containing peer
+     * addresses.</li>
+     * <li>Updates the {@link ManifestRegistry} with category/CID for
+     * bookkeeping.</li>
+     * <li>Writes and flushes the response back to the requesting channel.</li>
+     * </ol>
+     *
+     * @param envelop the incoming message envelope
+     * @param ctx the Netty channel context for replying
+     */
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
-        System.out.println("recieved Get Peers hasPeersDiscovery step 4");
+        System.out.println("Received Get Peers (peersDiscovery) step 4");
         NodeId nodeServerId = builder.getNode().getNodeId();
 
         int requestedPeerSize = envelop.getMessage().getPeersDiscovery().getSize();
-        String category = envelop.getMessage().getManifest().getCategory();
-        String cid = envelop.getMessage().getManifest().getCid().toString();
+        String category = envelop.getMessage().getPeersDiscovery().getCategory();
+        String cid = envelop.getMessage().getPeersDiscovery().getCid().toString();
 
-        LOGGER.log(Level.INFO, "Received get peers message of size {}", requestedPeerSize);
-        Set<PeerAddress> activePeers = registery
-                .getActivePeers()
-                .keySet();
+        LOGGER.log(Level.INFO, "Received get peers message of size {0}", requestedPeerSize);
 
+        // Collect available active peers
+        Set<PeerAddress> activePeers = registery.getActivePeers().keySet();
         int limit = Math.min(requestedPeerSize, activePeers.size());
 
         List<String> addresses = activePeers.stream()
@@ -73,20 +156,22 @@ public class GetPeersMessageHandler implements MessageHandler {
                 .map(PeerAddress::id)
                 .collect(Collectors.toList());
 
+        // Build protocol response
         NexusProtocol.GetPeersResponse getPeers
                 = NexusProtocol.GetPeersResponse.newBuilder()
                         .addAllAddresses(addresses)
                         .build();
 
-        GetPeersResponseMessage getPeersRequest = new GetPeersResponseMessage(
+        GetPeersResponseMessage getPeersResponse = new GetPeersResponseMessage(
                 NexusNetworkConfiguration.of(params.getNetwork()),
                 getPeers,
                 nodeServerId.getId()
         );
 
-        ManifestRegistry.getInstance().put(category, cid);
+        // Update manifest registry with category/CID reference
+        manifestRegistry.put(category, cid);
 
-        ctx.writeAndFlush(builder.build(getPeersRequest));
+        // Send response back to requester
+        ctx.writeAndFlush(builder.build(getPeersResponse));
     }
-
 }
