@@ -156,7 +156,7 @@ mvn clean install
     // for test purposes alone and will be removed
     public static void main(String[] args) throws Exception {
 
-        NexusNode node = new NexusNode(NexusNetwork.LOCALHOSTTEST);
+        NexisInstance businessInstance = new NexisInstance(NexusNetwork.LOCALHOSTTEST);
 
         node.start(9000, 5, true);
 

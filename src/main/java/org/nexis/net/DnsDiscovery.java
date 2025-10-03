@@ -27,12 +27,11 @@ public class DnsDiscovery {
     public DnsDiscovery(
             NexusNetworkConfiguration network,
             EventLoopGroup group,
-            ChannelInitializer connectionServer,
+            StreamConnection connection,
             Identity identity) {
         this.network = network.getNetwork();
         this.identity = identity;
-        this.connection = new NioProducer(connectionServer, group,
-                network.getNetwork().id(), network.getPort()).connectionOpened();
+        this.connection = connection;
     }
 
     public void seedPeers(int maxConnections, boolean propagate) {

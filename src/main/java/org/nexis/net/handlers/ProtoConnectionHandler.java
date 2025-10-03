@@ -23,7 +23,6 @@ import java.util.logging.Logger;
 import org.nexis.internal.MessageDispatcher;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexis.core.ValidationPipeline;
-import org.nexis.base.Manifest;
 
 /**
  * {@code ProtoConnectionHandler} is the primary inbound handler for processing

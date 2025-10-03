@@ -16,9 +16,9 @@ public class NexusTestPoint {
     // for test purposes alone and will be removed
     public static void main(String[] args) throws Exception {
 
-        NexisInstance peerManager = new NexisInstance(NexusNetwork.LOCALHOSTTEST);
+        NexisInstance businessInstance = new NexisInstance(NexusNetwork.LOCALHOSTTEST);
 
-        peerManager.start(9000, 5, true);
+        businessInstance.start(9004, 5, false);
 
         // Keep the JVM alive
         Thread.currentThread().join();
