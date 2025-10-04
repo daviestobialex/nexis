@@ -46,7 +46,7 @@ public enum NexusNetwork implements Network {
      * The nexus test network, known as {@code "testnet"}, with {@code id}
      * string {@code "org.nexus.test"}
      */
-    TESTNET("org.nexus.test", "test"),
+    TESTNET("nxis.org", "test"),
     /**
      * A local nexus regression test network, known as {@code "regtest"}, with
      * {@code id} string {@code "org.nexus.regtest"}

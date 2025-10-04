@@ -35,6 +35,7 @@ build/
 
 **/logs/
 
+**/certs/
 
 /docs/
 
@@ -46,6 +47,7 @@ nb-configuration.xml
 *.class
 *.war
 *.ear
+*.cert
 .classpath
 .project
 .settings

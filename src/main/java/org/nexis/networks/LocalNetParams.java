@@ -11,10 +11,10 @@ import org.nexis.utilities.Sha256Hash;
  *
  * @author daviestobialex
  */
-public class TestNetParams extends NexusNetworkConfiguration {
+public class LocalNetParams extends NexusNetworkConfiguration {
 
-    public TestNetParams() {
-        super(NexusNetwork.TESTNET, 0xf9beb4d9);
+    public LocalNetParams() {
+        super(NexusNetwork.LOCALHOSTTEST, 0xf9beb4d9);
 
         port = 9004;
         addressHeader = 0;
@@ -30,7 +30,7 @@ public class TestNetParams extends NexusNetworkConfiguration {
         checkpoints.put(200000, Sha256Hash.wrap("000000000000034a7dedef4a161fa058a2d67a173a90155f3a2fe6fc132e0ebf"));
 
         dnsSeeds = new String[]{
-            "18.170.223.254"
+            "127.0.0.1"
         };
 
         // These are in big-endian format, which is what the SeedPeers code expects.
@@ -43,11 +43,11 @@ public class TestNetParams extends NexusNetworkConfiguration {
             0xfb3b9c59};
     }
 
-    private static TestNetParams instance;
+    private static LocalNetParams instance;
 
-    public static synchronized TestNetParams get() {
+    public static synchronized LocalNetParams get() {
         if (instance == null) {
-            instance = new TestNetParams();
+            instance = new LocalNetParams();
         }
         return instance;
     }

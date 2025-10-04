@@ -11,15 +11,15 @@ import org.nexis.base.NexusNetwork;
  *
  * @author daviestobialex
  */
-public class NexusTestPoint {
+public class NexusStartPoint {
 
     // for test purposes alone and will be removed
     public static void main(String[] args) throws Exception {
 
-        NexisInstance businessInstance = new NexisInstance(NexusNetwork.LOCALHOSTTEST, true);
+        NexisInstance businessInstance = new NexisInstance(NexusNetwork.LOCALHOSTTEST, false);
 
         businessInstance
-                .start(9000)
+                .start(9004)
                 .connect(5);
 
         // Keep the JVM alive

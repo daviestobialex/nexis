@@ -141,17 +141,16 @@ public final class PeerRegistry {
 
         if (peer.getId() != null) {
             pendingPeers.add(peerConnection);
-            peerIndex.put(idKey(peer.getId()), peerConnection);
+            peerIndex.put(peer.id(), peerConnection);
         }
     }
 
     public void addActivePeer(PeerAddress peer, Channel channel) {
-        String nodeId = idKey(peer.getId());
-        System.out.println("NODE ID KEY TO PEER " + nodeId);
         PeerConnection peerConnection = new PeerConnection(peer, channel);
 
         // Avoid duplicates
-        if (peerIndex.putIfAbsent(nodeId, peerConnection) == null) {
+        if (peerIndex.putIfAbsent(peer.id(), peerConnection) == null) {
+            System.out.println("NODE ID KEY TO PEER " + peer.id() + " ADDED");
             activePeers.add(peerConnection);
             int current = connectionCounter.incrementAndGet();
 
@@ -168,7 +167,7 @@ public final class PeerRegistry {
     private void evictOldestPeer() {
         PeerConnection oldest = activePeers.poll();
         if (oldest != null) {
-            peerIndex.remove(idKey(oldest.peer().getId()));
+            peerIndex.remove(oldest.peer().id());
             connectionCounter.decrementAndGet();
             pendingPeers.add(oldest);// max connections reached, add to pending peer
         }
@@ -186,8 +185,7 @@ public final class PeerRegistry {
     }
 
     public void removeActivePeer(PeerAddress peer) {
-        String nodeId = idKey(peer.getId());
-        PeerConnection removed = peerIndex.remove(nodeId);
+        PeerConnection removed = peerIndex.remove(peer.id());
         if (removed != null) {
             activePeers.remove(removed);
             connectionCounter.decrementAndGet();
@@ -195,16 +193,14 @@ public final class PeerRegistry {
     }
 
     public void removePendingPeer(PeerAddress peer) {
-        String nodeId = idKey(peer.getId());
-        PeerConnection removed = peerIndex.remove(nodeId);
+        PeerConnection removed = peerIndex.remove(peer.id());
         if (removed != null) {
             pendingPeers.remove(removed);
         }
     }
 
     public void markPeerFailed(PeerAddress peer) {
-        String nodeId = idKey(peer.getId());
-        PeerConnection removed = peerIndex.remove(nodeId);
+        PeerConnection removed = peerIndex.remove(peer.id());
         if (removed != null) {
             pendingPeers.remove(removed);
             failedPeers.add(peer);
@@ -232,10 +228,6 @@ public final class PeerRegistry {
         }
 
         return null;
-    }
-
-    public Channel getActivePeerById(byte[] id) {
-        return peerIndex.get(idKey(id)).channel();
     }
 
     // wrap byte[] in Base64 or Hex string to avoid array equality issues

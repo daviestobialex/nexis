@@ -171,8 +171,8 @@ public class NexisInstance {
         this.builder = new NexusEnvelopBuilder(identity);
 
         NexusNetworkConfiguration params = NexusNetworkConfiguration.of(this.network);
-        Path index = Paths.get("src/main/nexus/", "manifest.idx");
-        Path store = Paths.get("src/main/nexus/", "manifest.dat");
+        Path index = Paths.get("./", "manifest.idx");
+        Path store = Paths.get("./", "manifest.dat");
 
         try {
             ManifestStore manifestStore = new ManifestStore(index.toFile(), store.toFile(), 10);

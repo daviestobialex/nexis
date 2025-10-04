@@ -19,9 +19,9 @@ import org.nexis.core.PeerRegistry;
  *
  * @author daviestobialex
  */
-public class PeerConnectListener implements ChannelFutureListener {
+public class PeerClientConnectListener implements ChannelFutureListener {
 
-    private static final Logger LOGGER = Logger.getLogger(PeerConnectListener.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(PeerClientConnectListener.class.getName());
 
     private final InetSocketAddress socketAddress;
     private final Bootstrap bootstrap;
@@ -35,7 +35,7 @@ public class PeerConnectListener implements ChannelFutureListener {
 
     private final Random random = new Random();
 
-    public PeerConnectListener(
+    public PeerClientConnectListener(
             InetSocketAddress socketAddress,
             Bootstrap bootstrap,
             EventLoop eventLoop,
@@ -91,6 +91,6 @@ public class PeerConnectListener implements ChannelFutureListener {
     }
 
     private String peerId() {
-        return this.socketAddress.getHostName() + ":" + socketAddress.getPort();
+        return this.peer.id();
     }
 }

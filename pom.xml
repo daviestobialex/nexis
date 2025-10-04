@@ -8,7 +8,7 @@
     <artifactId>instance-core</artifactId>
     <version>0.0.1</version>
     <name>nexis-core</name>
-    <description>nexus core</description>
+    <description>nexus p2p for b2b</description>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -73,7 +73,7 @@
                     <release>21</release>
                 </configuration>
             </plugin>
-            
+                    
             <plugin>
                 <groupId>io.github.ascopes</groupId>
                 <artifactId>protobuf-maven-plugin</artifactId>
@@ -86,6 +86,43 @@
                         <goals>
                             <goal>generate</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            
+            
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+
+                            <!-- ✅ Exclude all cryptographic signatures -->
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+
+                            <!-- ✅ Ensure correct Main-Class is set -->
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>org.nexis.starter.NexusStartPoint</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

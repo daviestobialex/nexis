@@ -16,6 +16,8 @@
 package org.nexis.messages.handlers;
 
 import io.netty.channel.ChannelHandlerContext;
+import java.net.UnknownHostException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.NetworkConfiguration;
 import org.nexis.base.PeerConnection;
@@ -87,13 +89,22 @@ public class GetPeersResponseHandler implements MessageHandler {
      */
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
+        LOGGER.info("RECIEVED PEER LIST AND CONNECTING");
         // trigger connection to peers functions
         envelop.getMessage().getPeers().getAddressesList().stream()
                 .forEach(address -> {// TODO: might have to search with the collection here than creating a O(n^2)
                     PeerConnection connecedPeer = PeerRegistry.getInstance().getPeerByAddress(address);
                     // validate if address is not already connected (O(n))
-                    if (connecedPeer == null) {
-                        connectionClient.connectionOpened(address, params.getPort());
+                    try {
+                        // attempt to filter out self propagting messages, network ip determinig issue
+                        String localHost = java.net.InetAddress.getLocalHost().getHostAddress();
+                        String canonicalHostName = java.net.InetAddress.getLocalHost().getCanonicalHostName();
+                        LOGGER.log(Level.INFO, "connecting to {0} from {1}/{2}", new String[]{address, localHost, canonicalHostName});
+                        if (connecedPeer == null || !address.contains(localHost)) {
+                            connectionClient.connectionOpened(address, params.getPort());
+                        }
+                    } catch (UnknownHostException e) {
+                        LOGGER.log(Level.SEVERE, "error reading host address while connecting to peer", e);
                     }
                 });
 

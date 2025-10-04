@@ -8,6 +8,7 @@ import java.time.Instant;
 import org.nexis.base.Network;
 import org.nexis.base.NetworkConfiguration;
 import org.nexis.base.NexusNetwork;
+import static org.nexis.base.NexusNetwork.LOCALHOSTTEST;
 import org.nexis.utilities.Sha256Hash;
 
 /**
@@ -49,6 +50,9 @@ public class NexusNetworkConfiguration extends NetworkConfiguration {
     public static NexusNetworkConfiguration of(NexusNetwork network) {
         switch (network) {
             case LOCALHOSTTEST -> {
+                return LocalNetParams.get();
+            }
+            case TESTNET -> {
                 return TestNetParams.get();
             }
             default ->

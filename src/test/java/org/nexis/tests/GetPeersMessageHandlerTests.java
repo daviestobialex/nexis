@@ -7,6 +7,7 @@ package org.nexis.tests;
 import com.google.protobuf.ByteString;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import java.net.InetSocketAddress;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.net.SocketAddress;
@@ -117,6 +118,12 @@ public class GetPeersMessageHandlerTests {
 
         when(manifestRegistry.getByCategory(any())).thenReturn(mockedSet);
 
+        when(ctx.channel()).thenReturn(channel);
+        InetSocketAddress local = mock(InetSocketAddress.class);
+
+        when(channel.localAddress()).thenReturn(local);
+
+        when(local.getHostName()).thenReturn("127.0.0.1");
         // act
         handler.handle(envelop, ctx);
 
@@ -145,6 +152,13 @@ public class GetPeersMessageHandlerTests {
                                 .setSize(3).build())
                         .build())
                 .build();
+
+        when(ctx.channel()).thenReturn(channel);
+        InetSocketAddress local = mock(InetSocketAddress.class);
+
+        when(channel.localAddress()).thenReturn(local);
+
+        when(local.getHostName()).thenReturn("127.0.0.1");
 
         handler.handle(envelop, ctx);
 

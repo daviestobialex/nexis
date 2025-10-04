@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-K9YK924P2S"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-K9YK924P2S');
+</script>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXIS - Network Exchange Integration System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: #000;
+            color: #fff;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: #000;
+            border-bottom: 1px solid #333;
+            z-index: 1000;
+            padding: 20px 0;
+        }
+
+        nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-decoration: none;
+            color: #fff;
+        }
+
+        .logo-icon {
+            position: relative;
+            width: 40px;
+            height: 40px;
+        }
+
+        .network-node {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #fff;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .node-1 {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+        }
+
+        .node-2 {
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation-delay: 0.2s;
+        }
+
+        .node-3 {
+            top: 12px;
+            right: 5px;
+            animation-delay: 0.4s;
+        }
+
+        .node-4 {
+            bottom: 12px;
+            right: 5px;
+            animation-delay: 0.6s;
+        }
+
+        .node-5 {
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation-delay: 0.8s;
+        }
+
+        .node-6 {
+            bottom: 12px;
+            left: 5px;
+            animation-delay: 1s;
+        }
+
+        .node-7 {
+            top: 12px;
+            left: 5px;
+            animation-delay: 1.2s;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: translate(-50%, -50%) scale(1.3);
+            }
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 40px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+
+        .nav-links a:hover {
+            opacity: 0.7;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 100px 40px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .hero-logo {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 40px;
+        }
+
+        .hero-logo .network-node {
+            width: 10px;
+            height: 10px;
+        }
+
+        .hero-logo .node-1 {
+            width: 16px;
+            height: 16px;
+        }
+
+        h1 {
+            font-size: 64px;
+            font-weight: 900;
+            margin-bottom: 20px;
+            letter-spacing: -2px;
+        }
+
+        .hero-tagline {
+            font-size: 28px;
+            margin-bottom: 40px;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: 2px solid #fff;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #fff;
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background: #000;
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        /* Background Grid */
+        .grid-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(#111 1px, transparent 1px),
+                linear-gradient(90deg, #111 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.3;
+            z-index: 1;
+        }
+
+        /* FAQ Section */
+        .faq-section {
+            padding: 100px 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .faq-section h2 {
+            font-size: 48px;
+            margin-bottom: 60px;
+            font-weight: 900;
+        }
+
+        .faq-item {
+            margin-bottom: 50px;
+            padding-bottom: 50px;
+            border-bottom: 1px solid #222;
+        }
+
+        .faq-item:last-child {
+            border-bottom: none;
+        }
+
+        .faq-question {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .faq-answer {
+            font-size: 18px;
+            line-height: 1.8;
+            opacity: 0.9;
+        }
+
+        .faq-answer ul {
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+
+        .faq-answer li {
+            margin: 10px 0;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid #222;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+
+        .footer-links a:hover {
+            opacity: 0.7;
+        }
+
+        .copyright {
+            opacity: 0.5;
+            font-size: 14px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 40px;
+            }
+
+            .hero-tagline {
+                font-size: 20px;
+            }
+
+            .faq-section h2 {
+                font-size: 32px;
+            }
+
+            .faq-question {
+                font-size: 20px;
+            }
+
+            .faq-answer {
+                font-size: 16px;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header>
+        <nav>
+            <a href="#" class="logo">
+                <div class="logo-icon">
+                    <div class="network-node node-1"></div>
+                    <div class="network-node node-2"></div>
+                    <div class="network-node node-3"></div>
+                    <div class="network-node node-4"></div>
+                    <div class="network-node node-5"></div>
+                    <div class="network-node node-6"></div>
+                    <div class="network-node node-7"></div>
+                </div>
+                <span class="logo-text">NEXIS</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#faq">FAQ</a></li>
+                <li><a
+                        href="https://docs.google.com/document/d/1F-iJ1vNIZSe56MH7gDHZvyG6Clv4w0d2hrckXszotKI/edit?tab=t.0#heading=h.d71pkr6qp117">Whitepaper</a>
+                </li>
+                <li><a href="#docs">Docs</a></li>
+                <li><a href="https://github.com/daviestobialex/nexis/tree/prototype">GitHub</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="grid-bg"></div>
+        <div class="hero-content">
+            <div class="hero-logo">
+                <div class="network-node node-1"></div>
+                <div class="network-node node-2"></div>
+                <div class="network-node node-3"></div>
+                <div class="network-node node-4"></div>
+                <div class="network-node node-5"></div>
+                <div class="network-node node-6"></div>
+                <div class="network-node node-7"></div>
+            </div>
+            <h1>NEXIS</h1>
+            <p class="hero-tagline">Where P2P meets B2B</p>
+            <div class="cta-buttons">
+                <a href="https://docs.google.com/document/d/1F-iJ1vNIZSe56MH7gDHZvyG6Clv4w0d2hrckXszotKI/edit?tab=t.0#heading=h.d71pkr6qp117"
+                    class="btn btn-primary">Read Whitepaper</a>
+                <a href="https://github.com/daviestobialex/nexis/tree/prototype" class="btn btn-secondary">View on
+                    GitHub</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="faq-section">
+        <h2>FAQ</h2>
+
+        <div class="faq-item">
+            <h3 class="faq-question">What is Nexis?</h3>
+            <div class="faq-answer">
+                <p>Nexis stands for <strong>Network Exchange Integration System</strong>. It is an <strong>open standard
+                        protocol</strong> that allows businesses to easily discover each other, interact securely, and
+                    exchange services across borders.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <h3 class="faq-question">How can Nexis help businesses?</h3>
+            <div class="faq-answer">
+                <p>Expanding a business across borders often means dealing with incompatible systems, fragmented APIs,
+                    and duplicated integrations.</p>
+
+                <p>
+                    With Nexis, businesses don’t need to reinvent every connection. Instead, they connect once to an
+                    open peer-to-peer standard—a shared protocol that lets them interoperate directly with other
+                    verified participants. Each peer brings its own APIs, compliance checks, or market services, but
+                    exposure happens through a common, lightweight library.
+                </p>
+                <p>
+
+                    This means faster integration, less redundancy, and a network effect where every new participant
+                    strengthens the ecosystem for everyone.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-links">
+            <a href="https://docs.google.com/document/d/1F-iJ1vNIZSe56MH7gDHZvyG6Clv4w0d2hrckXszotKI/edit?tab=t.0#heading=h.d71pkr6qp117"
+                id="whitepaper">Whitepaper</a>
+            <a href="#docs" id="docs">Documentation</a>
+            <a href="https://github.com/daviestobialex/nexis/tree/prototype" id="github">GitHub</a>
+            <a href="mailto:hello@nxis.org">Contact</a>
+        </div>
+        <p class="copyright">© 2025 NEXIS. Open Standard Protocol/Library.</p>
+    </footer>
+
+    <script>
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

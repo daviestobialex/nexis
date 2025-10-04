@@ -16,8 +16,8 @@
 package org.nexis.messages.handlers;
 
 import io.netty.channel.ChannelHandlerContext;
+import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -153,11 +153,17 @@ public class GetPeersMessageHandler implements MessageHandler {
         Iterable<PeerConnection> activePeers = registery.getActivePeers();
         int limit = Math.min(requestedPeerSize, registery.getActivePeerSize());
 
+        InetSocketAddress local = (InetSocketAddress) ctx.channel().localAddress();
+
         List<String> addresses = StreamSupport.stream(activePeers.spliterator(), false)
                 .limit(limit)
                 .map(PeerConnection::peer) // extract PeerAddress
                 .map(PeerAddress::id) // extract id() from PeerAddress
                 .collect(Collectors.toList());
+
+        // removing address of already connected peer in list of peers potentially
+        addresses.removeIf(address -> local.getAddress().getHostAddress().equals(address)
+                || local.getAddress().getHostAddress().contains(address));
 
         // Build protocol response
         NexusProtocol.GetPeersResponse getPeers

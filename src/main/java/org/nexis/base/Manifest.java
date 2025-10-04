@@ -78,7 +78,8 @@ public final class Manifest {
      */
     public static final String[] SEARCH_PATHS = {
         "src/main/nexus",
-        "src/main/resources/nexus"
+        "src/main/resources/nexus",
+        "./"
     };
 
     private final String raw;           // canonical serialized manifest (JSON/proto text)
