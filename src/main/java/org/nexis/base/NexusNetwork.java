@@ -52,7 +52,7 @@ public enum NexusNetwork implements Network {
      * {@code id} string {@code "org.nexus.regtest"}
      */
     REGTEST("org.nexus.regtest"),
-    LOCALHOSTTEST("127.0.0.1", "localhost");
+    LOCALHOSTTEST("127.0.0.3", "localhost");
 
     /**
      * Scheme part for Nexis URIs.

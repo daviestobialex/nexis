@@ -17,7 +17,7 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -89,7 +89,7 @@ public class ManifestMessageHandlerTests {
 
         manifestRegistry = mock(ManifestRegistry.class);
 
-        when(registry.getPendingPeers()).thenReturn(new ConcurrentHashMap<>());
+        when(registry.getPendingPeers()).thenReturn(new ConcurrentLinkedQueue<>());
 
         handler = new ManifestMessageHandler(builder, params, manifest, registry, manifestRegistry);
     }

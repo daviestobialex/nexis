@@ -16,15 +16,12 @@
 package org.nexis.messages.handlers;
 
 import com.google.protobuf.ByteString;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.NetworkConfiguration;
-import org.nexis.base.PeerAddress;
 import org.nexis.core.NexusEnvelopBuilder;
 import org.nexis.core.NodeId;
 import org.nexis.core.PeerRegistry;
@@ -41,7 +38,7 @@ import org.nexus.base.proto.NexusProtocol;
  */
 public class GetManifestContentMessageHandler implements MessageHandler {
 
-    private static final Logger LOGGER = Logger.getLogger(ManifestMessageHandler.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(GetManifestContentMessageHandler.class.getName());
 
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
@@ -85,9 +82,9 @@ public class GetManifestContentMessageHandler implements MessageHandler {
                 ctx.writeAndFlush(builder.build(manifestContentResponseMessage));
             } else {
                 // else forward to all active peers
-                ConcurrentMap<PeerAddress, Channel> activePeers = PeerRegistry.getInstance().getActivePeers();
-
-                activePeers.forEach((address, channel) -> {
+                PeerRegistry.getInstance()
+                        .getActivePeers()
+                        .forEach(peerConnection -> {
                     NexusProtocol.GetManifestContent getManifestContent = NexusProtocol.GetManifestContent.newBuilder()
                             .setCid(envelop.getMessage().getGetManifestContent().getCid())
                             .build();
@@ -97,7 +94,7 @@ public class GetManifestContentMessageHandler implements MessageHandler {
                             getManifestContent,
                             nodeServerId.getId());
 
-                    channel.writeAndFlush(builder.build(getManifestContentRequest));
+                    peerConnection.channel().writeAndFlush(builder.build(getManifestContentRequest));
                 });
             }
         } catch (IOException ex) {

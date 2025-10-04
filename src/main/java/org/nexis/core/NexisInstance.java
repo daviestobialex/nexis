@@ -152,20 +152,18 @@ public class NexisInstance {
      * Outbound connection client for peer discovery and propagation.
      */
     private final StreamConnection connectionClient;
+    /**
+     * Dns discovery
+     */
     private DnsDiscovery dnsDiscovery;
 
     /**
-     * Constructs a new {@code NexisInstance}.
-     *
-     * <p>
-     * This sets up the node identity, manifest store, validators, and all
-     * registered protocol message handlers. Both the client and server
-     * networking pipelines are initialized.</p>
-     *
-     * @param network the target {@link NexusNetwork} to join
-     * @throws FileNotFoundException if the manifest file cannot be found
+     * I currently cannot auto detect localhost testing, between two peers
      */
-    public NexisInstance(NexusNetwork network) throws FileNotFoundException {
+    private final boolean canPropagate;
+
+    // for testing
+    public NexisInstance(NexusNetwork network, boolean doPropagate) throws FileNotFoundException {
         IdentityProvider identityProvider = new Ed25519IdentityProvider();
         this.identity = identityProvider.loadOrCreateIdentity();
         this.manifest = Manifest.resolve("manifest.json");
@@ -194,7 +192,7 @@ public class NexisInstance {
             dispatcher.registerHandler(new PingMessageHandler());
             dispatcher.registerHandler(new ChallangeResponseHandler(params, builder, manifest));
             dispatcher.registerHandler(new GetPeersMessageHandler(builder, params));
-            dispatcher.registerHandler(new GetPeersResponseHandler(builder, params, group, manifest, connectionClient));
+            dispatcher.registerHandler(new GetPeersResponseHandler(params, connectionClient));
             dispatcher.registerHandler(new GetManifestContentMessageHandler(builder, params, manifestStore));
             dispatcher.registerHandler(new ManifestContentMessageHandler(builder, params, manifestStore, manifest));
 
@@ -202,8 +200,28 @@ public class NexisInstance {
             throw new RuntimeException("Error loading manifest index and store", ex);
         }
 
-        // Immediately attempt client connection
-        connectionClient.connectionOpened();
+        this.canPropagate = doPropagate;
+
+        if (doPropagate) {
+            // Immediately attempt client connection
+            this.connectionClient.connectionOpened();
+        }
+
+    }
+
+    /**
+     * Constructs a new {@code NexisInstance}.
+     *
+     * <p>
+     * This sets up the node identity, manifest store, validators, and all
+     * registered protocol message handlers. Both the client and server
+     * networking pipelines are initialized.</p>
+     *
+     * @param network the target {@link NexusNetwork} to join
+     * @throws FileNotFoundException if the manifest file cannot be found
+     */
+    public NexisInstance(NexusNetwork network) throws FileNotFoundException {
+        this(network, false);
     }
 
     /**
@@ -219,7 +237,6 @@ public class NexisInstance {
         // Begin DNS discovery / seeding
         dnsDiscovery = new DnsDiscovery(
                 NexusNetworkConfiguration.of(network),
-                group,
                 connectionClient,
                 identity);
 
@@ -230,10 +247,11 @@ public class NexisInstance {
      * initiating peer discovery.
      *
      * @param maxConnections
-     * @param propagate
      */
-    public void connect(int maxConnections, boolean propagate) {
-        dnsDiscovery.seedPeers(maxConnections, propagate);
+    public void connect(int maxConnections) {
+        if (this.canPropagate) {
+            dnsDiscovery.seedPeers(maxConnections);
+        }
     }
 
     /**
@@ -268,7 +286,7 @@ public class NexisInstance {
      */
     public void requestManifestContent() {
         PeerRegistry.getInstance().getActivePeers()
-                .forEach((peer, channel) -> {
+                .forEach(peerConnection -> {
                     ConcurrentHashMap<String, Set<String>> manifests
                             = ManifestRegistry.getInstance().getManifests();
 
@@ -287,7 +305,7 @@ public class NexisInstance {
                                             getContent,
                                             nodeId.getId());
 
-                            channel.writeAndFlush(builder.build(getManifestContentMessage));
+                            peerConnection.channel().writeAndFlush(builder.build(getManifestContentMessage));
                         }
                     });
                 });

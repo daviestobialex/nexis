@@ -26,7 +26,6 @@ public class DnsDiscovery {
 
     public DnsDiscovery(
             NexusNetworkConfiguration network,
-            EventLoopGroup group,
             StreamConnection connection,
             Identity identity) {
         this.network = network.getNetwork();
@@ -34,7 +33,7 @@ public class DnsDiscovery {
         this.connection = connection;
     }
 
-    public void seedPeers(int maxConnections, boolean propagate) {
+    public void seedPeers(int maxConnections) {
 
         // connect to peers and seed
         PeerGroup peer = new PeerGroup(
@@ -43,13 +42,8 @@ public class DnsDiscovery {
                 connection);
 
         peer.seed();
-
-        PeerRegistry.getInstance().onActivePeerConnected(connectedChannel -> {
-            System.out.println("===Active Peer connected====");
-            if (propagate) {
-                peer.initiateHandshakeWithPeers(new NexusEnvelopBuilder(identity), connectedChannel);
-            }
-        });
-
+        PeerRegistry.getInstance()
+                .onActivePeerConnected(channel -> peer
+                .initiateHandshakeWithPeers(new NexusEnvelopBuilder(identity), channel));
     }
 }

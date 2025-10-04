@@ -9,8 +9,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
 import java.net.SocketAddress;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -19,8 +17,7 @@ import java.security.Security;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,7 +26,7 @@ import static org.mockito.Mockito.*;
 import org.nexis.base.Identity;
 import org.nexis.base.NetworkConfiguration;
 import org.nexis.base.NexusNetwork;
-import org.nexis.base.PeerAddress;
+import org.nexis.base.PeerConnection;
 import org.nexis.core.ManifestRegistry;
 import org.nexis.core.NexusEnvelopBuilder;
 import org.nexis.core.NodeId;
@@ -98,9 +95,9 @@ public class GetPeersMessageHandlerTests {
     @Test
     void testHandle_withPeers_sendsResponseAndUpdatesManifest() {
         // prepare active peers
-        ConcurrentMap<PeerAddress, Channel> active = new ConcurrentHashMap<>();
-        active.put(new Peer("peer1"), channel);
-        active.put(new Peer("peer2"), channel);
+        ConcurrentLinkedQueue<PeerConnection> active = new ConcurrentLinkedQueue<>();
+        active.add(new PeerConnection(new Peer("peer1"), channel));
+        active.add(new PeerConnection(new Peer("peer2"), channel));
 
         when(registry.getActivePeers()).thenReturn(active);
 
@@ -133,9 +130,10 @@ public class GetPeersMessageHandlerTests {
     @Test
     void testHandle_respectsRequestedPeerSizeLimit() {
         // prepare many active peers
-        ConcurrentMap<PeerAddress, Channel> active = new ConcurrentHashMap<>();
+        ConcurrentLinkedQueue<PeerConnection> active = new ConcurrentLinkedQueue<>();
+
         for (int i = 0; i < 10; i++) {
-            active.put(new Peer("peer-" + i), channel);
+            active.add(new PeerConnection(new Peer("peer-" + i), channel));
         }
         when(registry.getActivePeers()).thenReturn(active);
 

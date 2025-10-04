@@ -41,7 +41,7 @@ import org.nexus.base.proto.NexusProtocol;
  */
 public class ManifestMessageHandler implements MessageHandler {
 
-    private static final Logger LOGGER = Logger.getLogger(ManifestMessageHandler.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(GetManifestContentMessageHandler.class.getName());
 
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
@@ -96,7 +96,7 @@ public class ManifestMessageHandler implements MessageHandler {
 
         // save public key
         String remoteAddress = ctx.channel().remoteAddress().toString();
-        registery.getPendingPeers().remove(new Peer(remoteAddress, nodeId));
+        registery.removePendingPeer(new Peer(remoteAddress, nodeId));
         registery.addActivePeer(new Peer(remoteAddress, nodeId, publicKey), ctx.channel());
 
         try {

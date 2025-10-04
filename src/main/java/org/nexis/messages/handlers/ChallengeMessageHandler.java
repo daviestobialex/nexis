@@ -117,33 +117,33 @@ public class ChallengeMessageHandler implements MessageHandler {
      */
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
-        System.out.println("system recieved hasHandshake step 1 send pub key");
         NodeId nodeServerId = builder.getNode().getNodeId();
         long nonce = envelop.getMessage().getHandshake().getNonce();
         byte[] nodeId = envelop.getNodeId().toByteArray();
 
-        System.out.println("pub key LEN" + builder.getNode().getKeyPair().getPublic().getEncoded().length);
-        NexusProtocol.ChallengeResponse challenge
-                = NexusProtocol.ChallengeResponse.newBuilder()
-                        .setPublicKey(ByteString.copyFrom(builder.getNode().getKeyPair().getPublic().getEncoded()))
-                        .setNonce(nonce)
-                        .build();
+        if (!registery.getNonceIndex().contains(nonce)) {
+            NexusProtocol.ChallengeResponse challenge
+                    = NexusProtocol.ChallengeResponse.newBuilder()
+                            .setPublicKey(ByteString.copyFrom(builder.getNode().getKeyPair().getPublic().getEncoded()))
+                            .setNonce(nonce)
+                            .build();
 
-        ChallengeResponseMessage challengeMessage = new ChallengeResponseMessage(
-                NexusNetworkConfiguration.of(params.getNetwork()),
-                challenge,
-                nodeServerId.getId()
-        );
+            ChallengeResponseMessage challengeMessage = new ChallengeResponseMessage(
+                    NexusNetworkConfiguration.of(params.getNetwork()),
+                    challenge,
+                    nodeServerId.getId()
+            );
 
-        PeerAddress nodeById = registery.getNodeById(nodeId);
-        // update peer registery with node id
-        if (nodeById == null) {
-            String remoteAddress = ctx.channel().remoteAddress().toString();
-            nodeById = new Peer(remoteAddress, nodeId);
-            System.out.println("adding recieved handshake node " + nodeById.getId().length);
-            registery.addPendingPeer(nodeById, ctx.channel());
+            PeerAddress nodeById = registery.getPeerById(nodeId);
+            // update peer registery with node id
+            if (nodeById == null) {
+                String remoteAddress = ctx.channel().remoteAddress().toString();
+                nodeById = new Peer(remoteAddress, nodeId);
+                System.out.println("adding recieved handshake node " + nodeById.getId().length);
+                registery.addPendingPeer(nodeById, ctx.channel());
+            }
+
+            ctx.writeAndFlush(builder.build(challengeMessage));
         }
-
-        ctx.writeAndFlush(builder.build(challengeMessage));
     }
 }

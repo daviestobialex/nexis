@@ -64,7 +64,7 @@ public class SignatureValidator implements Validator {
         } else if (envelop.getMessage().hasManifest()) {
             pubKey = envelop.getMessage().getManifest().getPublicKey().toByteArray();
         } else {
-            PeerAddress nodeProps = peerRegistry.getNodeById(nodeId);
+            PeerAddress nodeProps = peerRegistry.getPeerById(nodeId);
 
             if (nodeProps == null || nodeProps.getPublicKey() == null) {
                 throw new SecurityException("Unknown node or missing public key");

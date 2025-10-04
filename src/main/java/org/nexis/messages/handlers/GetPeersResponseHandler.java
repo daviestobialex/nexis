@@ -16,14 +16,12 @@
 package org.nexis.messages.handlers;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoopGroup;
 import java.util.logging.Logger;
-import org.nexis.base.Manifest;
 import org.nexis.base.NetworkConfiguration;
+import org.nexis.base.PeerConnection;
 import org.nexis.base.StreamConnection;
-import org.nexis.core.NexusEnvelopBuilder;
 import org.nexis.core.PeerGroup;
+import org.nexis.core.PeerRegistry;
 import org.nexis.internal.MessageHandler;
 import org.nexis.net.NioProducer;
 import org.nexis.net.NioProtoServer;
@@ -59,28 +57,18 @@ public class GetPeersResponseHandler implements MessageHandler {
 
     private static final Logger LOGGER = Logger.getLogger(GetPeersResponseHandler.class.getName());
 
-    private final EventLoopGroup group;
     private final StreamConnection connectionClient;
-    private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
 
     /**
      * Creates a new {@code GetPeersResponseHandler}.
      *
-     * @param builder envelope builder used to construct outgoing messages
      * @param params network configuration for the current node
-     * @param group Netty event loop group for managing peer connections
-     * @param manifest manifest describing the network context
      * @param connection stream connection client
      */
     public GetPeersResponseHandler(
-            NexusEnvelopBuilder builder,
             NetworkConfiguration params,
-            EventLoopGroup group,
-            Manifest manifest,
             StreamConnection connection) {
-        this.group = group;
-        this.builder = builder;
         this.params = params;
         this.connectionClient = connection;
     }
@@ -101,11 +89,12 @@ public class GetPeersResponseHandler implements MessageHandler {
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
         // trigger connection to peers functions
         envelop.getMessage().getPeers().getAddressesList().stream()
-                .forEach(address -> {
-                    PeerGroup peer = new PeerGroup(
-                            params.getNetwork(),
-                            connectionClient);
-                    peer.initiateHandshakeWithPeers(new NexusEnvelopBuilder(builder.getNode()), ctx.channel());
+                .forEach(address -> {// TODO: might have to search with the collection here than creating a O(n^2)
+                    PeerConnection connecedPeer = PeerRegistry.getInstance().getPeerByAddress(address);
+                    // validate if address is not already connected (O(n))
+                    if (connecedPeer == null) {
+                        connectionClient.connectionOpened(address, params.getPort());
+                    }
                 });
 
     }

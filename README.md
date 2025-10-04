@@ -253,6 +253,13 @@ Check the [issues](https://github.com/your-org/nexis-p2p/issues) for open tasks.
 
 ---
 
+## Donations
+If you like my work, you can become a sponsor here on GitHub or tip me through:
+
+[Paypal]()
+
+---
+
 ## 📜 License
 
 Licensed under the [Apache 2.0 License](LICENSE).

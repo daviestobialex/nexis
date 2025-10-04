@@ -16,11 +16,11 @@ public class NexusTestPoint {
     // for test purposes alone and will be removed
     public static void main(String[] args) throws Exception {
 
-        NexisInstance businessInstance = new NexisInstance(NexusNetwork.LOCALHOSTTEST);
+        NexisInstance businessInstance = new NexisInstance(NexusNetwork.LOCALHOSTTEST, true);
 
         businessInstance
-                .start(9004)
-                .connect(5, false);
+                .start(9000)
+                .connect(5);
 
         // Keep the JVM alive
         Thread.currentThread().join();

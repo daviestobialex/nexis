@@ -83,7 +83,10 @@ public class PeerConnectListener implements ChannelFutureListener {
                 peerRegistry.markPeerFailed(peer);
             }
         }
-        LOGGER.info(" active peer size : " + peerRegistry.getActivePeers().size() + " pending peer size: " + peerRegistry.getPendingPeers().size() + " failed peer size: " + peerRegistry.getFailedPeers().size());
+        LOGGER.info(" active peer size : " + peerRegistry.getActivePeerSize()
+                + " pending peer size: " + peerRegistry.getPendingPeerSize()
+                + " failed peer size: " + peerRegistry.getFailedPeerSize()
+                + " peer index size : " + peerRegistry.getPeerIndexSize());
 
     }
 

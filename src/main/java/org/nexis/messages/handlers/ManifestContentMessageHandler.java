@@ -30,6 +30,7 @@ import java.util.logging.Logger;
 import org.nexis.base.Manifest;
 import org.nexis.base.NetworkConfiguration;
 import org.nexis.base.PeerAddress;
+import org.nexis.base.PeerConnection;
 import org.nexis.base.SignedManifest;
 import org.nexis.core.NexusEnvelopBuilder;
 import org.nexis.core.PeerRegistry;
@@ -47,7 +48,7 @@ import org.nexus.base.proto.NexusProtocol;
  */
 public class ManifestContentMessageHandler implements MessageHandler {
 
-    private static final Logger LOGGER = Logger.getLogger(ManifestMessageHandler.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(GetManifestContentMessageHandler.class.getName());
 
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
@@ -89,8 +90,8 @@ public class ManifestContentMessageHandler implements MessageHandler {
             String hexedCid = HexFormat.bytesToHex(cid.toByteArray());
             // forward manifest content to request if current node is not the requesting node
             if (!signedManifest.getHexSignature().equalsIgnoreCase(hexedCid)) {
-                ConcurrentMap<PeerAddress, Channel> activePeers = PeerRegistry.getInstance().getActivePeers();
-                activePeers.forEach((address, channel) -> channel.writeAndFlush(envelop));
+               PeerRegistry.getInstance().getActivePeers()
+                       .forEach(peerConnection -> peerConnection.channel().writeAndFlush(envelop));
             }
         } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | SignatureException ex) {
             Logger.getLogger(ChallangeResponseHandler.class.getName()).log(Level.SEVERE, null, ex);

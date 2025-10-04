@@ -140,7 +140,7 @@ public class ChallengeMessageHandlerTests {
                 .setNodeId(ByteString.copyFrom(nodeIdBytes))
                 .build();
 
-        when(registry.getNodeById(nodeIdBytes)).thenReturn(mock(PeerAddress.class));
+        when(registry.getPeerById(nodeIdBytes)).thenReturn(mock(PeerAddress.class));
 
         handler.handle(envelop, ctx);
 

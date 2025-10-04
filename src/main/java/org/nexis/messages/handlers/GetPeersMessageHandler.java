@@ -21,8 +21,10 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.nexis.base.NetworkConfiguration;
 import org.nexis.base.PeerAddress;
+import org.nexis.base.PeerConnection;
 import org.nexis.core.ManifestRegistry;
 import org.nexis.core.NexusEnvelopBuilder;
 import org.nexis.core.NodeId;
@@ -66,7 +68,7 @@ import org.nexus.base.proto.NexusProtocol;
  */
 public class GetPeersMessageHandler implements MessageHandler {
 
-    private static final Logger LOGGER = Logger.getLogger(ManifestMessageHandler.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(GetManifestContentMessageHandler.class.getName());
 
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
@@ -148,12 +150,13 @@ public class GetPeersMessageHandler implements MessageHandler {
         LOGGER.log(Level.INFO, "Received get peers message of size {0}", requestedPeerSize);
 
         // Collect available active peers
-        Set<PeerAddress> activePeers = registery.getActivePeers().keySet();
-        int limit = Math.min(requestedPeerSize, activePeers.size());
+        Iterable<PeerConnection> activePeers = registery.getActivePeers();
+        int limit = Math.min(requestedPeerSize, registery.getActivePeerSize());
 
-        List<String> addresses = activePeers.stream()
+        List<String> addresses = StreamSupport.stream(activePeers.spliterator(), false)
                 .limit(limit)
-                .map(PeerAddress::id)
+                .map(PeerConnection::peer) // extract PeerAddress
+                .map(PeerAddress::id) // extract id() from PeerAddress
                 .collect(Collectors.toList());
 
         // Build protocol response

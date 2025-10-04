@@ -17,10 +17,10 @@ package org.nexis.net;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import org.nexis.base.StreamConnection;
 import org.nexis.core.Peer;
 import org.nexis.listeners.PeerConnectListener;
@@ -100,7 +100,6 @@ public class NioProducer implements StreamConnection {
         this.host = host;
         this.port = port;
         b = new Bootstrap();
-
         b.group(group)
                 .channel(NioSocketChannel.class)
                 .handler(channelInitializer);
@@ -119,7 +118,6 @@ public class NioProducer implements StreamConnection {
     public NioProducer(ChannelInitializer channelInitializer, EventLoopGroup group) {
         this.group = group;
         b = new Bootstrap();
-
         b.group(group)
                 .channel(NioSocketChannel.class)
                 .handler(channelInitializer);
@@ -152,18 +150,17 @@ public class NioProducer implements StreamConnection {
      * @return this instance for chaining.
      */
     private StreamConnection connectToNetwork() {
-        System.out.println("===connectToNetwork default====");
-        EventLoop eventLoop = group.next();
-
         InetSocketAddress inetSocketAddress = new InetSocketAddress(host, port);
-        b.connect(inetSocketAddress)
-                .addListener(new PeerConnectListener(
-                        inetSocketAddress,
-                        b,
-                        eventLoop,
-                        10,
-                        10,
-                        new Peer(host)));
+        if (!isTestConnection(inetSocketAddress)) {
+            b.connect(inetSocketAddress)
+                    .addListener(new PeerConnectListener(
+                            inetSocketAddress,
+                            b,
+                            group.next(),
+                            10,
+                            10,
+                            new Peer(host)));
+        }
         return this;
     }
 
@@ -176,17 +173,36 @@ public class NioProducer implements StreamConnection {
      */
     @Override
     public StreamConnection connectionOpened(String host, int port) {
-        EventLoop eventLoop = group.next();
 
         InetSocketAddress inetSocketAddress = new InetSocketAddress(host, port);
-        b.connect(inetSocketAddress)
-                .addListener(new PeerConnectListener(
-                        inetSocketAddress,
-                        b,
-                        eventLoop,
-                        10,
-                        10,
-                        new Peer(host)));
+        if (!isTestConnection(inetSocketAddress)) {
+            b.connect(inetSocketAddress)
+                    .addListener(new PeerConnectListener(
+                            inetSocketAddress,
+                            b,
+                            group.next(),
+                            10,
+                            10,
+                            new Peer(host)));
+        }
         return this;
+    }
+
+    /**
+     * this is to prevent self connection in testing environments
+     *
+     * @param target
+     * @return
+     */
+    private boolean isTestConnection(InetSocketAddress target) {
+        try {
+            String localHost = java.net.InetAddress.getLocalHost().getHostAddress();
+            String targetHost = target.getAddress().getHostAddress();
+
+            // Compare both IP and port
+            return (localHost.equals(targetHost) || targetHost.equals("127.0.0.1"));
+        } catch (UnknownHostException | NullPointerException e) {
+            return false;
+        }
     }
 }
