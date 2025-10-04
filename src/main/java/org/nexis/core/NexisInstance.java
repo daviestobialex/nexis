@@ -28,7 +28,9 @@ import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 import org.nexis.base.Manifest;
 import org.nexis.base.NexusNetwork;
 import org.nexis.net.NioProtoServer;
@@ -277,14 +279,20 @@ public class NexisInstance {
         LOGGER.info("Listening on port " + port);
     }
 
+    public void requestManifestContent(String CID, Consumer<String> getJsonManifest) {
+        throw new UnsupportedOperationException("operation not supported");
+    }
+
     /**
      * Requests manifest content from all currently active peers.
      * <p>
      * Iterates over each known manifest in the {@link ManifestRegistry} and
      * sends {@link GetManifestContentMessage} requests to peers.
      * </p>
+     *
+     * @param getJsonManifests
      */
-    public void requestManifestContent() {
+    public void requestManifestContentFromAllActivePeers(Consumer<Stream<String>> getJsonManifests) {
         PeerRegistry.getInstance().getActivePeers()
                 .forEach(peerConnection -> {
                     ConcurrentHashMap<String, Set<String>> manifests
@@ -314,11 +322,11 @@ public class NexisInstance {
     /**
      * Returns an iterator of CIDs for a given category.
      *
-     * @param category the manifest category
+     * @param categories the manifest category
      * @return an iterator of CIDs
      * @throws UnsupportedOperationException currently not implemented
      */
-    public Iterator<String> getCidsByCategory(String category) {
+    public Iterator<String> getCidsByCategory(String... categories) {
         throw new UnsupportedOperationException("operation not currently supported");
     }
 
