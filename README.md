@@ -236,8 +236,12 @@ mvn test
 * [ ] Gossip protocol for manifest relay
 * [ ] Block & transaction relay
 * [ ] Peer RPC / downstream operation execution
+      * [ ] API Spec Upload via manifest
+      * [ ] Fine grained library interface Listener implementation 
 * [ ] Instance Reputations Computations
-* [ ] Governance
+* [ ] Governance sub-protocol (incentify participating goverance nodes)
+* [ ] Support Messaging
+* [ ] Payments Sub-protocol (incentify payment participant nodes)
 
 ---
 
