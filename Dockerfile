@@ -8,4 +8,4 @@ EXPOSE 9004
 ADD target/instance-core-0.0.1.jar service.jar
 ADD src/main/nexus/manifest.json manifest.json
 
-ENTRYPOINT ["java", "-XX:+UseSerialGC", "-Xss512k", "-XX:MaxRAM=250m", "-cp", "service.jar", "org.nexis.starter.NexusStartPoint"]
+ENTRYPOINT ["java", "-XX:+UseSerialGC", "-Xss512k", "-XX:MaxRAM=100m", "-cp", "service.jar", "org.nexis.example.NexusStartInstanceExample"]

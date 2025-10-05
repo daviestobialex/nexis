@@ -120,7 +120,7 @@
                             <!-- ✅ Ensure correct Main-Class is set -->
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>org.nexis.starter.NexusStartPoint</mainClass>
+                                    <mainClass>org.nexis.example.NexusStartInstanceExample</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

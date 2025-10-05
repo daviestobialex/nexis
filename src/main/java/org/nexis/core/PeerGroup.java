@@ -152,10 +152,10 @@ public class PeerGroup {
      * @param activeChannel
      */
     public void initiateHandshakeWithPeers(NexusEnvelopBuilder builder, Channel activeChannel) {
-        NodeId nodeId = builder.getNode().getNodeId();
+
         long nonce = ThreadLocalRandom.current().nextLong();
         peerRegistry.getNonceIndex().add(nonce);// track nonce
-        doHandshake(nonce, activeChannel, nodeId, builder);
+        doHandshake(nonce, activeChannel, builder);
     }
 
     /**
@@ -164,10 +164,10 @@ public class PeerGroup {
      *
      * @param nonce the random value used to challenge the peer
      * @param activeChannel the Netty channel associated with the peer
-     * @param nodeId this node’s unique identifier
      * @param builder the envelope builder for constructing protocol messages
      */
-    private void doHandshake(long nonce, Channel activeChannel, NodeId nodeId, NexusEnvelopBuilder builder) {
+    private void doHandshake(long nonce, Channel activeChannel, NexusEnvelopBuilder builder) {
+        NodeId nodeId = builder.getNode().getNodeId();
         NexusProtocol.Challenge handshake = NexusProtocol.Challenge.newBuilder()
                 .setNonce(nonce)
                 .build();

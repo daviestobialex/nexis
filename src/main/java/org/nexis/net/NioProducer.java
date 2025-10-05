@@ -152,9 +152,9 @@ public class NioProducer implements StreamConnection {
      * @return this instance for chaining.
      */
     private StreamConnection connectToNetwork() {
-        LOGGER.info(" client connect to peer= " + host + " " + port);
         InetSocketAddress inetSocketAddress = new InetSocketAddress(host, port);
-        if (!isTestConnection(inetSocketAddress)) {
+        if (!isSelfConnection(inetSocketAddress)) {
+            LOGGER.info(" client connect to peer= " + host + " " + port);
             b.connect(inetSocketAddress)
                     .addListener(new PeerClientConnectListener(
                             inetSocketAddress,
@@ -176,9 +176,9 @@ public class NioProducer implements StreamConnection {
      */
     @Override
     public StreamConnection connectionOpened(String host, int port) {
-        LOGGER.info(" client connect to peer: " + host + " " + port);
         InetSocketAddress inetSocketAddress = new InetSocketAddress(host, port);
-        if (!isTestConnection(inetSocketAddress)) {
+        if (!isSelfConnection(inetSocketAddress)) {
+            LOGGER.info(" client connect to peer: " + host + " " + port);
             b.connect(inetSocketAddress)
                     .addListener(new PeerClientConnectListener(
                             inetSocketAddress,
@@ -192,22 +192,52 @@ public class NioProducer implements StreamConnection {
     }
 
     /**
-     * this is to prevent self connection in testing environments
+     * Determines whether the target address represents a self-connection.
+     * <p>
+     * This prevents the node from connecting to itself during localhost testing
+     * or when the seed host resolves to the same machine (e.g. 127.0.0.1, ::1,
+     * or any of the node’s bound network interfaces).
+     * </p>
      *
-     * @param target
-     * @return
+     * @param target the target {@link InetSocketAddress} to connect to
+     * @return {@code true} if the connection is local/self; {@code false}
+     * otherwise
      */
-    private boolean isTestConnection(InetSocketAddress target) {
+    private boolean isSelfConnection(InetSocketAddress target) {
         try {
-            String localHost = java.net.InetAddress.getLocalHost().getHostAddress();
+            if (target == null || target.getAddress() == null) {
+                LOGGER.info(() -> "Checking self-connection: target is NULL");
+                return false;
+            }
+
+            // Normalize to textual IP
             String targetHost = target.getAddress().getHostAddress();
+            int targetPort = target.getPort();
 
-            LOGGER.info("== isTestConnection == local " + localHost + " target = " + targetHost);
+            // Local interfaces (loopback, local, etc.)
+            var localAddresses = java.net.NetworkInterface.networkInterfaces()
+                    .flatMap(iface -> iface.inetAddresses())
+                    .map(java.net.InetAddress::getHostAddress)
+                    .toList();
 
-            // Compare both IP and port
-            return (localHost.equals(targetHost) || targetHost.equals("127.0.0.1"));
-        } catch (UnknownHostException | NullPointerException e) {
+            // Log for debugging
+            LOGGER.info(() -> "Checking self-connection: target=" + targetHost + ":" + targetPort
+                    + " localAddrs=" + localAddresses);
+
+            // Check if target is local (loopback or any local interface)
+            return target.getAddress().isLoopbackAddress()
+                    || localAddresses.contains(targetHost)
+                    || targetHost.equals("127.0.0.1")
+                    || targetHost.equalsIgnoreCase("::1");
+
+            // Optional: also compare the node's listening port if known
+            // (e.g., if this producer was created to connect to the same port it’s bound on)
+//            boolean samePort = (this.port == targetPort);
+//            return isLocalAddress && samePort;
+        } catch (Exception e) {
+            LOGGER.warning("Error checking self connection: " + e.getMessage());
             return false;
         }
     }
+
 }

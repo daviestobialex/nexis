@@ -23,6 +23,8 @@ import java.util.logging.Logger;
 import org.nexis.internal.MessageDispatcher;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexis.core.ValidationPipeline;
+import org.nexis.exceptions.DropMessageException;
+import org.nexis.utilities.VirtualThreadExecutor;
 
 /**
  * {@code ProtoConnectionHandler} is the primary inbound handler for processing
@@ -132,11 +134,18 @@ public class ProtoConnectionHandler extends SimpleChannelInboundHandler<NexusPro
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, NexusProtocol.NexusEnvelop msg) throws IOException, Exception {
 
-        // Always validate before dispatch
-        pipeline.validate(msg);
-
-        //  Dispatch to correct handler
-        dispatcher.dispatch(msg, ctx);
+        // Run validation and dispatch in lightweight virtual threads
+        VirtualThreadExecutor.chain()
+                .run(() -> pipeline.validate(msg))// Always validate before dispatch
+                .thenRun(() -> dispatcher.dispatch(msg, ctx)) //  Dispatch to correct handler
+                .onError(e -> {
+                    if (e instanceof DropMessageException) {
+                        return; // Silently skip
+                    }
+                    // Handle other validation or dispatch exceptions
+                    e.printStackTrace();
+                })
+                .execute();
     }
 
     @Override

@@ -52,6 +52,7 @@ import org.nexis.net.DnsDiscovery;
 import org.nexis.net.NioProducer;
 import org.nexis.store.ManifestStore;
 import org.nexis.validator.ChecksumValidator;
+import org.nexis.validator.IsSelfValidator;
 import org.nexis.validator.SignatureValidator;
 import org.nexus.base.proto.NexusProtocol;
 
@@ -182,6 +183,7 @@ public class NexisInstance {
             // Configure validators
             pipeline.addValidator(new ChecksumValidator(params));
             pipeline.addValidator(new SignatureValidator(params));
+            pipeline.addValidator(new IsSelfValidator(identity));
 
             // Set up server and client connections
             this.connectionServer = new NioProtoServer(group, pipeline, dispatcher);

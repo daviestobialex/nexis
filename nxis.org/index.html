@@ -234,6 +234,7 @@
             padding: 40px;
             position: relative;
             transition: all 0.3s ease;
+            min-height: 320px;
         }
 
         .faq-card:hover {
@@ -286,6 +287,44 @@
             opacity: 1 !important;
         }
 
+        /* Waitlist Section */
+        .waitlist-section {
+            padding: 100px 40px;
+            border-top: 1px solid #222;
+            background: transparent;
+        }
+
+        .waitlist-content {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 60px;
+        }
+
+        .waitlist-text h2 {
+            font-size: 48px;
+            font-weight: 900;
+            margin-bottom: 15px;
+            letter-spacing: -1px;
+        }
+
+        .waitlist-text p {
+            font-size: 18px;
+            opacity: 0.8;
+        }
+
+        .waitlist-actions {
+            display: flex;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+
+        .waitlist-btn, .questionnaire-btn {
+            white-space: nowrap;
+        }
+
         /* Footer */
         footer {
             border-top: 1px solid #222;
@@ -331,6 +370,15 @@
                 font-size: 32px;
             }
 
+            .faq-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .faq-card {
+                min-height: auto;
+            }
+
             .faq-question {
                 font-size: 20px;
             }
@@ -341,6 +389,25 @@
 
             .nav-links {
                 display: none;
+            }
+
+            .waitlist-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 40px;
+            }
+
+            .waitlist-text h2 {
+                font-size: 32px;
+            }
+
+            .waitlist-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .waitlist-actions .btn {
+                width: 100%;
             }
         }
     </style>
@@ -434,13 +501,27 @@
         </div>
     </section>
 
+    <!-- Waitlist Section -->
+    <section class="waitlist-section">
+        <div class="waitlist-content">
+            <div class="waitlist-text">
+                <h2>Join the network</h2>
+                <p>We're building this with founders, not for them. Help shape what Nexis becomes.</p>
+            </div>
+            <div class="waitlist-actions">
+                <a href="#" class="btn btn-primary waitlist-btn" onclick="openWaitlist(event)">Get early access</a>
+                <a href="#" class="btn btn-secondary questionnaire-btn" onclick="openQuestionnaire(event)">Take the questionnaire</a>
+            </div>
+        </div>
+    </section>
+
     <!-- Footer -->
     <footer>
         <div class="footer-links">
             <a href="https://docs.google.com/document/d/1F-iJ1vNIZSe56MH7gDHZvyG6Clv4w0d2hrckXszotKI/edit?usp=sharing" target="_blank" id="whitepaper">Whitepaper</a>
-            <a href="https://docs.google.com/document/d/1F-iJ1vNIZSe56MH7gDHZvyG6Clv4w0d2hrckXszotKI/edit?usp=sharing" target="_blank" id="docs">Technical Documentation</a>
+            <a href="#" target="_blank" id="docs">Documentation</a>
             <a href="https://github.com/daviestobialex/nexis/tree/prototype" target="_blank" id="github">GitHub</a>
-            <a href="mailto:hello@nexis.network">Contact</a>
+            <a href="mailto:hello@nexis.org">Contact</a>
         </div>
         <p class="copyright">© 2025 NEXIS. Open Standard Protocol.</p>
     </footer>
@@ -456,6 +537,19 @@
                 }
             });
         });
+
+        // Waitlist and Questionnaire handlers
+        function openWaitlist(e) {
+            e.preventDefault();
+            // Add your waitlist form URL here (e.g., Typeform, Google Forms, etc.)
+            window.open('YOUR_WAITLIST_URL_HERE', '_blank');
+        }
+
+        function openQuestionnaire(e) {
+            e.preventDefault();
+            // Add your questionnaire URL here
+            window.open('https://docs.google.com/forms/d/e/1FAIpQLSdsmWGoElgTxubJYVH6_9JpZLUOtWkUu23Qm0WLQh8gmLk0AQ/viewform?usp=dialog', '_blank');
+        }
     </script>
 </body>
 </html>

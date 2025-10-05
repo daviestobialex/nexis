@@ -4,8 +4,6 @@
  */
 package org.nexis.net;
 
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoopGroup;
 import org.nexis.base.Identity;
 import org.nexis.base.NexusNetwork;
 import org.nexis.base.StreamConnection;
