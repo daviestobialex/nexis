@@ -66,6 +66,7 @@ message NexusMessage {
 // initiate handshake with a nonce challenge
 message Challenge {
     fixed64 nonce = 1;
+    fixed64 genesisHash = 2;
 }
 
 // handshake challenge response

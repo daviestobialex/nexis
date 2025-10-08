@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.nexis.core.GoverancePolicy;
+import org.nexis.core.MonetaryPolicy;
 
 /**
  * A convenient {@code enum} representation of a Nexus network.
@@ -77,12 +79,24 @@ public enum NexusNetwork implements Network {
     // All supported names for this NexisNetwork
     private final List<String> allNames;
 
+    /**
+     * default monetary policies that governs the economic unit value
+     */
+    private final MonetaryPolicy monetaryPolicy;
+
+    /**
+     * default governance policies and mechanisms
+     */
+    private final GoverancePolicy goverancePolicy;
+
     // Maps from names and alternateNames to NexisNetwork
     private static final Map<String, NexusNetwork> stringToEnum = mergedNameMap();
 
     NexusNetwork(String networkId, String... alternateNames) {
         this.id = networkId;
         this.allNames = combine(this.toString(), alternateNames);
+        this.monetaryPolicy = new MonetaryPolicy();
+        this.goverancePolicy = new GoverancePolicy();
     }
 
     /**
@@ -200,5 +214,13 @@ public enum NexusNetwork implements Network {
         temp.add(canonical);
         temp.addAll(Arrays.asList(alternateNames));
         return Collections.unmodifiableList(temp);
+    }
+
+    public MonetaryPolicy getMonetaryPolicy() {
+        return monetaryPolicy;
+    }
+
+    public GoverancePolicy getGoverancePolicy() {
+        return goverancePolicy;
     }
 }

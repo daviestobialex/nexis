@@ -9,6 +9,7 @@ import org.nexis.base.Network;
 import org.nexis.base.NetworkConfiguration;
 import org.nexis.base.NexusNetwork;
 import static org.nexis.base.NexusNetwork.LOCALHOSTTEST;
+import org.nexis.core.Block;
 import org.nexis.utilities.Sha256Hash;
 
 /**
@@ -58,5 +59,10 @@ public class NexusNetworkConfiguration extends NetworkConfiguration {
             default ->
                 throw new IllegalArgumentException("Unknown network");
         }
+    }
+
+    @Override
+    public Block getGenesisBlock() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 }

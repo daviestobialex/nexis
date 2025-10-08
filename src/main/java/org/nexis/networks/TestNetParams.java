@@ -4,6 +4,7 @@
  */
 package org.nexis.networks;
 
+import java.time.Instant;
 import org.nexis.base.NexusNetwork;
 import org.nexis.utilities.Sha256Hash;
 
@@ -12,6 +13,10 @@ import org.nexis.utilities.Sha256Hash;
  * @author daviestobialex
  */
 public class TestNetParams extends NexusNetworkConfiguration {
+
+    private static final Instant GENESIS_TIME = Instant.ofEpochSecond(1759856131);
+    private static final long GENESIS_NONCE = 2083236893;
+    private static final Sha256Hash GENESIS_HASH = Sha256Hash.wrap("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f");
 
     public TestNetParams() {
         super(NexusNetwork.TESTNET, 0xf9beb4d9);

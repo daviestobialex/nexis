@@ -19,6 +19,7 @@ import org.nexis.utilities.Sha256Hash;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import org.nexis.core.Block;
 
 /**
  * {@code NetworkConfiguration} encapsulates the essential parameters required
@@ -42,6 +43,8 @@ import java.util.Objects;
  * <li><b>Bootstrap peers:</b> using DNS seeds and hardcoded address seeds.</li>
  * <li><b>Validate checkpoints:</b> through a block height → hash mapping,
  * enabling fast synchronization and integrity checks.</li>
+ * <li><b>Defines Economic Policy:</b> Dynamically computes the economic values
+ * of the network and controls economic unit production.</li>
  * </ul>
  *
  * <h3>Design Notes</h3>
@@ -113,6 +116,26 @@ public abstract class NetworkConfiguration {
      * Hardcoded integer IP seeds for peer bootstrapping.
      */
     protected int[] addrSeeds;
+
+    /**
+     * <p>
+     * Genesis block for this chain.</p>
+     *
+     * <p>
+     * The first block in every chain is a well known constant shared between
+     * all Bitcoin implementations. For a block to be valid, it must be
+     * eventually possible to work backwards to the genesis block by following
+     * the prevBlockHash pointers in the block headers.</p>
+     *
+     * <p>
+     * The genesis blocks for both test and main networks contain the timestamp
+     * of when they were created, and a message in the coinbase transaction. It
+     * says, <i>"The Times 03/Jan/2009 Chancellor on brink of second bailout for
+     * banks"</i>.</p>
+     *
+     * @return genesis block
+     */
+    public abstract Block getGenesisBlock();
 
     /**
      * Block height → block hash mapping for checkpoints.

@@ -18,6 +18,7 @@ package org.nexis.validator;
 import java.util.Arrays;
 import org.nexis.base.Identity;
 import org.nexis.base.Validator;
+import org.nexis.core.PeerRegistry;
 import org.nexis.exceptions.DropMessageException;
 import org.nexus.base.proto.NexusProtocol;
 
@@ -65,6 +66,7 @@ public class IsSelfValidator implements Validator {
      * The identity of the local node running this instance.
      */
     private final Identity serverIdentity;
+    private final PeerRegistry registery;
 
     /**
      * Constructs a new {@code IsSelfValidator}.
@@ -73,6 +75,7 @@ public class IsSelfValidator implements Validator {
      */
     public IsSelfValidator(Identity serverIdentity) {
         this.serverIdentity = serverIdentity;
+        this.registery = PeerRegistry.getInstance();
     }
 
     /**
@@ -104,6 +107,18 @@ public class IsSelfValidator implements Validator {
         if (Arrays.equals(localNodeId, messageNodeId)) {
             throw new DropMessageException("Dropping self-originated message from node "
                     + serverIdentity.getNodeId());
+        }
+
+        if (Arrays.equals(localNodeId, messageNodeId)) {
+            throw new DropMessageException("Dropping self-originated message from node "
+                    + serverIdentity.getNodeId());
+        }
+
+        if (envelop.getMessage().hasHandshake()
+                && registery.getNonceIndex().contains(envelop.getMessage().getHandshake().getNonce())) {
+            throw new DropMessageException("same nonce: Dropping self-originated message from node "
+                    + serverIdentity.getNodeId());
+
         }
     }
 }

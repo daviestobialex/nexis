@@ -25,6 +25,7 @@ import org.nexis.core.NodeId;
 import org.nexis.core.Peer;
 import org.nexis.base.PeerAddress;
 import org.nexis.core.PeerRegistry;
+import org.nexis.exceptions.DropMessageException;
 import org.nexis.messages.ChallengeResponseMessage;
 import org.nexis.networks.NexusNetworkConfiguration;
 
@@ -139,11 +140,12 @@ public class ChallengeMessageHandler implements MessageHandler {
             if (nodeById == null) {
                 String remoteAddress = ctx.channel().remoteAddress().toString();
                 nodeById = new Peer(remoteAddress, nodeId);
-                System.out.println("adding recieved handshake node " + nodeById.getId().length);
                 registery.addPendingPeer(nodeById, ctx.channel());
             }
 
             ctx.writeAndFlush(builder.build(challengeMessage));
+        } else {
+            throw new DropMessageException("nonce is found in index, peer is communicating with self");
         }
     }
 }

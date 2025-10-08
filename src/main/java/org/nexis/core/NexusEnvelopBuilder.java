@@ -113,7 +113,7 @@ public final class NexusEnvelopBuilder {
 
             NexusProtocol.NexusEnvelop envelop = NexusProtocol.NexusEnvelop.newBuilder()
                     .setChecksum(ByteString.copyFrom(message.checkSum()))
-                    .setNodeId(ByteString.copyFrom(message.nodeId()))
+                    .setNodeId(ByteString.copyFrom(message.getNodeId()))
                     .setMessage(message.message())
                     .setTimeStamp(now())
                     .setSignature(ByteString.copyFrom(signature))

@@ -65,7 +65,7 @@ public class PeerGroup {
     private final PeerRegistry peerRegistry = PeerRegistry.getInstance();
 
     private final NexusNetworkConfiguration params;
-    private static final Logger LOGGER = Logger.getLogger(PeerGroup.class.getName());
+    private static final Logger log = Logger.getLogger(PeerGroup.class.getName());
     private int maxConnections;
     private final StreamConnection connection;
 
@@ -170,6 +170,7 @@ public class PeerGroup {
         NodeId nodeId = builder.getNode().getNodeId();
         NexusProtocol.Challenge handshake = NexusProtocol.Challenge.newBuilder()
                 .setNonce(nonce)
+                //                .setGenesisHash(params.getGenesisBlock())// publishes its gensis block, there needs to be a genesis block validator
                 .build();
         ChallengeRequestMessage handshakeMessage = new ChallengeRequestMessage(
                 params, handshake, nodeId.getId());
