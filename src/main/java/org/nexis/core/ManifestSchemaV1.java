@@ -162,8 +162,8 @@ public final class ManifestSchemaV1 implements ManifestSchema {
         if (root.has(SPECIFICATIONS)) {
             root.get(SPECIFICATIONS).forEach(spec -> {
                 try {
-                    String type = spec.get("type").asText();
-                    if (Objects.equals(type, "openapi")) {
+                    String swagger = spec.get("swagger").asText();
+                    if (Objects.equals(swagger, "2.0")) {
                         specifications.add(
                                 objectMapper.writeValueAsString(spec));
                     }

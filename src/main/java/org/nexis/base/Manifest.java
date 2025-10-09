@@ -16,6 +16,7 @@
 package org.nexis.base;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,6 +32,7 @@ import org.nexis.exceptions.ManifestValidationException;
 import org.nexis.internal.ManifestSchema;
 import org.nexis.utilities.ByteUtils;
 import org.nexis.utilities.HexFormat;
+import org.nexis.utilities.RuntimeOpenApiGenerator;
 import org.nexis.utilities.Sha256Hash;
 
 /**
@@ -101,8 +103,13 @@ public final class Manifest {
         this.schema.validate(this.raw);
         try {
             this.manifestObject = this.schema.parse(this.raw);
+            RuntimeOpenApiGenerator.generateFromString(
+                    this.manifestObject.getSpecifications().get(0), "./target/generated-sources/nexus/");
+            RuntimeOpenApiGenerator.compileAndLoad(new File("./target/generated-sources/nexus/"));
         } catch (JsonProcessingException e) {
             throw new ManifestValidationException("error parsing manifest");
+        } catch (Exception ex) {
+            throw new RuntimeException("error loading manifest specifications");
         }
         // initiate blockchain activities or initiate sub-protocols, for now payments/or governance sub-protocols
     }
