@@ -16,8 +16,6 @@
 package org.nexis.base;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,9 +24,11 @@ import java.nio.file.Paths;
 import java.security.Security;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.nexis.core.ManifestObject;
+import org.nexis.core.ManifestSchemaV1;
+import org.nexis.exceptions.ManifestValidationException;
+import org.nexis.internal.ManifestSchema;
 import org.nexis.utilities.ByteUtils;
 import org.nexis.utilities.HexFormat;
 import org.nexis.utilities.Sha256Hash;
@@ -85,16 +85,26 @@ public final class Manifest {
     private final String raw;           // canonical serialized manifest (JSON/proto text)
     private final String manifestId;    // SHA-256 hex of raw
     private final Instant loadedAt;     // when it was loaded/created
+    private final ManifestSchema schema; // handles schema validation and parsing
+    private final ManifestObject manifestObject;
 
     static {
         Security.addProvider(new BouncyCastleProvider());
     }
 
     private Manifest(String raw, String manifestId, Instant loadedAt) {
-        // TODO: validate json schema 
+
         this.raw = Objects.requireNonNull(raw, "raw manifest cannot be null");
         this.manifestId = Objects.requireNonNull(manifestId, "manifestId cannot be null");
         this.loadedAt = Objects.requireNonNull(loadedAt, "loadedAt cannot be null");
+        this.schema = new ManifestSchemaV1();
+        this.schema.validate(this.raw);
+        try {
+            this.manifestObject = this.schema.parse(this.raw);
+        } catch (JsonProcessingException e) {
+            throw new ManifestValidationException("error parsing manifest");
+        }
+        // initiate blockchain activities or initiate sub-protocols, for now payments/or governance sub-protocols
     }
 
     /**
@@ -177,6 +187,8 @@ public final class Manifest {
 
     /**
      * Manifest identity as bytes (raw SHA-256 bytes).
+     *
+     * @return
      */
     public byte[] manifestIdBytes() {
         return HexFormat.parseHex(manifestId);
@@ -197,14 +209,6 @@ public final class Manifest {
     }
 
     public String getCategory() {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode rootNode = objectMapper.readValue(raw, JsonNode.class);
-            return rootNode.get("category").asText();
-        } catch (JsonProcessingException ex) {
-            Logger.getLogger(Manifest.class.getName()).log(Level.SEVERE, null, ex);
-            throw new RuntimeException("category not found in manifest file");
-        }
-
+        return manifestObject.category();
     }
 }

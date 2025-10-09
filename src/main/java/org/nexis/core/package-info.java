@@ -25,6 +25,7 @@
  * non-blocking I/O.</li>
  * <li><b>Google Protocol Buffers (Protobuf):</b> for binary serialization of
  * messages between nodes.</li>
+ * <li><b>JSON parser:</b> for parsing JSON data.</li>
  * </ul>
  *
  * <p>
