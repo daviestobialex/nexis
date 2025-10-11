@@ -10,6 +10,18 @@ message Ping {
   uint32 ping = 1; // used to keep track of the number of pings between peers
 }
 
+message GetBlock {// get block by hash
+
+}
+
+message GetBlockchain {// request download of blockchain
+
+}
+
+message BroadcastBlock{// send block to all peers
+
+}
+
 message Manifest {
   bytes cid = 1; // signed manifest id
   string category = 2; // manifest category
@@ -37,8 +49,8 @@ message GetPeersResponse {
 
 // still trying to understand this fully
 message Call {
-  string api_id = 1;
-  bytes params = 3; // fixed numbering (no gaps)
+  string api_id = 1;// spec path
+  bytes request = 3; // fixed numbering (no gaps)
   Result response = 4;
 }
 
@@ -59,7 +71,6 @@ message NexusMessage {
     GetPeers peersDiscovery = 7;
     Challenge handshake = 8; // handshake protocol
     ChallengeResponse handshakeResponse = 9; // handshake challenge response
-  
   }
 }
 

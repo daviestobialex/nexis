@@ -92,9 +92,24 @@ public final class Manifest {
     private final ManifestSchema schema; // handles schema validation and parsing
     private final ManifestObject manifestObject;
     private final HttpClientExecutor clientExecutor;
+
+    /**
+     * get HTTP client executor 
+     * @return
+     */
+    public HttpClientExecutor getClientExecutor() {
+        return clientExecutor;
+    }
+
     /**
      * API context can be used to execute requests using HttpClientExecutor
+     *
+     * @return
      */
+    public ApiClientContext getContext() {
+        return context;
+    }
+
     private final ApiClientContext context;
 
     static {

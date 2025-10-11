@@ -225,24 +225,7 @@ mvn test
 
 ## 📚 Roadmap
 
-* [x] Base architecture
-* [x] Identity & Manifest structures
-* [x] SignedManifest & CID handling
-* [x] Storage (LRU + Index/Data files)
-* [X] Message and Signature Validation with (ED25519)[https://docs.oracle.com/en/java/javase/21/docs/specs/security/standard-names.html]
-* [X] Manifest propagation across peers
-* [ ] Persistent peer address and peer interaction (blockchain format)
-* [ ] DHT integration for discovery
-* [ ] Gossip protocol for manifest relay
-* [ ] Block & transaction relay
-* [ ] Peer RPC / downstream operation execution
-      * [ ] API Spec Upload via manifest
-      * [ ] Fine grained library interface Listener implementation 
-* [ ] Instance Reputations Computations
-* [ ] Governance sub-protocol (incentify participating goverance nodes)
-* [ ] Support Messaging
-* [ ] Payments Sub-protocol (incentify payment participant nodes)
-
+[Trello Board](https://trello.com/b/W1jlPV9G/nexis)
 ---
 
 ## 🤝 Contributing
