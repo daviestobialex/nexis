@@ -16,11 +16,8 @@
 package org.nexis.base;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Security;
 import java.time.Instant;
@@ -32,8 +29,13 @@ import org.nexis.exceptions.ManifestValidationException;
 import org.nexis.internal.ManifestSchema;
 import org.nexis.utilities.ByteUtils;
 import org.nexis.utilities.HexFormat;
-import org.nexis.utilities.RuntimeOpenApiGenerator;
 import org.nexis.utilities.Sha256Hash;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import org.nexis.internal.ManifestSchema.EndpointDescriptor;
+import org.nexis.net.HttpClientExecutor;
 
 /**
  * Immutable value object representing a Manifest — the public, versioned
@@ -89,9 +91,29 @@ public final class Manifest {
     private final Instant loadedAt;     // when it was loaded/created
     private final ManifestSchema schema; // handles schema validation and parsing
     private final ManifestObject manifestObject;
+    private final HttpClientExecutor clientExecutor;
+    /**
+     * API context can be used to execute requests using HttpClientExecutor
+     */
+    private final ApiClientContext context;
 
     static {
         Security.addProvider(new BouncyCastleProvider());
+    }
+
+    /**
+     * Context holding information about an API client built from OpenAPI spec
+     */
+    public static class ApiClientContext {
+
+        final String baseUrl;
+        final Map<String, EndpointDescriptor> endpoints;
+
+        ApiClientContext(String baseUrl,
+                Map<String, EndpointDescriptor> endpoints) {
+            this.baseUrl = baseUrl;
+            this.endpoints = endpoints;
+        }
     }
 
     private Manifest(String raw, String manifestId, Instant loadedAt) {
@@ -103,9 +125,18 @@ public final class Manifest {
         this.schema.validate(this.raw);
         try {
             this.manifestObject = this.schema.parse(this.raw);
-            RuntimeOpenApiGenerator.generateFromString(
-                    this.manifestObject.getSpecifications().get(0), "./target/generated-sources/nexus/");
-            RuntimeOpenApiGenerator.compileAndLoad(new File("./target/generated-sources/nexus/"));
+
+            // Parse all endpoints
+            Map<String, EndpointDescriptor> endpoints
+                    = this.schema.parseEndpoints(this.manifestObject.getSpecifications());
+
+            /**
+             * API Context and HttpClientExecutor are building blocks for down
+             * stream calls
+             */
+            this.context = new ApiClientContext(getBaseUrl(), endpoints);
+            this.clientExecutor = new HttpClientExecutor();
+
         } catch (JsonProcessingException e) {
             throw new ManifestValidationException("error parsing manifest");
         } catch (Exception ex) {
@@ -218,4 +249,9 @@ public final class Manifest {
     public String getCategory() {
         return manifestObject.category();
     }
+
+    private String getBaseUrl() {
+        return manifestObject.baseUrl();
+    }
+
 }

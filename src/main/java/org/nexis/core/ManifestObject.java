@@ -23,7 +23,8 @@ public final record ManifestObject(
         String policyUrl,
         String termsUrl,
         List<String> dependencies,
-        List<String> specifications) {
+        String specification,
+        String baseUrl) {
 
     public record ContactInfo(
             String fullName,
@@ -45,7 +46,8 @@ public final record ManifestObject(
         private String policyUrl;
         private String termsUrl;
         private List<String> dependencies;
-        private List<String> specifications;
+        private String specification;
+        private String baseUrl;
 
         public Builder version(String version) {
             this.version = version;
@@ -77,6 +79,11 @@ public final record ManifestObject(
             return this;
         }
 
+        public Builder baseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+            return this;
+        }
+
         public Builder contact(ContactInfo contact) {
             this.contact = contact;
             return this;
@@ -97,8 +104,8 @@ public final record ManifestObject(
             return this;
         }
 
-        public Builder specifications(List<String> specifications) {
-            this.specifications = specifications;
+        public Builder specifications(String specification) {
+            this.specification = specification;
             return this;
         }
 
@@ -114,7 +121,8 @@ public final record ManifestObject(
                     policyUrl,
                     termsUrl,
                     dependencies != null ? dependencies : List.of(),
-                    specifications != null ? specifications : List.of()
+                    specification,
+                    baseUrl
             );
         }
     }
@@ -123,7 +131,7 @@ public final record ManifestObject(
         return dependencies != null ? dependencies : Collections.emptyList();
     }
 
-    public List<String> getSpecifications() {
-        return specifications != null ? specifications : Collections.emptyList();
+    public String getSpecifications() {
+        return specification;
     }
 }

@@ -29,7 +29,7 @@
             }
         ]
     },
-    "specifications": [
+    "specification": 
         {    
             "swagger": "2.0",
             "info": {
@@ -1084,5 +1084,5 @@
                 "url": "http://swagger.io"
             }
         }
-    ]
+    
 }

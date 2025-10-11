@@ -23,6 +23,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.Manifest;
 import org.nexis.core.ManifestObject;
+import org.nexis.core.ManifestSchemaV1;
 import org.nexis.exceptions.ManifestValidationException;
 
 /**
@@ -38,7 +39,7 @@ public interface ManifestSchema {
             "governor", "payments", "card-payments"
     );
     public static final String CONTACT = "contact";
-    public static final String SPECIFICATIONS = "specifications";
+    public static final String SPECIFICATIONS = "specification";
     public static final String CATEGORY = "category";
     public static final String EMAIL = "email";
 
@@ -46,6 +47,54 @@ public interface ManifestSchema {
     public static final Set<String> PROTOCOL_CATEGORIES = Set.of(
             "governor", "payments", "card-payments"
     );
+
+    /**
+     * Descriptor for an API endpoint extracted from OpenAPI spec
+     */
+    public static class EndpointDescriptor {
+
+        final String operationId;
+        final String httpMethod;
+        final String path;
+        final String summary;
+        final List<ParameterDescriptor> parameters;
+        final JsonNode requestBodySchema;
+        final JsonNode responseSchema;
+
+        public EndpointDescriptor(String operationId, String httpMethod, String path,
+                String summary, List<ParameterDescriptor> parameters,
+                JsonNode requestBodySchema, JsonNode responseSchema) {
+            this.operationId = operationId;
+            this.httpMethod = httpMethod.toUpperCase();
+            this.path = path;
+            this.summary = summary;
+            this.parameters = parameters != null ? parameters : Collections.emptyList();
+            this.requestBodySchema = requestBodySchema;
+            this.responseSchema = responseSchema;
+        }
+
+        public String getKey() {
+            return httpMethod + " " + path;
+        }
+    }
+
+    /**
+     * Parameter descriptor
+     */
+    public static class ParameterDescriptor {
+
+        final String name;
+        final String in; // path, query, header, cookie
+        final boolean required;
+        final JsonNode schema;
+
+        public ParameterDescriptor(String name, String in, boolean required, JsonNode schema) {
+            this.name = name;
+            this.in = in;
+            this.required = required;
+            this.schema = schema;
+        }
+    }
 
     /**
      * Validate the manifest JSON structure against the schema
@@ -96,4 +145,6 @@ public interface ManifestSchema {
             throw new RuntimeException("category not found in manifest file");
         }
     }
+
+    public Map<String, EndpointDescriptor> parseEndpoints(String spec) throws JsonProcessingException;
 }

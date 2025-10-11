@@ -8,15 +8,19 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import org.nexis.exceptions.ManifestValidationException;
 import org.nexis.internal.ManifestSchema;
 
 /**
+ * this manifest schema class parses the specifications based on open-api
+ * version 2.*.* and 3.*.* and extracts it properties so that it can build an
+ * executable object that can be interacted with HttpClientExecutor
  *
  * @author daviestobialex
  */
@@ -25,6 +29,41 @@ public final class ManifestSchemaV1 implements ManifestSchema {
     private static final String VERSION = "1";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /**
+     * Parse all endpoints from OpenAPI spec
+     *
+     * @param specificationJson
+     * @return
+     */
+    @Override
+    public Map<String, EndpointDescriptor> parseEndpoints(String specificationJson) throws JsonProcessingException {
+        JsonNode spec = objectMapper.readTree(specificationJson);
+        Map<String, EndpointDescriptor> endpoints = new HashMap<>();
+
+        JsonNode paths = spec.get("paths");
+        if (paths == null || !paths.isObject()) {
+            return endpoints;
+        }
+
+        Iterator<Map.Entry<String, JsonNode>> pathEntries = paths.fields();
+        while (pathEntries.hasNext()) {
+            Map.Entry<String, JsonNode> pathEntry = pathEntries.next();
+            String path = pathEntry.getKey();
+            JsonNode pathItem = pathEntry.getValue();
+
+            // Parse each HTTP method
+            for (String method : Arrays.asList("get", "post", "put", "delete", "patch", "head", "options")) {
+                if (pathItem.has(method)) {
+                    JsonNode operation = pathItem.get(method);
+                    EndpointDescriptor descriptor = parseOperation(path, method, operation);
+                    endpoints.put(descriptor.getKey(), descriptor);
+                }
+            }
+        }
+
+        return endpoints;
+    }
 
     @Override
     public void validate(String manifestJson) throws ManifestValidationException {
@@ -70,31 +109,95 @@ public final class ManifestSchemaV1 implements ManifestSchema {
         }
     }
 
-    private void validateSpecifications(JsonNode specifications) throws ManifestValidationException {
-        if (!specifications.isArray()) {
-            throw new ManifestValidationException("specifications must be an array");
+    /**
+     * Parse a single operation from OpenAPI spec
+     */
+    private EndpointDescriptor parseOperation(String path, String method, JsonNode operation) {
+        String operationId = operation.has("operationId")
+                ? operation.get("operationId").asText() : method + path.replace("/", "_");
+
+        String summary = operation.has("summary")
+                ? operation.get("summary").asText() : "";
+
+        // Parse parameters
+        List<ParameterDescriptor> parameters = new ArrayList<>();
+        if (operation.has("parameters")) {
+            JsonNode params = operation.get("parameters");
+            if (params.isArray()) {
+                for (JsonNode param : params) {
+                    parameters.add(new ParameterDescriptor(
+                            param.get("name").asText(),
+                            param.get("in").asText(),
+                            param.has("required") && param.get("required").asBoolean(),
+                            param.has("schema") ? param.get("schema") : null
+                    ));
+                }
+            }
         }
 
-        for (JsonNode spec : specifications) {
-            // Check if it's a Swagger/OpenAPI specification
-            if (spec.has("swagger")) {
-                String swaggerVersion = spec.get("swagger").asText();
-                if (!swaggerVersion.startsWith("2.") && !swaggerVersion.startsWith("3.")) {
-                    throw new ManifestValidationException(
-                            "Unsupported Swagger version: " + swaggerVersion);
+        // Parse request body
+        JsonNode requestBodySchema = null;
+        if (operation.has("requestBody")) {
+            JsonNode requestBody = operation.get("requestBody");
+            if (requestBody.has("content")) {
+                JsonNode content = requestBody.get("content");
+                if (content.has("application/json")) {
+                    JsonNode jsonContent = content.get("application/json");
+                    if (jsonContent.has("schema")) {
+                        requestBodySchema = jsonContent.get("schema");
+                    }
                 }
+            }
+        }
 
-                // Validate required Swagger fields
-                if (!spec.has("info") || !spec.has("paths")) {
-                    throw new ManifestValidationException(
-                            "Swagger specification missing required fields (info, paths)");
+        // Parse response schema
+        JsonNode responseSchema = null;
+        if (operation.has("responses")) {
+            JsonNode responses = operation.get("responses");
+            // Look for 200 or 201 response
+            for (String status : Arrays.asList("200", "201", "default")) {
+                if (responses.has(status)) {
+                    JsonNode response = responses.get(status);
+                    if (response.has("content")) {
+                        JsonNode content = response.get("content");
+                        if (content.has("application/json")) {
+                            JsonNode jsonContent = content.get("application/json");
+                            if (jsonContent.has("schema")) {
+                                responseSchema = jsonContent.get("schema");
+                                break;
+                            }
+                        }
+                    }
                 }
+            }
+        }
 
-                // Scrub URL - ensure host is not exposing internal details
-                if (spec.has("host")) {
-                    String host = spec.get("host").asText();
-                    validateHostSecurity(host);
-                }
+        return new EndpointDescriptor(
+                operationId, method, path, summary, parameters,
+                requestBodySchema, responseSchema
+        );
+    }
+
+    private void validateSpecifications(JsonNode specifications) throws ManifestValidationException {
+
+        // Check if it's a Swagger/OpenAPI specification
+        if (specifications.has("swagger")) {
+            String swaggerVersion = specifications.get("swagger").asText();
+            if (!swaggerVersion.startsWith("2.") && !swaggerVersion.startsWith("3.")) {
+                throw new ManifestValidationException(
+                        "Unsupported Swagger version: " + swaggerVersion);
+            }
+
+            // Validate required Swagger fields
+            if (!specifications.has("info") || !specifications.has("paths")) {
+                throw new ManifestValidationException(
+                        "Swagger specification missing required fields (info, paths)");
+            }
+
+            // Scrub URL - ensure host is not exposing internal details
+            if (specifications.has("host")) {
+                String host = specifications.get("host").asText();
+                validateHostSecurity(host);
             }
         }
     }
@@ -158,20 +261,17 @@ public final class ManifestSchemaV1 implements ManifestSchema {
         );
 
         // Parse specifications
-        ArrayList<String> specifications = new ArrayList<>();
-        if (root.has(SPECIFICATIONS)) {
-            root.get(SPECIFICATIONS).forEach(spec -> {
-                try {
-                    String swagger = spec.get("swagger").asText();
-                    if (Objects.equals(swagger, "2.0")) {
-                        specifications.add(
-                                objectMapper.writeValueAsString(spec));
-                    }
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException("Failed to serialize specification", e);
-                }
-            });
-        }
+        String specification;
+        String baseUrl;
+
+        JsonNode spec = root.get(SPECIFICATIONS);
+
+        String host = spec.get("host").asText();
+        String basePath = spec.get("basePath").asText();
+
+        baseUrl = host.concat(basePath);
+
+        specification = objectMapper.writeValueAsString(spec);
 
         return new ManifestObject.Builder()
                 .version(root.get("version").asText())
@@ -181,9 +281,10 @@ public final class ManifestSchemaV1 implements ManifestSchema {
                 .organizationRegistrationNumbers(registerationNumbers)
                 .category(root.get(CATEGORY).asText())
                 .contact(contact)
+                .baseUrl(baseUrl)
                 .policyUrl(root.get("organizationPolicy").asText())
                 .termsUrl(root.get("organizationTermsAndConditions").asText())
-                .specifications(specifications)
+                .specifications(specification)
                 .build();
     }
 
