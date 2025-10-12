@@ -76,4 +76,12 @@ public interface Storage extends Closeable {
      * @throws IOException if the retrieval operation fails
      */
     byte[] get(BigInteger cid) throws IOException;
+
+    /**
+     * is cid contained in cache
+     *
+     * @param cid
+     * @return
+     */
+    boolean contains(BigInteger cid);
 }

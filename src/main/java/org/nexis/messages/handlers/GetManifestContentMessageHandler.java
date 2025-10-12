@@ -22,6 +22,7 @@ import java.math.BigInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.NetworkConfiguration;
+import org.nexis.core.ManifestRegistry;
 import org.nexis.core.NexusEnvelopBuilder;
 import org.nexis.core.NodeId;
 import org.nexis.core.PeerRegistry;
@@ -46,11 +47,10 @@ public class GetManifestContentMessageHandler implements MessageHandler {
 
     public GetManifestContentMessageHandler(
             NexusEnvelopBuilder builder,
-            NetworkConfiguration params,
-            Storage store) {
+            NetworkConfiguration params) {
         this.builder = builder;
         this.params = params;
-        this.manifestStore = store;
+        this.manifestStore = ManifestRegistry.getInstance().getStore();
     }
 
     @Override

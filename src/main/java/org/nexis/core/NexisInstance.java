@@ -22,15 +22,17 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
 import org.nexis.base.Manifest;
 import org.nexis.base.NexusNetwork;
 import org.nexis.net.NioProtoServer;
@@ -164,6 +166,7 @@ public class NexisInstance {
      * I currently cannot auto detect localhost testing, between two peers
      */
     private final boolean canPropagate;
+    private final ManifestRegistry registry;
 
     // for testing
     public NexisInstance(NexusNetwork network, boolean doPropagate) throws FileNotFoundException {
@@ -172,37 +175,29 @@ public class NexisInstance {
         this.manifest = Manifest.resolve("manifest.json");
         this.network = network;
         this.builder = new NexusEnvelopBuilder(identity);
+        registry = ManifestRegistry.getInstance();
 
         NexusNetworkConfiguration params = NexusNetworkConfiguration.of(this.network);
-        Path index = Paths.get("./", "manifest.idx");
-        Path store = Paths.get("./", "manifest.dat");
 
-        try {
-            ManifestStore manifestStore = new ManifestStore(index.toFile(), store.toFile(), 10);
+        // Configure validators
+        pipeline.addValidator(new ChecksumValidator(params));
+        pipeline.addValidator(new SignatureValidator(params));
+        pipeline.addValidator(new IsSelfValidator(identity));
 
-            // Configure validators
-            pipeline.addValidator(new ChecksumValidator(params));
-            pipeline.addValidator(new SignatureValidator(params));
-            pipeline.addValidator(new IsSelfValidator(identity));
+        // Set up server and client connections
+        this.connectionServer = new NioProtoServer(group, pipeline, dispatcher);
+        this.connectionClient = new NioProducer(connectionServer, group,
+                params.getNetwork().id(), params.getPort());
 
-            // Set up server and client connections
-            this.connectionServer = new NioProtoServer(group, pipeline, dispatcher);
-            this.connectionClient = new NioProducer(connectionServer, group,
-                    params.getNetwork().id(), params.getPort());
-
-            // Register protocol handlers
-            dispatcher.registerHandler(new ManifestMessageHandler(builder, params, manifest));
-            dispatcher.registerHandler(new ChallengeMessageHandler(builder, params));
-            dispatcher.registerHandler(new PingMessageHandler());
-            dispatcher.registerHandler(new ChallangeResponseHandler(params, builder, manifest));
-            dispatcher.registerHandler(new GetPeersMessageHandler(builder, params));
-            dispatcher.registerHandler(new GetPeersResponseHandler(params, connectionClient));
-            dispatcher.registerHandler(new GetManifestContentMessageHandler(builder, params, manifestStore));
-            dispatcher.registerHandler(new ManifestContentMessageHandler(builder, params, manifestStore, manifest));
-
-        } catch (IOException ex) {
-            throw new RuntimeException("Error loading manifest index and store", ex);
-        }
+        // Register protocol handlers
+        dispatcher.registerHandler(new ManifestMessageHandler(builder, params, manifest));
+        dispatcher.registerHandler(new ChallengeMessageHandler(builder, params));
+        dispatcher.registerHandler(new PingMessageHandler());
+        dispatcher.registerHandler(new ChallangeResponseHandler(params, builder, manifest));
+        dispatcher.registerHandler(new GetPeersMessageHandler(builder, params));
+        dispatcher.registerHandler(new GetPeersResponseHandler(params, connectionClient));
+        dispatcher.registerHandler(new GetManifestContentMessageHandler(builder, params));
+        dispatcher.registerHandler(new ManifestContentMessageHandler(builder, params, manifest));
 
         this.canPropagate = doPropagate;
 
@@ -292,33 +287,136 @@ public class NexisInstance {
      * sends {@link GetManifestContentMessage} requests to peers.
      * </p>
      *
-     * @param getJsonManifests
+     * @return
      */
-    public void requestManifestContentFromAllActivePeers(Consumer<Stream<String>> getJsonManifests) {
-        PeerRegistry.getInstance().getActivePeers()
-                .forEach(peerConnection -> {
-                    ConcurrentHashMap<String, Set<String>> manifests
-                            = ManifestRegistry.getInstance().getManifests();
+    public CompletableFuture<Map<String, String>> requestManifestsContent() {
+        Map<String, String> results = new ConcurrentHashMap<>();
+        List<CompletableFuture<Void>> pending = new ArrayList<>();
 
-                    manifests.forEach((category, cmanifests) -> {
-                        for (String cmanifest : cmanifests) {
-                            NexusProtocol.GetManifestContent getContent
-                                    = NexusProtocol.GetManifestContent.newBuilder()
-                                            .setCid(ByteString.copyFrom(cmanifest.getBytes()))
-                                            .build();
+        registry.getManifests().forEach((category, cids)
+                -> cids.forEach(cid -> {
+                    byte[] cached = registry.getContent(cid);
+                    if (cached != null) {
+                        results.put(cid, new String(cached));
+                    } else {
+                        pending.add(
+                                registry.register(cid)
+                                        .thenAccept(content -> results.put(cid, content))
+                        );
+                        sendManifestRequest(cid);
+                    }
+                })
+        );
 
-                            NodeId nodeId = new NexusEnvelopBuilder(identity).getNode().getNodeId();
+        // No array allocation - using method reference
+        return pending.isEmpty()
+                ? CompletableFuture.completedFuture(results)
+                : CompletableFuture.allOf(pending.toArray(CompletableFuture[]::new))
+                        .thenApply(v -> results);
+    }
 
-                            GetManifestContentMessage getManifestContentMessage
-                                    = new GetManifestContentMessage(
-                                            NexusNetworkConfiguration.of(network),
-                                            getContent,
-                                            nodeId.getId());
+    /**
+     * Alternative: Stream results as they arrive Better for large numbers of
+     * manifests
+     *
+     * @param onEachResult Called immediately for each result (cached or
+     * fetched)
+     * @return CompletableFuture that completes when all fetching is done
+     */
+    public CompletableFuture<Integer> requestManifestContentStreamingResults(
+            java.util.function.BiConsumer<String, String> onEachResult) {
 
-                            peerConnection.channel().writeAndFlush(builder.build(getManifestContentMessage));
+        List<CompletableFuture<Void>> pendingFutures = new ArrayList<>();
+        ConcurrentHashMap<String, Set<String>> manifests = registry.getManifests();
+
+        manifests.forEach((category, cids) -> {
+            for (String cid : cids) {
+                byte[] cachedContent = registry.getContent(cid);
+
+                if (cachedContent != null) {
+                    // Return cached content immediately
+                    onEachResult.accept(cid, new String(cachedContent));
+                } else {
+                    // Fetch from network and stream result when available
+                    CompletableFuture<String> future = registry.register(cid);
+
+                    CompletableFuture<Void> mapped = future.thenAccept(content -> {
+                        if (content != null) {
+                            onEachResult.accept(cid, content);
                         }
                     });
-                });
+                    pendingFutures.add(mapped);
+
+                    sendManifestRequest(cid);
+                }
+            }
+        });
+
+        if (pendingFutures.isEmpty()) {
+            return CompletableFuture.completedFuture(0);
+        }
+
+        return CompletableFuture.allOf(pendingFutures.toArray(CompletableFuture[]::new))
+                .handle((v, ex) -> pendingFutures.size());
+    }
+
+    /**
+     * Request specific CIDs with mixed cached/network results
+     *
+     * @param cids Collection of CIDs to request
+     * @return CompletableFuture with results map
+     */
+    public CompletableFuture<Map<String, String>> requestManifests(Collection<String> cids) {
+        Map<String, String> results = new ConcurrentHashMap<>();
+        List<CompletableFuture<Void>> pendingFutures = new ArrayList<>();
+
+        for (String cid : cids) {
+            byte[] cachedContent = registry.getContent(cid);
+
+            if (cachedContent != null) {
+                results.put(cid, new String(cachedContent));
+            } else {
+                CompletableFuture<String> future = registry.register(cid);
+                pendingFutures.add(future.thenAccept(content -> {
+                    if (content != null) {
+                        results.put(cid, content);
+                    }
+                }));
+                sendManifestRequest(cid);
+            }
+        }
+
+        if (pendingFutures.isEmpty()) {
+            return CompletableFuture.completedFuture(results);
+        }
+
+        return CompletableFuture.allOf(pendingFutures.toArray(CompletableFuture[]::new))
+                .thenApply(v -> results);
+    }
+
+    /**
+     * Helper method to send manifest request to all active peers
+     *
+     * @param cid
+     */
+    private void sendManifestRequest(String cid) {
+        NexusProtocol.GetManifestContent getContent = NexusProtocol.GetManifestContent.newBuilder()
+                .setCid(ByteString.copyFrom(cid.getBytes()))
+                .build();
+
+        NodeId nodeId = new NexusEnvelopBuilder(identity).getNode().getNodeId();
+
+        GetManifestContentMessage message = new GetManifestContentMessage(
+                NexusNetworkConfiguration.of(network),
+                getContent,
+                nodeId.getId()
+        );
+
+        NexusProtocol.NexusEnvelop envelop = builder.build(message);
+
+        // Broadcast to all active peers
+        PeerRegistry.getInstance().getActivePeers()
+                .forEach(peer -> peer.channel().writeAndFlush(envelop));
     }
 
     /**
@@ -329,7 +427,20 @@ public class NexisInstance {
      * @throws UnsupportedOperationException currently not implemented
      */
     public Iterator<String> getCidsByCategory(String... categories) {
-        throw new UnsupportedOperationException("operation not currently supported");
+        ConcurrentHashMap<String, Set<String>> manifests = registry.getManifests();
+
+        // If no categories are specified, return all CIDs from all categories
+        if (categories == null || categories.length == 0) {
+            return manifests.values().stream()
+                    .flatMap(Set::stream)
+                    .iterator();
+        }
+
+        // Otherwise, collect only CIDs for the given categories
+        return Arrays.stream(categories)
+                .filter(manifests::containsKey)
+                .flatMap(category -> manifests.get(category).stream())
+                .iterator();
     }
 
     /**
@@ -338,18 +449,24 @@ public class NexisInstance {
      * @return iterator of categories
      */
     public Iterator<String> categories() {
-        return ManifestRegistry.getInstance().getManifests().keys().asIterator();
+        return registry.getManifests().keys().asIterator();
     }
 
     /**
      * Placeholder for Remote Procedure Call (RPC) implementation.
      *
-     * @param CID
-     * @param rpcId
+     * @param cid
+     * @param path
      * @param request
      */
-    public void rpc(String CID, String rpcId, byte[] request) {
-        // Future work
+    public void call(String cid, String path, byte[] request) {
+        byte[] manifestjson = registry.getContent(cid);
+        // get spec from manifest json
+        // is gas fee enough to make call
+        // compute transaction value if any
+        // scope dependencies
+        // compute distribute fee claims
+        // await response and gossip block to network for approval
         throw new UnsupportedOperationException("operation not supported yet");
     }
 }

@@ -16,7 +16,6 @@
 package org.nexis.messages.handlers;
 
 import com.google.protobuf.ByteString;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -24,7 +23,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SignatureException;
-import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.Manifest;
@@ -32,6 +30,7 @@ import org.nexis.base.NetworkConfiguration;
 import org.nexis.base.PeerAddress;
 import org.nexis.base.PeerConnection;
 import org.nexis.base.SignedManifest;
+import org.nexis.core.ManifestRegistry;
 import org.nexis.core.NexusEnvelopBuilder;
 import org.nexis.core.PeerRegistry;
 import org.nexis.internal.MessageHandler;
@@ -48,7 +47,7 @@ import org.nexus.base.proto.NexusProtocol;
  */
 public class ManifestContentMessageHandler implements MessageHandler {
 
-    private static final Logger LOGGER = Logger.getLogger(GetManifestContentMessageHandler.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ManifestContentMessageHandler.class.getName());
 
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
@@ -58,11 +57,10 @@ public class ManifestContentMessageHandler implements MessageHandler {
     public ManifestContentMessageHandler(
             NexusEnvelopBuilder builder,
             NetworkConfiguration params,
-            Storage store,
             Manifest manifest) {
         this.builder = builder;
         this.params = params;
-        this.manifestStore = store;
+        this.manifestStore = ManifestRegistry.getInstance().getStore();
         this.manifest = manifest;
     }
 
@@ -77,6 +75,8 @@ public class ManifestContentMessageHandler implements MessageHandler {
         ByteString cid = envelop.getMessage().getManifestContent().getCid();
         ByteString rawJson = envelop.getMessage().getManifestContent().getRaw();
 
+        ManifestRegistry.getInstance().complete(cid.toString(), rawJson.toString());
+
         try {
             // update manifest store
             manifestStore.put(new BigInteger(cid.toByteArray()), ByteUtils.compress(rawJson.toByteArray()));
@@ -90,8 +90,17 @@ public class ManifestContentMessageHandler implements MessageHandler {
             String hexedCid = HexFormat.bytesToHex(cid.toByteArray());
             // forward manifest content to request if current node is not the requesting node
             if (!signedManifest.getHexSignature().equalsIgnoreCase(hexedCid)) {
-               PeerRegistry.getInstance().getActivePeers()
-                       .forEach(peerConnection -> peerConnection.channel().writeAndFlush(envelop));
+                // check if cid is present in manifest, forward to peer directly or gossip to all active peers
+                PeerAddress peerById = PeerRegistry.getInstance().getPeerById(cid.toByteArray());
+                if (peerById == null) {
+                    PeerRegistry.getInstance().getActivePeers()
+                            .forEach(peerConnection -> peerConnection.channel().writeAndFlush(envelop));
+                } else {
+                    PeerConnection peerConnection = PeerRegistry.getInstance().getPeerByAddress(peerById.id());// consider returning null safe check Optional
+                    if (peerConnection != null) {
+                        peerConnection.channel().writeAndFlush(envelop);
+                    }
+                }
             }
         } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | SignatureException ex) {
             Logger.getLogger(ChallangeResponseHandler.class.getName()).log(Level.SEVERE, null, ex);

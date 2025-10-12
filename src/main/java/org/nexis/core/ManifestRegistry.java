@@ -15,21 +15,32 @@
  */
 package org.nexis.core;
 
+import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import org.nexis.base.ContentRegistry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.nexis.store.ManifestStore;
+import org.nexis.store.Storage;
 
 /**
  *
  * @author daviestobialex
  */
-public final class ManifestRegistry implements ContentRegistry<String, String> {
+public final class ManifestRegistry {
 
+    private final ManifestStore manifestStore;
     /**
      * contains categories and CIDs
      */
     private final ConcurrentHashMap<String, Set<String>> manifests;
+
+    private final ConcurrentHashMap<String, CompletableFuture<String>> pendingRequests;
 
     /**
      * Singleton instance (lazy-loaded, thread-safe)
@@ -41,13 +52,20 @@ public final class ManifestRegistry implements ContentRegistry<String, String> {
 
     private ManifestRegistry() {
         this.manifests = new ConcurrentHashMap<>();
+        this.pendingRequests = new ConcurrentHashMap<>();
+        try {
+            Path index = Paths.get("./", "manifest.idx");
+            Path store = Paths.get("./", "manifest.dat");
+            this.manifestStore = new ManifestStore(index.toFile(), store.toFile(), 10);
+        } catch (IOException e) {
+            throw new RuntimeException("manifest store failed to instantiate, manifest registery creation failed");
+        }
     }
 
     public static ManifestRegistry getInstance() {
         return ManifestRegistry.Holder.INSTANCE;
     }
 
-    @Override
     public void put(String category, String cid) {
         System.out.println("ADDING TO MANIFEST :: category : " + category + " cid :" + cid);
         Set<String> cids = manifests.get(category);
@@ -60,19 +78,37 @@ public final class ManifestRegistry implements ContentRegistry<String, String> {
         manifests.put(category, cids);
     }
 
-    @Override
     public boolean hasContent(String cid) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        return manifestStore.contains(new BigInteger(cid.getBytes()));
     }
 
-    @Override
     public byte[] getContent(String cid) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        try {
+            return manifestStore.get(new BigInteger(cid.getBytes()));
+        } catch (IOException ex) {
+            Logger.getLogger(ManifestRegistry.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
     }
 
-    @Override
-    public void requestContent(String cid) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    public CompletableFuture<String> register(String cid) {
+        CompletableFuture<String> future = new CompletableFuture<>();
+        pendingRequests.put(cid, future);
+        return future;
+    }
+
+    public void complete(String cid, String content) {
+        CompletableFuture<String> future = pendingRequests.remove(cid);
+        if (future != null && !future.isDone()) {
+            future.complete(content);
+        }
+    }
+
+    public void fail(String cid, Throwable t) {
+        CompletableFuture<String> future = pendingRequests.remove(cid);
+        if (future != null && !future.isDone()) {
+            future.completeExceptionally(t);
+        }
     }
 
     /**
@@ -85,13 +121,15 @@ public final class ManifestRegistry implements ContentRegistry<String, String> {
         return manifests.get(category);
     }
 
-    @Override
-    public void save(byte[] content) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    public void save(String cid, byte[] content) throws IOException {
+        manifestStore.put(new BigInteger(cid.getBytes()), content);
     }
 
-    @Override
     public ConcurrentHashMap<String, Set<String>> getManifests() {
         return manifests;
+    }
+
+    public Storage getStore() {
+        return manifestStore;
     }
 }

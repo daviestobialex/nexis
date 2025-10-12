@@ -164,4 +164,9 @@ public class ManifestStore implements Storage {
         index.close();
         dataFile.close();
     }
+
+    @Override
+    public boolean contains(BigInteger cid) {
+        return cache.containsKey(cid);
+    }
 }
