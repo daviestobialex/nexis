@@ -281,6 +281,16 @@ public class NexisInstance {
     }
 
     /**
+     * to listen to blockchain download
+     *
+     * @return
+     */
+    public NexisInstance setDownloadListener() {
+
+        return this;
+    }
+
+    /**
      * Requests manifest content from all currently active peers.
      * <p>
      * Iterates over each known manifest in the {@link ManifestRegistry} and

@@ -67,7 +67,7 @@ public class ManifestMessageHandler implements MessageHandler {
             NexusEnvelopBuilder builder,
             NetworkConfiguration params,
             Manifest manifest,
-            PeerRegistry registry, 
+            PeerRegistry registry,
             ManifestRegistry manifestRegistry) {
         this.builder = builder;
         this.params = params;
@@ -93,7 +93,7 @@ public class ManifestMessageHandler implements MessageHandler {
         String cid = envelop.getMessage().getManifest().getCid().toString();
         byte[] publicKey = envelop.getMessage().getManifest().getPublicKey().toByteArray();
         manifestRegistry.put(category, cid);
-
+        
         // save public key
         String remoteAddress = ctx.channel().remoteAddress().toString();
         registery.removePendingPeer(new Peer(remoteAddress, nodeId));
@@ -120,6 +120,5 @@ public class ManifestMessageHandler implements MessageHandler {
         } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | SignatureException ex) {
             throw new RuntimeException("unable to sign manifest", ex);
         }
-
     }
 }

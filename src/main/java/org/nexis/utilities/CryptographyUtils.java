@@ -20,6 +20,7 @@ import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import org.bouncycastle.crypto.digests.RIPEMD160Digest;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /**
@@ -65,7 +66,7 @@ public class CryptographyUtils {
         KeyFactory keyFactory = KeyFactory.getInstance(algorithm, "BC");
         return keyFactory.generatePublic(keySpec);
     }
-    
+
     /**
      * Signs a serialized message with the provided private key using Ed25519.
      *
@@ -86,5 +87,30 @@ public class CryptographyUtils {
         sig.initSign(privateKey);
         sig.update(toSign);
         return sig.sign();
+    }
+
+    /**
+     * Calculate RIPEMD160(SHA256(input)). This is used in Address calculations.
+     *
+     * @param input bytes to hash
+     * @return RIPEMD160(SHA256(input))
+     */
+    public static byte[] sha256hash160(byte[] input) {
+        byte[] sha256 = Sha256Hash.hash(input);
+        return digestRipeMd160(sha256);
+    }
+
+    /**
+     * Calculate RIPEMD160(input).
+     *
+     * @param input bytes to hash
+     * @return RIPEMD160(input)
+     */
+    public static byte[] digestRipeMd160(byte[] input) {
+        RIPEMD160Digest digest = new RIPEMD160Digest();
+        digest.update(input, 0, input.length);
+        byte[] ripmemdHash = new byte[20];
+        digest.doFinal(ripmemdHash, 0);
+        return ripmemdHash;
     }
 }
