@@ -1,13 +1,80 @@
 /*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ * Copyright 2011 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.nexis.store;
 
+import org.nexis.core.StoredBlock;
+import org.nexis.exceptions.BlockStoreException;
+import org.nexis.utilities.Sha256Hash;
+
 /**
+ * An implementor of BlockStore saves StoredBlock objects to disk. Different
+ * implementations store them in different ways. An in-memory implementation
+ * (MemoryBlockStore) exists for unit testing but real apps will want to use
+ * implementations that save to disk.<p>
  *
- * @author daviestobialex
+ * A BlockStore is a map of hashes to StoredBlock. The hash is the double digest
+ * of the Bitcoin serialization of the block header, <b>not</b> the header with
+ * the extra data as well.<p>
+ *
+ * BlockStores are thread safe.
  */
-public class BlockStore {
-    
+public interface BlockStore {
+
+    /**
+     * Saves the given block header+extra data.The key isn't specified
+ explicitly as it can be calculated from the StoredBlock directly.Can
+ throw if there is a problem with the underlying storage layer such as
+ running out of disk space.
+     * @param block
+     * @throws org.nexis.exceptions.BlockStoreException
+     */
+    void put(StoredBlock block) throws BlockStoreException;
+
+    /**
+     * Returns the StoredBlock given a hash.The returned values block.getHash()
+ method will be equal to the parameter.If no such block is found, returns
+ null.
+     * @param hash
+     * @return 
+     * @throws org.nexis.exceptions.BlockStoreException
+     */
+    StoredBlock get(Sha256Hash hash) throws BlockStoreException;
+
+    /**
+     * Returns the {@link StoredBlock} that represents the top of the chain of
+     * greatest total work.Note that this can be arbitrarily expensive, you
+ probably should use {@link BlockChain#getChainHead()} or perhaps
+    {@link BlockChain#getBestChainHeight()} which will run in constant time
+ and not take any heavyweight locks.
+     * @return 
+     * @throws org.nexis.exceptions.BlockStoreException
+     */
+    StoredBlock getChainHead() throws BlockStoreException;
+
+    /**
+     * Sets the {@link StoredBlock} that represents the top of the chain of
+     * greatest total work.
+     * @param chainHead
+     * @throws org.nexis.exceptions.BlockStoreException
+     */
+    void setChainHead(StoredBlock chainHead) throws BlockStoreException;
+
+    /**
+     * Closes the store.
+     * @throws org.nexis.exceptions.BlockStoreException
+     */
+    void close() throws BlockStoreException;
 }

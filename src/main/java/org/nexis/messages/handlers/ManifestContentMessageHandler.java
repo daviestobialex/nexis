@@ -88,6 +88,8 @@ public class ManifestContentMessageHandler implements MessageHandler {
             // validate cid is same as node
             SignedManifest signedManifest = new SignedManifest(manifest, builder.getNode());
             String hexedCid = HexFormat.bytesToHex(cid.toByteArray());
+            // TODO: validate signers or approvers of the manifest and ensure it traces back to the genesis manifest or is part of the markel chain via validation
+            
             // forward manifest content to request if current node is not the requesting node
             if (!signedManifest.getHexSignature().equalsIgnoreCase(hexedCid)) {
                 // check if cid is present in manifest, forward to peer directly or gossip to all active peers

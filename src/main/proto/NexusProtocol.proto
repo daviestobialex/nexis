@@ -10,15 +10,36 @@ message Ping {
   uint32 ping = 1; // used to keep track of the number of pings between peers
 }
 
-message GetBlock {// get block by hash
+message BlockHeader {
+  bytes merkle_root = 4;
+  bytes block_hash = 1;           // block header hash
+  bytes prev_hash = 2;            // previous block hash
+   
+}
+
+message ManifestBlock {// get block by hash
+
+  BlockHeader header = 1;
+  int64 timestamp = 3;             // Unix epoch timestamp (seconds)
+  bytes proposer = 4;             // base58 public key of proposer
+//   repeated Interaction interactions = 5; // list of interactions (transactions)
+  bytes block_signature = 7;      // proposer or aggregated signature
+  uint64 version = 5;
+  fixed64 nonce = 2;
+  Policy policy = 8;    
+}
+
+// Represents policy configuration for a block
+message Policy {
+  uint64 total_supply_cap = 1;             // maximum supply
+  bytes locked_until = 2;                 // ISO timestamp string
+}
+
+message GetManifestBlockchain {// request download of blockchain
 
 }
 
-message GetBlockchain {// request download of blockchain
-
-}
-
-message BroadcastBlock{// send block to all peers
+message BroadcastManifestBlock{// send block to all peers
 
 }
 
@@ -71,6 +92,7 @@ message NexusMessage {
     GetPeers peersDiscovery = 7;
     Challenge handshake = 8; // handshake protocol
     ChallengeResponse handshakeResponse = 9; // handshake challenge response
+    ManifestBlock manifestBlok = 10;
   }
 }
 
