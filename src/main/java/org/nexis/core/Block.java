@@ -8,13 +8,15 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.nexis.utilities.Sha256Hash;
+import org.nexus.base.proto.NexusProtocol;
 
 /**
  *
  * @author daviestobialex
  */
-public abstract class Block {
+public class Block {
 
     /**
      * How many bytes are required to represent a block header
@@ -48,7 +50,7 @@ public abstract class Block {
     private Sha256Hash prevBlockHash;
     private Sha256Hash merkleRoot, witnessRoot;
     private Instant time;
-    private long nonce;
+    private long nonce;// used in minning but this may not be required
 
     /**
      * Stores the hash of the block. If null, getHash() will recalculate it.
@@ -91,4 +93,29 @@ public abstract class Block {
                 : null;
     }
 
+    /**
+     * Deserialize this message from a given payload.
+     *
+     * @param payload payload to deserialize from
+     * @return read message
+     */
+    public static Block read(NexusProtocol.Block payload) {
+
+        long nonce = payload.getNonce();
+        long version = payload.getVersion();
+        Sha256Hash prevHash = Sha256Hash.of(payload.getHeader().getPrevHash().toByteArray());
+        Sha256Hash merkelRoot = Sha256Hash.of(payload.getHeader().getMerkleRoot().toByteArray());
+        Sha256Hash hash = Sha256Hash.of(payload.getHeader().getBlockHash().toByteArray());
+        long timestamp = payload.getTimestamp();
+        List<Transaction> transactions = payload.getTransactionsList()
+                .stream().map(proto -> Transaction.read(proto))
+                .collect(Collectors.toList());
+         
+        return new Block(version,
+                prevHash,
+                merkelRoot, hash,
+                Instant.ofEpochSecond(timestamp),
+                nonce,
+                transactions);
+    }
 }

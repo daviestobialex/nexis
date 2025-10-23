@@ -22,6 +22,7 @@ import java.security.SignatureException;
 import java.util.Arrays;
 import org.nexis.utilities.CryptographyUtils;
 import org.nexis.utilities.HexFormat;
+import org.nexis.utilities.Sha256Hash;
 
 /**
  *
@@ -39,6 +40,7 @@ public final class SignedManifest {
      * as CID for IPFS
      */
     private final byte[] signature;
+    private final Sha256Hash signedHash;// this hash is a signed hash and is used to compare against the gensis hash
 
     /**
      * Creates a new {@code SignedManifest} by signing the given
@@ -56,6 +58,7 @@ public final class SignedManifest {
             throws NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, SignatureException {
         this.manifest = manifest;
         this.signature = CryptographyUtils.sign(manifest.manifestIdBytes(), node.getKeyPair().getPrivate());
+        this.signedHash = Sha256Hash.of(signature);
     }
 
     /**

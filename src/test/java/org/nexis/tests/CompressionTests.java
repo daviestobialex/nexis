@@ -6,12 +6,24 @@ package org.nexis.tests;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SecureRandom;
+import java.security.Security;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import org.nexis.base.Identity;
 import org.nexis.base.Manifest;
+import org.nexis.core.NodeId;
 import org.nexis.utilities.ByteUtils;
+import static org.nexis.utilities.CryptographyUtils.ED25519_ALGO;
 
 /**
  *
@@ -21,10 +33,30 @@ public class CompressionTests {
 
     private final static Logger LOGGER = Logger.getLogger(CompressionTests.class.getName());
 
-    @Test
-    public void manifest_compressionTest() throws FileNotFoundException, IOException {
+    private Identity node;
 
-        Manifest manifest = Manifest.resolve("manifest.json");
+    @Test
+    public void manifest_compressionTest() throws FileNotFoundException, IOException, NoSuchAlgorithmException, NoSuchProviderException {
+
+        // generate a keypair
+        // Add the Bouncy Castle provider
+        Security.addProvider(new BouncyCastleProvider());
+
+        // Use the strongest available SecureRandom instance
+        SecureRandom random = SecureRandom.getInstanceStrong();
+
+        // Get an Ed25519 key pair generator
+        KeyPairGenerator keyGen = KeyPairGenerator.getInstance(ED25519_ALGO, "BC");
+        keyGen.initialize(256, random); // 256 is the standard key size for Ed25519
+
+        // Generate the key pair
+        KeyPair keyPair = keyGen.generateKeyPair();
+
+        node = mock(Identity.class);
+        when(node.getKeyPair()).thenReturn(keyPair);
+        when(node.getNodeId()).thenAnswer(inv -> new NodeId((byte[]) inv.getArgument(0)));
+
+        Manifest manifest = Manifest.resolve("manifest.json", node);
         String category = manifest.getCategory();
 
         String raw = manifest.getRaw();
@@ -34,11 +66,11 @@ public class CompressionTests {
         byte[] compress = ByteUtils.compress(raw.getBytes());
 
         int compressedLength = compress.length;
-        
+
         LOGGER.log(Level.INFO, "category {0}", category);
         LOGGER.log(Level.INFO, "rawLength {0}", rawLength);
         LOGGER.log(Level.INFO, "compressedLength {0}", compressedLength);
-        
+
         Assertions.assertEquals("payments", category);
         Assertions.assertTrue(compressedLength < rawLength);
 

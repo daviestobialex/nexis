@@ -26,7 +26,7 @@ import org.nexis.internal.ManifestSchema;
  */
 public final class ManifestSchemaV1 implements ManifestSchema {
 
-    private static final String VERSION = "1";
+    private final int VERSION = 1;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -71,8 +71,12 @@ public final class ManifestSchemaV1 implements ManifestSchema {
             JsonNode root = objectMapper.readTree(manifestJson);
 
             // Validate version
-            if (!root.has("version")) {
+            if (!root.has("manifestVersion")) {
                 throw new ManifestValidationException("Missing required field: version");
+            }
+
+            if (root.get("manifestVersion").asInt() != VERSION) {
+                throw new ManifestValidationException("invalid version");
             }
 
             // Validate category is present
@@ -111,6 +115,11 @@ public final class ManifestSchemaV1 implements ManifestSchema {
 
     /**
      * Parse a single operation from OpenAPI spec
+     *
+     * @param path
+     * @param method
+     * @param operation
+     * @return
      */
     private EndpointDescriptor parseOperation(String path, String method, JsonNode operation) {
         String operationId = operation.has("operationId")
@@ -274,7 +283,8 @@ public final class ManifestSchemaV1 implements ManifestSchema {
         specification = objectMapper.writeValueAsString(spec);
 
         return new ManifestObject.Builder()
-                .version(root.get("version").asText())
+                .version(VERSION)
+                .protocolVersion(root.get("protocolVersion").asInt())
                 .organizationName(root.get("organizationName").asText())
                 .organizationUrl(root.get("organizationUrl").asText())
                 .countryCodes(countryCodes)
@@ -289,7 +299,7 @@ public final class ManifestSchemaV1 implements ManifestSchema {
     }
 
     @Override
-    public String getVersion() {
+    public int getVersion() {
         return VERSION;
     }
 

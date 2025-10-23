@@ -23,7 +23,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.Manifest;
 import org.nexis.core.ManifestObject;
-import org.nexis.core.ManifestSchemaV1;
 import org.nexis.exceptions.ManifestValidationException;
 
 /**
@@ -109,7 +108,7 @@ public interface ManifestSchema {
      *
      * @return
      */
-    String getVersion();
+    int getVersion();
 
     /**
      * Parse the manifest into structured data

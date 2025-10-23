@@ -6,7 +6,6 @@ package org.nexis.messages.handlers;
 
 import io.netty.channel.ChannelHandlerContext;
 import org.nexis.core.Block;
-import org.nexis.core.ManifestBlock;
 import org.nexis.internal.MessageHandler;
 import org.nexus.base.proto.NexusProtocol;
 
@@ -14,19 +13,19 @@ import org.nexus.base.proto.NexusProtocol;
  *
  * @author daviestobialex
  */
-public class ManifestBlockMessageHandler  implements MessageHandler {
+public class BlockMessageHandler  implements MessageHandler {
 
     @Override
     public boolean canHandle(NexusProtocol.NexusMessage message) {
-        return message.hasManifestBlok();
+        return message.hasBlock();
     }
 
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
         
-        NexusProtocol.ManifestBlock manifestBlok = envelop.getMessage().getManifestBlok();
+        NexusProtocol.Block protoblock = envelop.getMessage().getBlock();
         
-        Block block = ManifestBlock.read(manifestBlok);
+        Block block = Block.read(protoblock);
     }
     
 }

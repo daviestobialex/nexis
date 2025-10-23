@@ -18,6 +18,8 @@ package org.nexis.base;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.security.Security;
 import java.time.Instant;
@@ -28,7 +30,6 @@ import org.nexis.core.ManifestSchemaV1;
 import org.nexis.exceptions.ManifestValidationException;
 import org.nexis.internal.ManifestSchema;
 import org.nexis.utilities.ByteUtils;
-import org.nexis.utilities.HexFormat;
 import org.nexis.utilities.Sha256Hash;
 
 import java.nio.file.Files;
@@ -36,6 +37,7 @@ import java.nio.file.Path;
 import java.util.*;
 import org.nexis.internal.ManifestSchema.EndpointDescriptor;
 import org.nexis.net.HttpClientExecutor;
+import org.nexis.utilities.CryptographyUtils;
 
 /**
  * Immutable value object representing a Manifest — the public, versioned
@@ -87,14 +89,16 @@ public final class Manifest {
     };
 
     private final String raw;           // canonical serialized manifest (JSON/proto text)
-    private final String manifestId;    // SHA-256 hex of raw
+    private final Sha256Hash manifestId;   // SHA-256 hex of raw
+    private final Sha256Hash contentHash;
     private final Instant loadedAt;     // when it was loaded/created
     private final ManifestSchema schema; // handles schema validation and parsing
     private final ManifestObject manifestObject;
     private final HttpClientExecutor clientExecutor;
 
     /**
-     * get HTTP client executor 
+     * get HTTP client executor
+     *
      * @return
      */
     public HttpClientExecutor getClientExecutor() {
@@ -131,10 +135,10 @@ public final class Manifest {
         }
     }
 
-    private Manifest(String raw, String manifestId, Instant loadedAt) {
+    private Manifest(String raw, Instant loadedAt, Identity identity) {
 
         this.raw = Objects.requireNonNull(raw, "raw manifest cannot be null");
-        this.manifestId = Objects.requireNonNull(manifestId, "manifestId cannot be null");
+        this.contentHash = Sha256Hash.of(raw.getBytes());
         this.loadedAt = Objects.requireNonNull(loadedAt, "loadedAt cannot be null");
         this.schema = new ManifestSchemaV1();
         this.schema.validate(this.raw);
@@ -152,25 +156,79 @@ public final class Manifest {
             this.context = new ApiClientContext(getBaseUrl(), endpoints);
             this.clientExecutor = new HttpClientExecutor();
 
+            manifestId = stableId(identity);
+
         } catch (JsonProcessingException e) {
             throw new ManifestValidationException("error parsing manifest");
         } catch (Exception ex) {
+            ex.printStackTrace();
             throw new RuntimeException("error loading manifest specifications");
         }
         // initiate blockchain activities or initiate sub-protocols, for now payments/or governance sub-protocols
+    }
+
+    private String getAllRegNos() {
+
+        // Deterministic concatenation (sorted by key to ensure stable ordering)
+        StringBuilder sb = new StringBuilder();
+
+        manifestObject
+                .organizationRegistrationNumbers().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> {
+                    sb.append(entry.getKey())
+                            .append('=')
+                            .append(entry.getValue())
+                            .append(';');
+                });
+
+        return sb.toString();
+    }
+
+    private Sha256Hash stableId(Identity identity) {
+
+        String orgName = manifestObject.organizationName();
+        String category = manifestObject.category();
+        String allRegNos = getAllRegNos();
+        int protocolVersion = manifestObject.protocolVersion();
+        int manifestVersion = manifestObject.version();
+
+        // Convert all to UTF-8 bytes
+        byte[] orgNameBytes = orgName.getBytes(StandardCharsets.UTF_8);
+        byte[] categoryBytes = category.getBytes(StandardCharsets.UTF_8);
+        byte[] regBytes = allRegNos.getBytes(StandardCharsets.UTF_8);
+
+        // Compute total length for buffer
+        int totalLen = orgNameBytes.length
+                + categoryBytes.length
+                + regBytes.length
+                + 8 // 4 bytes for version + 4 for protocolVersion
+                + identity.getKeyPair().getPublic().getEncoded().length;
+
+        ByteBuffer buffer = ByteBuffer.allocate(totalLen);
+
+        // Deterministic field order
+        buffer.put(ByteUtils.writInt32BE(protocolVersion));
+        buffer.put(ByteUtils.writInt32BE(manifestVersion));
+        buffer.put(orgNameBytes);
+        buffer.put(categoryBytes);
+        buffer.put(regBytes);
+        buffer.put(identity.getKeyPair().getPublic().getEncoded());
+
+        return Sha256Hash.of(buffer.array());
     }
 
     /**
      * Load the manifest from a file path.
      *
      * @param path path to the manifest file
+     * @param identity node server identity
      * @return a new immutable Manifest instance
      * @throws IOException if reading fails
      */
-    public static Manifest load(Path path) throws IOException {
+    public static Manifest load(Path path, Identity identity) throws IOException {
         String content = Files.readString(path);
-        String id = ByteUtils.formatHex(Sha256Hash.hash(content.getBytes()));
-        return new Manifest(content, id, Instant.now());
+        return new Manifest(content, Instant.now(), identity);
     }
 
     /**
@@ -178,15 +236,16 @@ public final class Manifest {
      * the first match.
      *
      * @param filename relative filename to search for
+     * @param identity node server identity
      * @return loaded Manifest
      * @throws FileNotFoundException if no candidate is found
      */
-    public static Manifest resolve(String filename) throws FileNotFoundException {
+    public static Manifest resolve(String filename, Identity identity) throws FileNotFoundException {
         for (String dir : SEARCH_PATHS) {
             Path candidate = Paths.get(dir, filename);
             if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
                 try {
-                    return load(candidate);
+                    return load(candidate, identity);
                 } catch (IOException e) {
                     // Wrap to unchecked so callers can optionally handle; alternatively propagate IOException.
                     throw new RuntimeException("Failed to read manifest at " + candidate, e);
@@ -200,11 +259,11 @@ public final class Manifest {
      * Create a Manifest from a raw string payload.
      *
      * @param raw canonical payload (e.g. JSON string)
+     * @param identity node server identity
      * @return Manifest
      */
-    public static Manifest of(String raw) {
-        String id = ByteUtils.formatHex(Sha256Hash.hash(raw.getBytes()));
-        return new Manifest(raw, id, Instant.now());
+    public static Manifest of(String raw, Identity identity) {
+        return new Manifest(raw, Instant.now(), identity);
     }
 
     /**
@@ -235,16 +294,16 @@ public final class Manifest {
      * @return
      */
     public String manifestId() {
-        return manifestId;
+        return manifestId.toString();
     }
 
     /**
-     * Manifest identity as bytes (raw SHA-256 bytes).
+     * Manifest identity as raw SHA-256 bytes
      *
      * @return
      */
     public byte[] manifestIdBytes() {
-        return HexFormat.parseHex(manifestId);
+        return manifestId.getBytes();
     }
 
     /**

@@ -172,7 +172,7 @@ public class NexisInstance {
     public NexisInstance(NexusNetwork network, boolean doPropagate) throws FileNotFoundException {
         IdentityProvider identityProvider = new Ed25519IdentityProvider();
         this.identity = identityProvider.loadOrCreateIdentity();
-        this.manifest = Manifest.resolve("manifest.json");
+        this.manifest = Manifest.resolve("manifest.json", identity);
         this.network = network;
         this.builder = new NexusEnvelopBuilder(identity);
         registry = ManifestRegistry.getInstance();
@@ -206,6 +206,7 @@ public class NexisInstance {
             this.connectionClient.connectionOpened();
         }
 
+        //TODO: load wallet
     }
 
     /**
@@ -472,11 +473,21 @@ public class NexisInstance {
     public void call(String cid, String path, byte[] request) {
         byte[] manifestjson = registry.getContent(cid);
         // get spec from manifest json
-        // is gas fee enough to make call
+        // owner of API may/may not charge 
         // compute transaction value if any
         // scope dependencies
         // compute distribute fee claims
         // await response and gossip block to network for approval
         throw new UnsupportedOperationException("operation not supported yet");
     }
+
+    public CompletableFuture<TransactionBroadcast> sendTransaction(SendRequest sendRequest) {
+        throw new UnsupportedOperationException("operation not supported yet");
+    }
+    
+    public CompletableFuture<TransactionBroadcast> sendApproval(SendRequest sendRequest) {
+        throw new UnsupportedOperationException("operation not supported yet");
+    }
+    
+    // set listeners for transactions, blocks, approvals/new entrants, messages, disputes
 }

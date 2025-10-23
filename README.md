@@ -31,7 +31,7 @@ Thanks to the pioneering work of Satoshi Nakamoto and projects like BitcoinJ
   Secure, asynchronous communication between nodes using Netty.
 
 * **Manifest System**
-  Every node publishes a signed **Manifest** (organization identity, services, API spec).
+  Every node publishes a signed **Manifest** (organization identity, services, API spec/ISO 2022).
 
   * Verifiable via SHA-256 + ED25519 signatures.
   * Cached locally with efficient indexing and compression.

@@ -13,9 +13,10 @@ import java.util.Map;
  * @author daviestobialex
  */
 public final record ManifestObject(
-        String version,
+        int version,
         String organizationName,
         String organizationUrl,
+        int protocolVersion,
         Map<String, String> organizationRegistrationNumbers,
         List<String> countryCodes,
         String category,
@@ -36,9 +37,10 @@ public final record ManifestObject(
 
     public static class Builder {
 
-        private String version;
+        private int version;
         private String organizationName;
         private String organizationUrl;
+        private int protocolVersion;
         private Map<String, String> organizationRegistrationNumbers;
         private List<String> countryCodes;
         private String category;
@@ -49,7 +51,7 @@ public final record ManifestObject(
         private String specification;
         private String baseUrl;
 
-        public Builder version(String version) {
+        public Builder version(int version) {
             this.version = version;
             return this;
         }
@@ -108,12 +110,18 @@ public final record ManifestObject(
             this.specification = specification;
             return this;
         }
+        
+            public Builder protocolVersion(int protocolVersion) {
+            this.protocolVersion = protocolVersion;
+            return this;
+        }
 
         public ManifestObject build() {
             return new ManifestObject(
                     version,
                     organizationName,
                     organizationUrl,
+                    protocolVersion,
                     organizationRegistrationNumbers,
                     countryCodes != null ? countryCodes : List.of(),
                     category,

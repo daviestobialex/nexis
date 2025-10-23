@@ -17,12 +17,12 @@ message BlockHeader {
    
 }
 
-message ManifestBlock {// get block by hash
+message Block {// get block by hash
 
   BlockHeader header = 1;
   int64 timestamp = 3;             // Unix epoch timestamp (seconds)
   bytes proposer = 4;             // base58 public key of proposer
-//   repeated Interaction interactions = 5; // list of interactions (transactions)
+  repeated Transaction transactions = 6; // list of interactions (transactions)
   bytes block_signature = 7;      // proposer or aggregated signature
   uint64 version = 5;
   fixed64 nonce = 2;
@@ -35,7 +35,32 @@ message Policy {
   bytes locked_until = 2;                 // ISO timestamp string
 }
 
-message GetManifestBlockchain {// request download of blockchain
+message TransactionOutPoint {
+  bytes hash = 1;      // transaction hash being referenced
+  uint64 index = 2;    // output index in that transaction
+}
+
+message TransactionInput {
+  TransactionOutPoint outpoint = 1;
+  bytes script_bytes = 2;  // API call parameters or service input data
+  uint64 sequence = 3;
+  optional uint64 value = 4;  // optional value for tracking
+}
+
+message TransactionOutput {
+  uint64 value = 1;
+  bytes script_bytes = 2;  // API response data or service output
+}
+
+message Transaction {
+  uint64 version = 1;
+  repeated TransactionInput inputs = 2;
+  repeated TransactionOutput outputs = 3;
+  uint64 lock_time = 4;
+  optional bytes signature = 5;
+}
+
+message GetBlockchain {// request download of blockchain
 
 }
 
@@ -92,7 +117,8 @@ message NexusMessage {
     GetPeers peersDiscovery = 7;
     Challenge handshake = 8; // handshake protocol
     ChallengeResponse handshakeResponse = 9; // handshake challenge response
-    ManifestBlock manifestBlok = 10;
+    Block block = 10;
+    Transaction transaction = 11;
   }
 }
 
@@ -119,6 +145,7 @@ message ChallengeResponse {
 // That’s about 13% smaller messages. Over millions of messages, that’s a real bandwidth and memory difference.
 // TODO: optimize payload sizes
 message NexusEnvelop {
+   uint32 version = 1;
     bytes node_id = 2; // node id, would have to do some research how this would matter from a peer to peer network point of view
     bytes message_id = 3;     // UUID as string but should be reduced to a 8 bytes
     NexusMessage message = 4;        // optional message-specific payload
