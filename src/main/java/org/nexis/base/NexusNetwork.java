@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import static org.nexis.base.Coin.COIN;
 import org.nexis.core.GoverancePolicy;
 import org.nexis.core.MonetaryPolicy;
 
@@ -55,6 +56,16 @@ public enum NexusNetwork implements Network {
      */
     REGTEST("org.nexus.regtest"),
     LOCALHOSTTEST("127.0.0.3", "localhost");
+
+    /**
+     * The maximum number of coins to be generated
+     */
+    private static final long MAX_COINS = 21_000_000;
+
+    /**
+     * The maximum money to be generated
+     */
+    public static final Coin MAX_MONEY = COIN.multiply(MAX_COINS);
 
     /**
      * Scheme part for Nexis URIs.
@@ -155,6 +166,81 @@ public enum NexusNetwork implements Network {
         return NEXUS_SCHEME;
     }
 
+    @Override
+    public boolean hasMaxMoney() {
+        return true;
+    }
+
+    @Override
+    public Coin maxMoney() {
+        return MAX_MONEY;
+    }
+
+    @Override
+    public boolean exceedsMaxMoney(Monetary amount) {
+        if (amount instanceof Coin) {
+            return ((Coin) amount).compareTo(MAX_MONEY) > 0;
+        } else {
+            throw new IllegalArgumentException("amount must be a Coin type");
+        }
+    }
+
+    /**
+     * Check if an address is valid on this network. This is meant to be used as
+     * a precondition for a method or function that expects a valid address. If
+     * you are validating addresses provided externally, you probably want to
+     * use {@link #isValidAddress(Address)} to handle errors more gracefully.
+     * This method uses {@link #isValidAddress(Address)} internally which
+     * properly accounts for address normalization.
+     *
+     * @param address Address to validate
+     * @return The unmodified address if valid on this network
+     * @throws IllegalArgumentException if address not valid on this network
+     */
+    public Address checkAddress(Address address) throws IllegalArgumentException {
+        if (!isValidAddress(address)) {
+            throw new IllegalArgumentException(String.format("Address %s not valid on network %s", address, this));
+        }
+        return address;
+    }
+
+    /**
+     * Is address valid for this network. Because we normalize the
+     * {@code network()} value in the {@link Address} type (see the JavaDoc for
+     * {@link Address#network()}) this method should be used in preference to
+     * simply verifying that {@code address.network()} returns the desired
+     * network type.
+     *
+     * @param address Address to validate
+     * @return {@code true} if valid on this network, {@code false} otherwise
+     */
+    public boolean isValidAddress(Address address) {
+        boolean valid;
+        switch (this) {
+            case MAINNET:
+                valid = address.network() == MAINNET;
+                break;
+            case TESTNET:
+//            case SIGNET:
+                // SIGNET uses the same addresses as TESTNET
+                valid = address.network() == TESTNET;
+                break;
+            case REGTEST:
+//                if (address instanceof LegacyAddress) {
+                // For Legacy addresses, REGTEST uses TESTNET addresses
+//                    valid = ((LegacyAddress) address).network == TESTNET;
+//                } else {
+                // On segwit, REGTEST has its own address type
+                valid = address.network() == REGTEST;
+//                }
+                break;
+            default:
+                valid = false;
+                break;
+        }
+        return valid;
+    }
+
     /**
      * Find the {@code NexisNetwork} from a name string, e.g. "mainnet",
      * "testnet" or "signet". A number of common alternate names are allowed
@@ -223,4 +309,17 @@ public enum NexusNetwork implements Network {
     public GoverancePolicy getGoverancePolicy() {
         return goverancePolicy;
     }
+
+    /**
+     * Return the standard Bech32
+     * {@link org.bitcoinj.base.SegwitAddress.SegwitHrp} (as a {@code String})
+     * for this network.
+     *
+     * @return The HRP as a (lowercase) string.
+     */
+    @Override
+    public String segwitAddressHrp() {
+        return SegwitAddress.SegwitHrp.ofNetwork(this).toString();
+    }
+
 }

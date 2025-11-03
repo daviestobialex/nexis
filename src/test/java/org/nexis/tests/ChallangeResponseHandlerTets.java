@@ -125,7 +125,7 @@ public class ChallangeResponseHandlerTets {
             when(registry.getNonceIndex()).thenReturn(nonceIndex);
 
             byte[] publicKeyBytes = keyPair.getPublic().getEncoded();
-            byte[] nodeIdBytes = NodeId.stableNodeId(publicKeyBytes);
+            byte[] nodeIdBytes = NodeId.stableNodeId(publicKeyBytes).getBytes();
 
             NexusProtocol.ChallengeResponse challengeResp = NexusProtocol.ChallengeResponse.newBuilder()
                     .setNonce(nonce)
@@ -181,7 +181,7 @@ public class ChallangeResponseHandlerTets {
         when(registry.getNonceIndex()).thenReturn(new HashSet<>());
 
         byte[] publicKeyBytes = keyPair.getPublic().getEncoded();
-        byte[] nodeIdBytes = NodeId.stableNodeId(publicKeyBytes);
+        byte[] nodeIdBytes = NodeId.stableNodeId(publicKeyBytes).getBytes();
 
         NexusProtocol.ChallengeResponse challengeResp = NexusProtocol.ChallengeResponse.newBuilder()
                 .setNonce(99999L)
@@ -205,7 +205,7 @@ public class ChallangeResponseHandlerTets {
         when(registry.getNonceIndex()).thenReturn(nonceIndex);
 
         byte[] publicKeyBytes = keyPair.getPublic().getEncoded();
-        byte[] nodeIdBytes = NodeId.stableNodeId(publicKeyBytes);
+        byte[] nodeIdBytes = NodeId.stableNodeId(publicKeyBytes).getBytes();
 
         NexusProtocol.ChallengeResponse challengeResp = NexusProtocol.ChallengeResponse.newBuilder()
                 .setNonce(nonce)

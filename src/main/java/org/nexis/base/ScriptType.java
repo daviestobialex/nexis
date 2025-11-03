@@ -41,9 +41,9 @@ import java.util.Optional;
  * 382: Segwit Output Script Descriptors</a>
  */
 public enum ScriptType {// can support these types but will predominately use types 4 and 5
-    P2PKH("pkh", 1), // pay to pubkey hash (aka pay to address)
-    P2PK("pk", 2), // pay to pubkey
-    P2SH("sh", 3), // pay to script hash
+//    P2PKH("pkh", 1), // pay to pubkey hash (aka pay to address)
+//    P2PK("pk", 2), // pay to pubkey
+//    P2SH("sh", 3), // pay to script hash
     P2WPKH("wpkh", 4), // pay to witness pubkey hash
     P2WSH("wsh", 5), // pay to witness script hash
     P2TR("tr", 6);      // pay to taproot

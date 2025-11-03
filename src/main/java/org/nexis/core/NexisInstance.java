@@ -33,6 +33,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
+import org.nexis.base.Address;
 import org.nexis.base.Manifest;
 import org.nexis.base.NexusNetwork;
 import org.nexis.net.NioProtoServer;
@@ -56,6 +57,7 @@ import org.nexis.store.ManifestStore;
 import org.nexis.validator.ChecksumValidator;
 import org.nexis.validator.IsSelfValidator;
 import org.nexis.validator.SignatureValidator;
+import org.nexis.wallet.Wallet;
 import org.nexus.base.proto.NexusProtocol;
 
 /**
@@ -134,9 +136,9 @@ public class NexisInstance {
     private final EventLoopGroup group = new NioEventLoopGroup();
 
     /**
-     * Logger for node lifecycle and events.
+     * Logger for node life-cycle and events.
      */
-    private static final Logger LOGGER = Logger.getLogger(NexisInstance.class.getName());
+    private static final Logger log = Logger.getLogger(NexisInstance.class.getName());
 
     /**
      * Validation pipeline used for incoming message integrity checks.
@@ -167,6 +169,8 @@ public class NexisInstance {
      */
     private final boolean canPropagate;
     private final ManifestRegistry registry;
+
+    private final Wallet wallet;
 
     // for testing
     public NexisInstance(NexusNetwork network, boolean doPropagate) throws FileNotFoundException {
@@ -207,6 +211,8 @@ public class NexisInstance {
         }
 
         //TODO: load wallet
+        wallet = Wallet.of(identity, params);
+
     }
 
     /**
@@ -274,7 +280,7 @@ public class NexisInstance {
                 .channel(NioServerSocketChannel.class)
                 .childHandler(connectionServer);
         b.bind(port).sync();
-        LOGGER.info("Listening on port " + port);
+        log.info("Listening on port " + port);
     }
 
     public void requestManifestContent(String CID, Consumer<String> getJsonManifest) {
@@ -484,10 +490,19 @@ public class NexisInstance {
     public CompletableFuture<TransactionBroadcast> sendTransaction(SendRequest sendRequest) {
         throw new UnsupportedOperationException("operation not supported yet");
     }
-    
+
     public CompletableFuture<TransactionBroadcast> sendApproval(SendRequest sendRequest) {
         throw new UnsupportedOperationException("operation not supported yet");
     }
-    
+
+    /**
+     * get wallet address
+     *
+     * @return
+     */
+    public Address getWalletAddress() {
+        return wallet.currentAddress();
+    }
+
     // set listeners for transactions, blocks, approvals/new entrants, messages, disputes
 }

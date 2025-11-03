@@ -4,6 +4,8 @@
  */
 package org.nexis.core;
 
+import org.nexis.base.Monetary;
+import org.nexis.base.Network;
 import org.nexis.base.PeerAddress;
 
 /**
@@ -32,16 +34,6 @@ public class Peer implements PeerAddress {
     }
 
     @Override
-    public String id() {
-        return networkId;
-    }
-
-    @Override
-    public String uriScheme() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    @Override
     public byte[] getId() {
         return nodeId;
     }
@@ -49,6 +41,11 @@ public class Peer implements PeerAddress {
     @Override
     public byte[] getPublicKey() {
         return pubKey;
+    }
+
+    @Override
+    public String id() {
+        return networkId;
     }
 
 }

@@ -90,7 +90,8 @@ public class PeerClientConnectListener implements ChannelFutureListener {
 
     }
 
+    @Deprecated// to be deprecated once it is all fleshed out
     private String peerId() {
-        return this.peer.id();
+        return new String(this.peer.getId());
     }
 }

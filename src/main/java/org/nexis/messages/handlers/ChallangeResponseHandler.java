@@ -41,7 +41,7 @@ import org.nexis.networks.NexusNetworkConfiguration;
  */
 public class ChallangeResponseHandler implements MessageHandler {
 
-    private static final Logger LOGGER = Logger.getLogger(ChallangeResponseHandler.class.getName());
+    private static final Logger log = Logger.getLogger(ChallangeResponseHandler.class.getName());
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
     private final Manifest manifest;
@@ -84,13 +84,13 @@ public class ChallangeResponseHandler implements MessageHandler {
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
         NodeId nodeServerId = builder.getNode().getNodeId();
 
-        LOGGER.info("challenge/handshake response received step 2");
+        log.info("challenge/handshake response received step 2");
         // validate node id 
         byte[] nodeId = envelop.getNodeId().toByteArray();
         byte[] publicKey = envelop.getMessage().getHandshakeResponse().getPublicKey().toByteArray();
         long nonce = envelop.getMessage().getHandshakeResponse().getNonce();
 
-        byte[] computedNodeId = NodeId.stableNodeId(publicKey);
+        byte[] computedNodeId = NodeId.stableNodeId(publicKey).getBytes();
 
         if (!Arrays.equals(computedNodeId, nodeId)) {
             throw new SecurityException("bad node actor detected");// TODO: maybe update network with bad node actor id?
@@ -139,7 +139,7 @@ public class ChallangeResponseHandler implements MessageHandler {
                     = new ManifestRequestMessage(
                             NexusNetworkConfiguration.of(params.getNetwork()),
                             manifestRequest, nodeServerId.getId());
-            LOGGER.info("sending signed manifed");
+            log.info("sending signed manifed");
 
             ctx.writeAndFlush(builder.build(manifestMessage));
         } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | SignatureException ex) {

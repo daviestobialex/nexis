@@ -49,4 +49,6 @@ public interface Identity {
         return provider.loadOrCreateIdentity();
     }
 
+    public boolean isPubKeyHashMine(byte[] extractHashFromP2WH);
+
 }

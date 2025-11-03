@@ -63,7 +63,8 @@ public class GetPeersMessageHandlerTests {
         keyPair = keyGen.generateKeyPair();
 
         node = mock(Identity.class);
-        when(node.getNodeId()).thenReturn(new NodeId(NodeId.stableNodeId(keyPair.getPublic().getEncoded())));
+        byte[] bytes = NodeId.stableNodeId(keyPair.getPublic().getEncoded()).getBytes();
+        when(node.getNodeId()).thenReturn(new NodeId(bytes));
 
         builder = mock(NexusEnvelopBuilder.class);
         when(builder.getNode()).thenReturn(node);

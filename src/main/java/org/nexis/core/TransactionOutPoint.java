@@ -86,4 +86,67 @@ public class TransactionOutPoint {
         ByteUtils.writeInt32LE(index, buf);
         return buf;
     }
+
+    /**
+     * Returns the hash of the transaction this outpoint references/spends/is
+     * connected to.
+     */
+    public Sha256Hash hash() {
+        return hash;
+    }
+
+    /**
+     * @return the index of this outpoint
+     */
+    public long index() {
+        return index;
+    }
+
+    /**
+     * An outpoint is a part of a transaction input that points to the output of
+     * another transaction.If we have both sides in memory, and they have been
+     * linked together, this returns a pointer to the connected output, or null
+     * if there is no such connection.
+     *
+     * @return
+     */
+//    @Nullable
+    public TransactionOutput getConnectedOutput() {
+        if (fromTx != null) {
+            return fromTx.getOutput(index);
+        } else if (connectedOutput != null) {
+            return connectedOutput;
+        }
+        return null;
+    }
+
+    /**
+     * Returns a copy of this outpoint, but with fromTx removed.
+     *
+     * @return outpoint with removed fromTx
+     */
+    public TransactionOutPoint disconnectTransaction() {
+        return new TransactionOutPoint(hash, index, null, connectedOutput);
+    }
+
+    /**
+     * Returns a copy of this outpoint, but with the connectedOutput removed.
+     *
+     * @return outpoint with removed connectedOutput
+     */
+    public TransactionOutPoint disconnectOutput() {
+        return new TransactionOutPoint(hash, index, fromTx, null);
+    }
+
+    /**
+     * Returns a copy of this outpoint, but with the provided transaction as
+     * fromTx.
+     *
+     * @param transaction transaction to set as fromTx
+     * @return outpoint with fromTx set
+     */
+    public TransactionOutPoint connectTransaction(Transaction transaction) {
+        return new TransactionOutPoint(hash, index, Objects.requireNonNull(transaction), connectedOutput);
+    }
+
 }

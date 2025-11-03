@@ -29,6 +29,33 @@ message Block {// get block by hash
   Policy policy = 8;    
 }
 
+message RejectMessage {
+  // "tx", "block", or other message type that was rejected
+  string rejected_message = 1;
+
+  // The reason code
+  RejectCode code = 2;
+
+  // Human-readable rejection reason
+  string reason = 3;
+
+  // Hash of rejected object (only for tx or block)
+  bytes rejected_message_hash = 4;
+}
+
+// Enum matching Bitcoin's reject reason codes
+enum RejectCode {
+  REJECT_MALFORMED = 0;       // 0x01
+  REJECT_INVALID = 16;        // 0x10
+  REJECT_OBSOLETE = 17;       // 0x11
+  REJECT_DUPLICATE = 18;      // 0x12
+  REJECT_NONSTANDARD = 64;    // 0x40
+  REJECT_DUST = 65;           // 0x41
+  REJECT_INSUFFICIENTFEE = 66;// 0x42
+  REJECT_CHECKPOINT = 67;     // 0x43
+  REJECT_OTHER = 255;         // 0xFF
+}
+
 // Represents policy configuration for a block
 message Policy {
   uint64 total_supply_cap = 1;             // maximum supply
@@ -40,11 +67,19 @@ message TransactionOutPoint {
   uint64 index = 2;    // output index in that transaction
 }
 
+
+message Witness {
+  // A witness is a stack of byte arrays. Each element is a pushed item on the witness stack.
+  repeated bytes stack = 1;
+}
+
 message TransactionInput {
   TransactionOutPoint outpoint = 1;
   bytes script_bytes = 2;  // API call parameters or service input data
   uint64 sequence = 3;
   optional uint64 value = 4;  // optional value for tracking
+  Witness witness = 5;        // per-input witness stack (optional; usually present only for segwit spends)
+
 }
 
 message TransactionOutput {
@@ -119,6 +154,7 @@ message NexusMessage {
     ChallengeResponse handshakeResponse = 9; // handshake challenge response
     Block block = 10;
     Transaction transaction = 11;
+     RejectMessage rejectedMessage = 12;
   }
 }
 

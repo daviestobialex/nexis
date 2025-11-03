@@ -180,4 +180,8 @@ public class PeerGroup {
 
         activeChannel.writeAndFlush(envelop);
     }
+    
+    public PeerRegistry getPeerRegistry(){
+        return peerRegistry;
+    }
 }

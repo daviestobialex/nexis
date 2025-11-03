@@ -69,7 +69,8 @@ public class ManifestMessageHandlerTests {
         keyPair = keyGen.generateKeyPair();
         node = mock(Identity.class);
         when(node.getKeyPair()).thenReturn(keyPair);
-        when(node.getNodeId()).thenReturn(new NodeId(NodeId.stableNodeId(keyPair.getPublic().getEncoded())));
+        when(node.getNodeId()).thenReturn(new NodeId(
+                NodeId.stableNodeId(keyPair.getPublic().getEncoded()).getBytes()));
 
         builder = mock(NexusEnvelopBuilder.class);
         when(builder.getNode()).thenReturn(node);
@@ -109,7 +110,7 @@ public class ManifestMessageHandlerTests {
 
     @Test
     void testHandle_validManifest_promotesPeerAndSendsGetPeers() {
-        byte[] nodeId = NodeId.stableNodeId(keyPair.getPublic().getEncoded());
+        byte[] nodeId = NodeId.stableNodeId(keyPair.getPublic().getEncoded()).getBytes();
 
         NexusProtocol.Manifest manifestProto = NexusProtocol.Manifest.newBuilder()
                 .setCategory("category-x")
@@ -149,7 +150,7 @@ public class ManifestMessageHandlerTests {
 
         ManifestMessageHandler badHandler = new ManifestMessageHandler(badBuilder, params, manifest);
 
-        byte[] nodeId = NodeId.stableNodeId(keyPair.getPublic().getEncoded());
+        byte[] nodeId = NodeId.stableNodeId(keyPair.getPublic().getEncoded()).getBytes();
 
         NexusProtocol.Manifest manifestProto = NexusProtocol.Manifest.newBuilder()
                 .setCategory("cat")

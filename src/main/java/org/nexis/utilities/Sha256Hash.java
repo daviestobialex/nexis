@@ -299,14 +299,6 @@ public class Sha256Hash implements Comparable<Sha256Hash> {
     }
 
     /**
-     * @deprecated use {@link #serialize()}
-     */
-    @Deprecated
-    public byte[] getReversedBytes() {
-        return serialize();
-    }
-
-    /**
      * Write hash into the given buffer.
      *
      * @param buf buffer to write into

@@ -16,6 +16,7 @@ import java.security.Security;
 import java.security.Signature;
 import java.security.SignatureException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import static org.nexis.utilities.CryptographyUtils.ED25519_ALGO;
 import org.nexis.utilities.HexFormat;
@@ -51,7 +52,7 @@ public class SignatureTests {
         sig.initVerify(publicKey);
         sig.update(messageBytes);
         boolean isVerified = sig.verify(signatureBytes);
-
+        Assertions.assertTrue(isVerified, "signature verification test failed");
         System.out.println("Signature verification result: " + isVerified);
     }
 

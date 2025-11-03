@@ -16,9 +16,9 @@
 package org.nexis.base;
 
 /**
- * A {@code Network} represents a generic, addressable Nexus-like network
- * chain. Implementations of this interface provide the minimum metadata
- * needed to identify and inter-operate with a given network.
+ * A {@code Network} represents a generic, addressable Nexus-like network chain.
+ * Implementations of this interface provide the minimum metadata needed to
+ * identify and inter-operate with a given network.
  * <p>
  * The contract defined here is intentionally minimal, but critical:
  * <ul>
@@ -29,7 +29,8 @@ package org.nexis.base;
  *
  * <li>{@link #uriScheme()} returns the URI scheme used to encode addresses or
  * resources belonging to this network. For example, Bitcoin uses
- * {@code "bitcoin:"} URIs, while a Nexus network might use {@code "nexus:"}</li>
+ * {@code "bitcoin:"} URIs, while a Nexus network might use
+ * {@code "nexus:"}</li>
  * </ul>
  *
  * <h3>Usage</h3>
@@ -79,5 +80,38 @@ public interface Network {
      * @return The URI scheme for this network
      */
     String uriScheme();
+
+    /**
+     * Human-readable part (HRP) of bech32 encoded segwit addresses for this
+     * network.
+     *
+     * @return HRP (lowercase)
+     */
+    String segwitAddressHrp();
+
+    /**
+     * Does this network have a fixed maximum number of coins
+     *
+     * @return {@code true} if this network has a fixed maximum number of coins
+     */
+    boolean hasMaxMoney();
+
+    /**
+     * Maximum number of coins for this network as a {@link Monetary} value.
+     * Where not applicable, a very large number of coins is returned instead
+     * (e.g. the main coin issue for Dogecoin).
+     *
+     * @return Maximum number of coins for this network
+     */
+    Monetary maxMoney();
+
+    /**
+     * Check if an amount exceeds the maximum allowed for a network (if the
+     * network has one)
+     *
+     * @param monetary A monetary amount
+     * @return true if too big, false if an allowed amount
+     */
+    boolean exceedsMaxMoney(Monetary monetary);
 
 }

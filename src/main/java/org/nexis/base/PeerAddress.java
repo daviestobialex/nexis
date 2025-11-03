@@ -5,9 +5,13 @@
 package org.nexis.base;
 
 /**
+ * TODO: need to seeif network actually needs to be here based on the design but
+ * I want to get the crypto part done first then I decide based on the
+ * architecture I am going for
  *
  * @author daviestobialex
  */
-public interface PeerAddress extends PublicNodeProperties, Network{
-    
+public interface PeerAddress extends PublicNodeProperties {
+
+    public String id();
 }

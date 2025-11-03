@@ -36,7 +36,7 @@ public class CompressionTests {
     private Identity node;
 
     @Test
-    public void manifest_compressionTest() throws FileNotFoundException, IOException, NoSuchAlgorithmException, NoSuchProviderException {
+    public void manifest_compression_and_decompress_Test() throws FileNotFoundException, IOException, NoSuchAlgorithmException, NoSuchProviderException {
 
         // generate a keypair
         // Add the Bouncy Castle provider
@@ -67,12 +67,16 @@ public class CompressionTests {
 
         int compressedLength = compress.length;
 
-        LOGGER.log(Level.INFO, "category {0}", category);
-        LOGGER.log(Level.INFO, "rawLength {0}", rawLength);
+        LOGGER.log(Level.INFO, "compressed category {0}", category);
+        LOGGER.log(Level.INFO, "compressed rawLength {0}", rawLength);
         LOGGER.log(Level.INFO, "compressedLength {0}", compressedLength);
 
         Assertions.assertEquals("payments", category);
         Assertions.assertTrue(compressedLength < rawLength);
 
+        byte[] decompress = ByteUtils.decompress(compress);
+
+        LOGGER.log(Level.INFO, "decompressLength {0}", decompress.length);
+        Assertions.assertTrue(rawLength == decompress.length);
     }
 }

@@ -10,7 +10,6 @@ package org.nexis.core;
  */
 import java.math.BigInteger;
 import java.util.HexFormat;
-import java.util.logging.Logger;
 import org.nexis.base.PublicNodeProperties;
 import org.nexis.utilities.Sha256Hash;
 
@@ -20,9 +19,8 @@ import org.nexis.utilities.Sha256Hash;
  */
 public final class NodeId implements PublicNodeProperties {
 
-    private final byte[] id;
+    private final Sha256Hash id;
     private final byte[] pubKey;
-    private final static Logger log = Logger.getLogger(NodeId.class.getName());
 
     public NodeId(byte[] pubKey) {
         this.id = stableNodeId(pubKey);
@@ -34,11 +32,11 @@ public final class NodeId implements PublicNodeProperties {
     }
 
     public BigInteger toBigInt() {
-        return new BigInteger(1, id);
+        return new BigInteger(1, id.getBytes());
     }
 
     public int bitLength() {
-        return id.length * 8;
+        return id.getBytes().length * 8;
     }
 
     /**
@@ -48,24 +46,31 @@ public final class NodeId implements PublicNodeProperties {
      * @return
      */
     public BigInteger distanceTo(NodeId other) {
-        byte[] result = new byte[id.length];
-        for (int i = 0; i < id.length; i++) {
-            result[i] = (byte) (id[i] ^ other.id[i]);
+        byte[] result = new byte[id.getBytes().length];
+        for (int i = 0; i < id.getBytes().length; i++) {
+            result[i] = (byte) (id.getBytes()[i] ^ other.id.getBytes()[i]);
         }
         return new BigInteger(1, result);
     }
 
     public String toHex() {
-        return HexFormat.of().formatHex(id);
+        return HexFormat.of().formatHex(id.getBytes());
     }
 
-    public static byte[] stableNodeId(byte[] input) {
-        return Sha256Hash.hash(input);
+    /**
+     * This creates an instance of {@code Sha256Hash}, which is a double hash of
+     * the public key to produce a 32 byte length array
+     *
+     * @param publicKey public key bytes
+     * @return
+     */
+    public static Sha256Hash stableNodeId(byte[] publicKey) {
+        return Sha256Hash.twiceOf(publicKey);
     }
 
     @Override
     public byte[] getId() {
-        return id;
+        return id.getBytes();
     }
 
     @Override

@@ -5,12 +5,14 @@
 package org.nexis.core;
 
 import java.lang.ref.WeakReference;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
+import java.util.Map;
 import java.util.Objects;
 import org.nexis.base.Coin;
+import org.nexis.base.VarInt;
 import org.nexis.script.Script;
+import org.nexis.utilities.ByteUtils;
 import static org.nexis.utilities.Preconditions.checkArgument;
+import org.nexis.utilities.Sha256Hash;
 import org.nexus.base.proto.NexusProtocol;
 
 /**
@@ -73,6 +75,17 @@ public class TransactionInput {
 
     private TransactionWitness witness;
 
+    public enum ConnectionResult {
+        NO_SUCH_TX,
+        ALREADY_SPENT,
+        SUCCESS
+    }
+
+    public enum ConnectMode {
+        DISCONNECT_ON_CONFLICT,
+        ABORT_ON_CONFLICT
+    }
+
     /**
      * Creates an input that connects to nothing - used only in creation of
      * genesis transactions.
@@ -120,8 +133,11 @@ public class TransactionInput {
 
     /**
      * Creates an UNSIGNED input that links to the given output
+     *
+     * @param parentTransaction
+     * @param output
      */
-    TransactionInput(Transaction parentTransaction, TransactionOutput output) {
+    public TransactionInput(Transaction parentTransaction, TransactionOutput output) {
         this(parentTransaction,
                 EMPTY_ARRAY,
                 output.getParentTransaction() != null
@@ -136,8 +152,28 @@ public class TransactionInput {
      *
      * @return byte array containing the transaction input
      */
-    public byte[] serialize() {
+    public NexusProtocol.TransactionInput toProto() {
         throw new UnsupportedOperationException("no supported yet");
+    }
+
+    /**
+     * @return The Transaction that owns this input.
+     */
+    public Transaction getParentTransaction() {
+        return parent;
+    }
+
+    /**
+     * The "script bytes" might not actually be a script. In coinbase
+     * transactions where new coins are minted there is no input transaction, so
+     * instead the scriptBytes contains some extra stuff (like a rollover nonce)
+     * that we don't care about much. The bytes are turned into a Script object
+     * (cached below) on demand via a getter.
+     *
+     * @return the scriptBytes
+     */
+    public byte[] getScriptBytes() {
+        return scriptBytes;
     }
 
     /**
@@ -149,13 +185,246 @@ public class TransactionInput {
         return witness != null ? witness : TransactionWitness.EMPTY;
     }
 
+    /**
+     * Determine if the transaction has witnesses.
+     *
+     * @return true if the transaction has witnesses
+     */
+    public boolean hasWitness() {
+        return witness != null && witness.getPushCount() != 0;
+    }
+
     protected final void setParent(
             //            @Nullable
             Transaction parent) {
         this.parent = parent;
     }
 
-    NexusProtocol.TransactionInput toProto() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    /**
+     * Sequence numbers allow participants in a multi-party transaction signing
+     * protocol to create new versions of the transaction independently of each
+     * other.Newer versions of a transaction can replace an existing version
+     * that's in nodes memory pools if the existing version is time locked. See
+     * the Contracts page on the Bitcoin wiki for examples of how you can use
+     * this feature to build contract protocols.
+     *
+     * @return
+     */
+    public long getSequenceNumber() {
+        return sequence;
     }
+
+    /**
+     * @return true if this transaction's sequence number is set (ie it may be a
+     * part of a time-locked transaction)
+     */
+    public boolean hasSequence() {
+        return sequence != NO_SEQUENCE;
+    }
+
+    /**
+     * Clear input scripts, e.g. in preparation for signing.
+     */
+    public void clearScriptBytes() {
+        setScriptBytes(TransactionInput.EMPTY_ARRAY);
+    }
+
+    /**
+     * @param scriptBytes the scriptBytes to set
+     */
+    void setScriptBytes(byte[] scriptBytes) {
+        this.scriptSig = null;
+        this.scriptBytes = scriptBytes;
+    }
+
+    /**
+     * Set the transaction witness of an input.
+     *
+     * @param witness
+     */
+    public void setWitness(TransactionWitness witness) {
+        this.witness = witness;
+    }
+
+    /**
+     * Sequence numbers allow participants in a multi-party transaction signing
+     * protocol to create new versions of the transaction independently of each
+     * other.Newer versions of a transaction can replace an existing version
+     * that's in nodes memory pools if the existing version is time locked. See
+     * the Contracts page on the Bitcoin wiki for examples of how you can use
+     * this feature to build contract protocols.
+     *
+     * @param sequence
+     */
+    public void setSequenceNumber(long sequence) {
+        checkArgument(sequence >= 0 && sequence <= ByteUtils.MAX_UNSIGNED_INTEGER, ()
+                -> "sequence out of range: " + sequence);
+        this.sequence = sequence;
+    }
+
+    /**
+     * @return The previous output transaction reference, as an OutPoint
+     * structure. This contains the data needed to connect to the output of the
+     * transaction we're gathering coins from.
+     */
+    public TransactionOutPoint getOutpoint() {
+        return outpoint;
+    }
+
+    /**
+     * @return Value of the output connected to this input, if known. Null if
+     * unknown.
+     */
+//    @Nullable
+    public Coin getValue() {
+        return value;
+    }
+
+    /**
+     * Return the size of the serialized message. Note that if the message was
+     * deserialized from a payload, this size can differ from the size of the
+     * original payload.
+     *
+     * @return size of the serialized message in bytes
+     */
+    public int messageSize() {
+        int size = TransactionOutPoint.BYTES;
+        size += VarInt.sizeOf(scriptBytes.length) + scriptBytes.length;
+        size += 4; // sequence
+        return size;
+    }
+
+    /**
+     * Locates the referenced output from the given pool of transactions.
+     *
+     * @param transactions
+     * @return The TransactionOutput or null if the transactions map doesn't
+     * contain the referenced tx.
+     */
+//    @Nullable
+    public TransactionOutput getConnectedOutput(Map<Sha256Hash, Transaction> transactions) {
+        Transaction tx = transactions.get(outpoint.hash());
+        if (tx == null) {
+            return null;
+        }
+        return tx.getOutput(outpoint);
+    }
+
+    /**
+     * Returns the connected output, assuming the input was connected with
+     * {@link TransactionInput#connect(TransactionOutput)} or variants at some
+     * point.If it wasn't connected, then this method returns null.
+     *
+     * @return
+     */
+//    @Nullable
+    public TransactionOutput getConnectedOutput() {
+        return getOutpoint().getConnectedOutput();
+    }
+
+    /**
+     * Returns the connected transaction, assuming the input was connected with
+     * {@link TransactionInput#connect(TransactionOutput)} or variants at some
+     * point.If it wasn't connected, then this method returns null.
+     *
+     * @return
+     */
+//    @Nullable
+    public Transaction getConnectedTransaction() {
+        return getOutpoint().fromTx;
+    }
+
+    /**
+     * If this input is connected, check the output is connected back to this
+     * input and release it if so, making it spendable once again.
+     *
+     * @return true if the disconnection took place, false if it was not
+     * connected.
+     */
+    public boolean disconnect() {
+        TransactionOutput connectedOutput;
+        if (outpoint.fromTx != null) {
+            // The outpoint is connected using a "standard" wallet, disconnect it.
+            connectedOutput = outpoint.fromTx.getOutput(outpoint);
+            outpoint = outpoint.disconnectTransaction();
+        } else if (outpoint.connectedOutput != null) {
+            // The outpoint is connected using a UTXO based wallet, disconnect it.
+            connectedOutput = outpoint.connectedOutput;
+            outpoint = outpoint.disconnectOutput();
+        } else {
+            // The outpoint is not connected, do nothing.
+            return false;
+        }
+
+        if (connectedOutput != null && connectedOutput.getSpentBy() == this) {
+            // The outpoint was connected to an output, disconnect the output.
+            connectedOutput.markAsUnspent();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Connects this input to the relevant output of the referenced transaction
+     * if it's in the given map. Connecting means updating the internal pointers
+     * and spent flags. If the mode is to ABORT_ON_CONFLICT then the spent
+     * output won't be changed, but the outpoint.fromTx pointer will still be
+     * updated.
+     *
+     * @param transactions Map of txhash to transaction.
+     * @param mode Whether to abort if there's a pre-existing connection or not.
+     * @return NO_SUCH_TX if the prevtx wasn't found, ALREADY_SPENT if there was
+     * a conflict, SUCCESS if not.
+     */
+    public ConnectionResult connect(Map<Sha256Hash, Transaction> transactions, ConnectMode mode) {
+        Transaction tx = transactions.get(outpoint.hash());
+        if (tx == null) {
+            return TransactionInput.ConnectionResult.NO_SUCH_TX;
+        }
+        return connect(tx, mode);
+    }
+
+    /**
+     * Connects this input to the relevant output of the referenced transaction.
+     * Connecting means updating the internal pointers and spent flags. If the
+     * mode is to ABORT_ON_CONFLICT then the spent output won't be changed, but
+     * the outpoint.fromTx pointer will still be updated.
+     *
+     * @param transaction The transaction to try.
+     * @param mode Whether to abort if there's a pre-existing connection or not.
+     * @return NO_SUCH_TX if transaction is not the prevtx, ALREADY_SPENT if
+     * there was a conflict, SUCCESS if not.
+     */
+    public ConnectionResult connect(Transaction transaction, ConnectMode mode) {
+        if (!transaction.getTxId().equals(outpoint.hash())) {
+            return ConnectionResult.NO_SUCH_TX;
+        }
+        TransactionOutput out = transaction.getOutput(outpoint);
+        if (!out.isAvailableForSpending()) {
+            if (getParentTransaction().equals(outpoint.fromTx)) {
+                // Already connected.
+                return ConnectionResult.SUCCESS;
+            } else if (mode == ConnectMode.DISCONNECT_ON_CONFLICT) {
+                out.markAsUnspent();
+            } else if (mode == ConnectMode.ABORT_ON_CONFLICT) {
+                outpoint = outpoint.connectTransaction(out.getParentTransaction());
+                return TransactionInput.ConnectionResult.ALREADY_SPENT;
+            }
+        }
+        connect(out);
+        return TransactionInput.ConnectionResult.SUCCESS;
+    }
+
+    /**
+     * Internal use only: connects this TransactionInput to the given output
+     * (updates pointers and spent flags)
+     * @param out
+     */
+    public void connect(TransactionOutput out) {
+        outpoint = outpoint.connectTransaction(out.getParentTransaction());
+        out.markAsSpent(this);
+        value = out.getValue();
+    }
+
 }

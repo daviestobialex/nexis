@@ -5,6 +5,7 @@
 package org.nexis.core;
 
 import java.security.KeyPair;
+import java.util.Arrays;
 import org.nexis.base.Identity;
 
 /**
@@ -64,6 +65,11 @@ public class SimpleNodeIdentity implements Identity {
     @Override
     public KeyPair getKeyPair() {
         return this.keyPair;
+    }
+
+    @Override
+    public boolean isPubKeyHashMine(byte[] extractHashFromP2WH) {
+        return Arrays.equals(getNodeId().getId(), extractHashFromP2WH);
     }
 
 }

@@ -60,7 +60,7 @@ public class CryptographyUtils {
         return new KeyPair(publicKey, privateKey);
     }
 
-    public static PublicKey bytesToPublicKey(byte[] pubKeyBytes, String algorithm) throws Exception {
+    public static PublicKey bytesToPublicKey(byte[] pubKeyBytes, String algorithm) throws NoSuchAlgorithmException, NoSuchProviderException, InvalidKeySpecException {
         // Algorithm examples: "Ed25519", "EC", "RSA"
         X509EncodedKeySpec keySpec = new X509EncodedKeySpec(pubKeyBytes);
         KeyFactory keyFactory = KeyFactory.getInstance(algorithm, "BC");
@@ -112,5 +112,13 @@ public class CryptographyUtils {
         byte[] ripmemdHash = new byte[20];
         digest.doFinal(ripmemdHash, 0);
         return ripmemdHash;
+    }
+
+    public static boolean verify(byte[] pubKey, byte[] signature, byte[] data) throws NoSuchAlgorithmException, NoSuchProviderException, InvalidKeySpecException, InvalidKeyException, SignatureException {
+        Signature sig = Signature.getInstance(ED25519_ALGO, "BC");
+        sig.initVerify(bytesToPublicKey(pubKey, ED25519_ALGO));
+        sig.update(data);
+
+        return sig.verify(signature);
     }
 }

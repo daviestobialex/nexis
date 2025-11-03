@@ -15,39 +15,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.nexis.script;
 
+import java.security.PublicKey;
 import org.nexis.base.Address;
-import org.nexis.base.internal.TimeUtils;
-import org.nexis.crypto.ECKey;
-import org.nexis.base.LegacyAddress;
+import org.nexis.internal.TimeUtils;
 import org.nexis.base.SegwitAddress;
 import org.nexis.utilities.Sha256Hash;
 import org.nexis.core.Transaction;
-import org.nexis.crypto.TransactionSignature;
-import org.nexis.base.ScriptType;
-import org.nexis.crypto.internal.CryptoUtils;
+import org.nexis.internal.CryptoUtils;
 
-import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Stack;
 
-import static org.nexis.base.internal.Preconditions.checkArgument;
-import static org.nexis.base.internal.Preconditions.checkState;
+import static org.nexis.internal.Preconditions.checkArgument;
+import static org.nexis.internal.Preconditions.checkState;
 import static org.nexis.script.ScriptOpCodes.OP_0;
 import static org.nexis.script.ScriptOpCodes.OP_1NEGATE;
 import static org.nexis.script.ScriptOpCodes.OP_CHECKMULTISIG;
 import static org.nexis.script.ScriptOpCodes.OP_CHECKSIG;
-import static org.nexis.script.ScriptOpCodes.OP_DUP;
 import static org.nexis.script.ScriptOpCodes.OP_EQUAL;
-import static org.nexis.script.ScriptOpCodes.OP_EQUALVERIFY;
 import static org.nexis.script.ScriptOpCodes.OP_HASH160;
 import static org.nexis.script.ScriptOpCodes.OP_PUSHDATA1;
 import static org.nexis.script.ScriptOpCodes.OP_PUSHDATA2;
@@ -55,26 +47,36 @@ import static org.nexis.script.ScriptOpCodes.OP_PUSHDATA4;
 import static org.nexis.script.ScriptOpCodes.OP_RETURN;
 
 /**
- * <p>Tools for the construction of commonly used script types. You don't normally need this as it's hidden behind
- * convenience methods on {@link Transaction}, but they are useful when working with the
- * protocol at a lower level.</p>
+ * <p>
+ * Tools for the construction of commonly used script types. You don't normally
+ * need this as it's hidden behind convenience methods on {@link Transaction},
+ * but they are useful when working with the protocol at a lower level.</p>
  */
 public class ScriptBuilder {
+
     private final List<ScriptChunk> chunks;
     private Instant creationTime = TimeUtils.currentTime();
 
-    /** Creates a fresh ScriptBuilder with an empty program. */
+    /**
+     * Creates a fresh ScriptBuilder with an empty program.
+     */
     public ScriptBuilder() {
         chunks = new LinkedList<>();
     }
 
-    /** Creates a fresh ScriptBuilder with the given program as the starting point. */
+    /**
+     * Creates a fresh ScriptBuilder with the given program as the starting
+     * point.
+     *
+     * @param template
+     */
     public ScriptBuilder(Script template) {
         chunks = new ArrayList<>(template.chunks());
     }
 
     /**
-     * Sets the creation time to build the script with. If this is not set, the current time is used by the builder.
+     * Sets the creation time to build the script with. If this is not set, the
+     * current time is used by the builder.
      *
      * @param creationTime creation time to build the script with
      * @return this builder
@@ -84,37 +86,73 @@ public class ScriptBuilder {
         return this;
     }
 
-    /** Adds the given chunk to the end of the program */
+    /**
+     * Adds the given chunk to the end of the program
+     *
+     * @param chunk
+     * @return
+     */
     public ScriptBuilder addChunk(ScriptChunk chunk) {
         return addChunk(chunks.size(), chunk);
     }
 
-    /** Adds the given chunk at the given index in the program */
+    /**
+     * Adds the given chunk at the given index in the program
+     *
+     * @param index
+     * @param chunk
+     * @return
+     */
     public ScriptBuilder addChunk(int index, ScriptChunk chunk) {
         chunks.add(index, chunk);
         return this;
     }
 
-    /** Adds the given opcode to the end of the program. */
+    /**
+     * Adds the given opcode to the end of the program.
+     *
+     * @param opcode
+     * @return
+     */
     public ScriptBuilder op(int opcode) {
         return op(chunks.size(), opcode);
     }
 
-    /** Adds the given opcode to the given index in the program */
+    /**
+     * Adds the given opcode to the given index in the program
+     *
+     * @param index
+     * @param opcode
+     * @return
+     */
     public ScriptBuilder op(int index, int opcode) {
         checkArgument(opcode > OP_PUSHDATA4);
         return addChunk(index, new ScriptChunk(opcode, null));
     }
 
-    /** Adds a copy of the given byte array as a data element (i.e. PUSHDATA) at the end of the program. */
+    /**
+     * Adds a copy of the given byte array as a data element (i.e.PUSHDATA) at
+     * the end of the program.
+     *
+     * @param data
+     * @return
+     */
     public ScriptBuilder data(byte[] data) {
-        if (data.length == 0)
+        if (data.length == 0) {
             return smallNum(0);
-        else
+        } else {
             return data(chunks.size(), data);
+        }
     }
 
-    /** Adds a copy of the given byte array as a data element (i.e. PUSHDATA) at the given index in the program. */
+    /**
+     * Adds a copy of the given byte array as a data element (i.e.PUSHDATA) at
+     * the given index in the program.
+     *
+     * @param index
+     * @param data
+     * @return
+     */
     public ScriptBuilder data(int index, byte[] data) {
         // implements BIP62
         byte[] copy = Arrays.copyOf(data, data.length);
@@ -123,10 +161,11 @@ public class ScriptBuilder {
             opcode = OP_0;
         } else if (data.length == 1) {
             byte b = data[0];
-            if (b >= 1 && b <= 16)
+            if (b >= 1 && b <= 16) {
                 opcode = Script.encodeToOpN(b);
-            else
+            } else {
                 opcode = 1;
+            }
         } else if (data.length < OP_PUSHDATA1) {
             opcode = data.length;
         } else if (data.length < 256) {
@@ -140,16 +179,23 @@ public class ScriptBuilder {
     }
 
     /**
-     * Adds the given number to the end of the program. Automatically uses
+     * Adds the given number to the end of the program.Automatically uses
      * shortest encoding possible.
+     *
+     * @param num
+     * @return
      */
     public ScriptBuilder number(long num) {
         return number(chunks.size(), num);
     }
 
     /**
-     * Adds the given number to the given index in the program. Automatically
+     * Adds the given number to the given index in the program.Automatically
      * uses shortest encoding possible.
+     *
+     * @param index
+     * @param num
+     * @return
      */
     public ScriptBuilder number(int index, long num) {
         if (num == -1) {
@@ -162,20 +208,25 @@ public class ScriptBuilder {
     }
 
     /**
-     * Adds the given number as a OP_N opcode to the end of the program.
-     * Only handles values 0-16 inclusive.
-     * 
+     * Adds the given number as a OP_N opcode to the end of the program.Only
+     * handles values 0-16 inclusive.
+     *
+     * @param num
+     * @return
      * @see #number(long)
      */
     public ScriptBuilder smallNum(int num) {
         return smallNum(chunks.size(), num);
     }
 
-    /** Adds the given number as a push data chunk.
-     * This is intended to use for negative numbers or values greater than 16, and although
-     * it will accept numbers in the range 0-16 inclusive, the encoding would be
-     * considered non-standard.
-     * 
+    /**
+     * Adds the given number as a push data chunk.This is intended to use for
+     * negative numbers or values greater than 16, and although it will accept
+     * numbers in the range 0-16 inclusive, the encoding would be considered
+     * non-standard.
+     *
+     * @param num
+     * @return
      * @see #number(long)
      */
     protected ScriptBuilder bigNum(long num) {
@@ -183,25 +234,31 @@ public class ScriptBuilder {
     }
 
     /**
-     * Adds the given number as a OP_N opcode to the given index in the program.
-     * Only handles values 0-16 inclusive.
-     * 
+     * Adds the given number as a OP_N opcode to the given index in the
+     * program.Only handles values 0-16 inclusive.
+     *
+     * @param index
+     * @param num
+     * @return
      * @see #number(long)
      */
     public ScriptBuilder smallNum(int index, int num) {
-        checkArgument(num >= 0, () ->
-                "cannot encode negative numbers with smallNum");
-        checkArgument(num <= 16, () ->
-                "cannot encode numbers larger than 16 with smallNum");
+        checkArgument(num >= 0, ()
+                -> "cannot encode negative numbers with smallNum");
+        checkArgument(num <= 16, ()
+                -> "cannot encode numbers larger than 16 with smallNum");
         return addChunk(index, new ScriptChunk(Script.encodeToOpN(num), null));
     }
 
     /**
-     * Adds the given number as a push data chunk to the given index in the program.
-     * This is intended to use for negative numbers or values greater than 16, and although
-     * it will accept numbers in the range 0-16 inclusive, the encoding would be
-     * considered non-standard.
-     * 
+     * Adds the given number as a push data chunk to the given index in the
+     * program.This is intended to use for negative numbers or values greater
+     * than 16, and although it will accept numbers in the range 0-16 inclusive,
+     * the encoding would be considered non-standard.
+     *
+     * @param index
+     * @param num
+     * @return
      * @see #number(long)
      */
     protected ScriptBuilder bigNum(int index, long num) {
@@ -243,6 +300,7 @@ public class ScriptBuilder {
 
     /**
      * Adds true to the end of the program.
+     *
      * @return this
      */
     public ScriptBuilder opTrue() {
@@ -251,6 +309,7 @@ public class ScriptBuilder {
 
     /**
      * Adds true to the given index in the program.
+     *
      * @param index at which insert true
      * @return this
      */
@@ -260,6 +319,7 @@ public class ScriptBuilder {
 
     /**
      * Adds false to the end of the program.
+     *
      * @return this
      */
     public ScriptBuilder opFalse() {
@@ -268,6 +328,7 @@ public class ScriptBuilder {
 
     /**
      * Adds false to the given index in the program.
+     *
      * @param index at which insert true
      * @return this
      */
@@ -275,12 +336,16 @@ public class ScriptBuilder {
         return number(index, 0); // push OP_0/OP_FALSE
     }
 
-    /** Creates a new immutable Script based on the state of the builder. */
+    /**
+     * Creates a new immutable Script based on the state of the builder.
+     */
     public Script build() {
         return Script.of(chunks, creationTime);
     }
 
-    /** Creates an empty script. */
+    /**
+     * Creates an empty script.
+     */
     public static Script createEmpty() {
         return new ScriptBuilder().build();
     }
@@ -288,7 +353,7 @@ public class ScriptBuilder {
     /**
      * Creates a scriptPubKey that encodes payment to the given address.
      *
-     * @param to           address to send payment to
+     * @param to address to send payment to
      * @param creationTime creation time of the scriptPubKey
      * @return scriptPubKey
      */
@@ -297,7 +362,8 @@ public class ScriptBuilder {
     }
 
     /**
-     * Creates a scriptPubKey that encodes payment to the given address. The creation time will be the current time.
+     * Creates a scriptPubKey that encodes payment to the given address. The
+     * creation time will be the current time.
      *
      * @param to address to send payment to
      * @return scriptPubKey
@@ -308,19 +374,7 @@ public class ScriptBuilder {
 
     private ScriptBuilder outputScript(Address to) {
         checkState(chunks.isEmpty());
-        if (to instanceof LegacyAddress) {
-            ScriptType scriptType = to.getOutputScriptType();
-            if (scriptType == ScriptType.P2PKH)
-                p2pkhOutputScript(((LegacyAddress) to).getHash());
-            else if (scriptType == ScriptType.P2SH)
-                p2shOutputScript(((LegacyAddress) to).getHash());
-            else
-                throw new IllegalStateException("Cannot handle " + scriptType);
-        } else if (to instanceof SegwitAddress) {
-            p2whOutputScript((SegwitAddress) to);
-        } else {
-            throw new IllegalStateException("Cannot handle " + to);
-        }
+        p2whOutputScript((SegwitAddress) to);
         return this;
     }
 
@@ -332,106 +386,153 @@ public class ScriptBuilder {
     }
 
     /**
-     * Creates a scriptSig that can redeem a P2PKH output.
-     * If given signature is null, incomplete scriptSig will be created with OP_0 instead of signature
+     * Creates a scriptSig that can redeem a P2PKH output.If given signature is
+     * null, incomplete scriptSig will be created with OP_0 instead of signature
+     *
+     * @param sigBytes
+     * @param pubKey
+     * @return
      */
-    public static Script createInputScript(@Nullable TransactionSignature signature, ECKey pubKey) {
-        byte[] pubkeyBytes = pubKey.getPubKey();
-        byte[] sigBytes = signature != null ? signature.encodeToBitcoin() : new byte[]{};
+    public static Script createInputScript(byte[] sigBytes, PublicKey pubKey) {
+        byte[] pubkeyBytes = pubKey.getEncoded();
         return new ScriptBuilder().data(sigBytes).data(pubkeyBytes).build();
     }
 
     /**
-     * Creates a scriptSig that can redeem a P2PK output.
-     * If given signature is null, incomplete scriptSig will be created with OP_0 instead of signature
+     * Creates a scriptSig that can redeem a P2PK output.If given signature is
+     * null, incomplete scriptSig will be created with OP_0 instead of signature
+     *
+     * @param sigBytes
+     * @return
      */
-    public static Script createInputScript(@Nullable TransactionSignature signature) {
-        byte[] sigBytes = signature != null ? signature.encodeToBitcoin() : new byte[]{};
+    public static Script createInputScript(byte[] sigBytes) {
         return new ScriptBuilder().data(sigBytes).build();
     }
 
-    /** Creates a program that requires at least N of the given keys to sign, using OP_CHECKMULTISIG. */
-    public static Script createMultiSigOutputScript(int threshold, List<ECKey> pubkeys) {
+    /**
+     * Creates a program that requires at least N of the given keys to sign,
+     * using OP_CHECKMULTISIG.
+     *
+     * @param threshold
+     * @param pubkeys
+     * @return
+     */
+    public static Script createMultiSigOutputScript(int threshold, List<PublicKey> pubkeys) {
         checkArgument(threshold > 0);
         checkArgument(threshold <= pubkeys.size());
         checkArgument(pubkeys.size() <= 16);  // That's the max we can represent with a single opcode.
         ScriptBuilder builder = new ScriptBuilder();
         builder.smallNum(threshold);
-        for (ECKey key : pubkeys) {
-            builder.data(key.getPubKey());
+        for (PublicKey key : pubkeys) {
+            builder.data(key.getEncoded());
         }
         builder.smallNum(pubkeys.size());
         builder.op(OP_CHECKMULTISIG);
         return builder.build();
     }
 
-    /** Create a program that satisfies an OP_CHECKMULTISIG program. */
-    public static Script createMultiSigInputScript(List<TransactionSignature> signatures) {
+    /**
+     * Create a program that satisfies an OP_CHECKMULTISIG program.
+     *
+     * @param signatures
+     * @return
+     */
+    public static Script createMultiSigInputScript(List<byte[]> signatures) {
         List<byte[]> sigs = new ArrayList<>(signatures.size());
-        for (TransactionSignature signature : signatures) {
-            sigs.add(signature.encodeToBitcoin());
+        for (byte[] signature : signatures) {
+            sigs.add(signature);
         }
 
         return createMultiSigInputScriptBytes(sigs, null);
     }
 
-    /** Create a program that satisfies an OP_CHECKMULTISIG program. */
-    public static Script createMultiSigInputScript(TransactionSignature... signatures) {
+    /**
+     * Create a program that satisfies an OP_CHECKMULTISIG program.
+     *
+     * @param signatures
+     * @return
+     */
+    public static Script createMultiSigInputScript(byte[]... signatures) {
         return createMultiSigInputScript(Arrays.asList(signatures));
     }
 
-    /** Create a program that satisfies an OP_CHECKMULTISIG program, using pre-encoded signatures. */
+    /**
+     * Create a program that satisfies an OP_CHECKMULTISIG program, using
+     * pre-encoded signatures.
+     *
+     * @param signatures
+     * @return
+     */
     public static Script createMultiSigInputScriptBytes(List<byte[]> signatures) {
         return createMultiSigInputScriptBytes(signatures, null);
     }
 
     /**
-     * Create a program that satisfies a P2SH OP_CHECKMULTISIG program.
-     * If given signature list is null, incomplete scriptSig will be created with OP_0 instead of signatures
+     * Create a program that satisfies a P2SH OP_CHECKMULTISIG program.If given
+     * signature list is null, incomplete scriptSig will be created with OP_0
+     * instead of signatures
+     *
+     * @param signatures
+     * @param multisigProgram
+     * @return 
      */
-    public static Script createP2SHMultiSigInputScript(@Nullable List<TransactionSignature> signatures,
-                                                       Script multisigProgram) {
+    public static Script createP2SHMultiSigInputScript(List<byte[]> signatures,
+            Script multisigProgram) {
         List<byte[]> sigs = new ArrayList<>();
         if (signatures == null) {
             // create correct number of empty signatures
             int numSigs = multisigProgram.getNumberOfSignaturesRequiredToSpend();
-            for (int i = 0; i < numSigs; i++)
+            for (int i = 0; i < numSigs; i++) {
                 sigs.add(new byte[]{});
+            }
         } else {
-            for (TransactionSignature signature : signatures) {
-                sigs.add(signature.encodeToBitcoin());
+            for (byte[] signature : signatures) {
+                sigs.add(signature);
             }
         }
         return createMultiSigInputScriptBytes(sigs, multisigProgram.program());
     }
 
     /**
-     * Create a program that satisfies an OP_CHECKMULTISIG program, using pre-encoded signatures. 
-     * Optionally, appends the script program bytes if spending a P2SH output.
+     * Create a program that satisfies an OP_CHECKMULTISIG program, using
+     * pre-encoded signatures.Optionally, appends the script program bytes if
+     * spending a P2SH output.
+     *
+     * @param signatures
+     * @param multisigProgramBytes
+     * @return
      */
-    public static Script createMultiSigInputScriptBytes(List<byte[]> signatures, @Nullable byte[] multisigProgramBytes) {
+    public static Script createMultiSigInputScriptBytes(List<byte[]> signatures, byte[] multisigProgramBytes) {
         checkArgument(signatures.size() <= 16);
         ScriptBuilder builder = new ScriptBuilder();
         builder.smallNum(0);  // Work around a bug in CHECKMULTISIG that is now a required part of the protocol.
-        for (byte[] signature : signatures)
+        for (byte[] signature : signatures) {
             builder.data(signature);
-        if (multisigProgramBytes!= null)
+        }
+        if (multisigProgramBytes != null) {
             builder.data(multisigProgramBytes);
+        }
         return builder.build();
     }
 
     /**
-     * Returns a copy of the given scriptSig with the signature inserted in the given position.
+     * Returns a copy of the given scriptSig with the signature inserted in the
+     * given position.This function assumes that any missing sigs have OP_0
+     * placeholders.If given scriptSig already has all the signatures in place,
+     * IllegalArgumentException will be thrown.
      *
-     * This function assumes that any missing sigs have OP_0 placeholders. If given scriptSig already has all the signatures
-     * in place, IllegalArgumentException will be thrown.
      *
+     * @param scriptSig
+     * @param signature
      * @param targetIndex where to insert the signature
-     * @param sigsPrefixCount how many items to copy verbatim (e.g. initial OP_0 for multisig)
-     * @param sigsSuffixCount how many items to copy verbatim at end (e.g. redeemScript for P2SH)
+     * @param sigsPrefixCount how many items to copy verbatim (e.g. initial OP_0
+     * for multisig)
+     * @param sigsSuffixCount how many items to copy verbatim at end (e.g.
+     * redeemScript for P2SH)
+     * @return
      */
     public static Script updateScriptWithSignature(Script scriptSig, byte[] signature, int targetIndex,
-                                                   int sigsPrefixCount, int sigsSuffixCount) {
+            int sigsPrefixCount, int sigsSuffixCount) {
         ScriptBuilder builder = new ScriptBuilder();
         List<ScriptChunk> inputChunks = scriptSig.chunks();
         int totalChunks = inputChunks.size();
@@ -440,17 +541,18 @@ public class ScriptBuilder {
         // We assume here that OP_0 placeholders always go after the sigs, so
         // to find if we have sigs missing, we can just check the chunk in latest sig position
         boolean hasMissingSigs = inputChunks.get(totalChunks - sigsSuffixCount - 1).equalsOpCode(OP_0);
-        checkArgument(hasMissingSigs, () ->
-                "scriptSig is already filled with signatures");
+        checkArgument(hasMissingSigs, ()
+                -> "scriptSig is already filled with signatures");
 
         // copy the prefix
-        for (ScriptChunk chunk: inputChunks.subList(0, sigsPrefixCount))
+        for (ScriptChunk chunk : inputChunks.subList(0, sigsPrefixCount)) {
             builder.addChunk(chunk);
+        }
 
         // copy the sigs
         int pos = 0;
         boolean inserted = false;
-        for (ScriptChunk chunk: inputChunks.subList(sigsPrefixCount, totalChunks - sigsSuffixCount)) {
+        for (ScriptChunk chunk : inputChunks.subList(sigsPrefixCount, totalChunks - sigsSuffixCount)) {
             if (pos == targetIndex) {
                 inserted = true;
                 builder.data(signature);
@@ -467,58 +569,45 @@ public class ScriptBuilder {
             if (pos == targetIndex) {
                 inserted = true;
                 builder.data(signature);
-            }
-            else {
+            } else {
                 builder.addChunk(new ScriptChunk(OP_0, null));
             }
             pos++;
         }
 
         // copy the suffix
-        for (ScriptChunk chunk: inputChunks.subList(totalChunks - sigsSuffixCount, totalChunks))
+        for (ScriptChunk chunk : inputChunks.subList(totalChunks - sigsSuffixCount, totalChunks)) {
             builder.addChunk(chunk);
+        }
 
         checkState(inserted);
         return builder.build();
     }
 
-    /** Creates a scriptPubKey that encodes payment to the given raw public key. */
+    /**
+     * Creates a scriptPubKey that encodes payment to the given raw public key.
+     *
+     * @param pubKey
+     * @return
+     */
     public static Script createP2PKOutputScript(byte[] pubKey) {
         return new ScriptBuilder().data(pubKey).op(OP_CHECKSIG).build();
     }
 
-    /** Creates a scriptPubKey that encodes payment to the given raw public key. */
-    public static Script createP2PKOutputScript(ECKey pubKey) {
-        return createP2PKOutputScript(pubKey.getPubKey());
-    }
-
     /**
-     * Creates a scriptPubKey that sends to the given public key hash.
+     * Creates a scriptPubKey that encodes payment to the given raw public key.
+     * @param pubKey
+     * @return 
      */
-    public static Script createP2PKHOutputScript(byte[] hash) {
-        return new ScriptBuilder().p2pkhOutputScript(hash).build();
-    }
-
-    private ScriptBuilder p2pkhOutputScript(byte[] hash) {
-        checkArgument(hash.length == LegacyAddress.LENGTH);
-        checkState(chunks.isEmpty());
-        return op(OP_DUP)
-                .op(OP_HASH160)
-                .data(hash)
-                .op(OP_EQUALVERIFY)
-                .op(OP_CHECKSIG);
-    }
-
-    /**
-     * Creates a scriptPubKey that sends to the given public key.
-     */
-    public static Script createP2PKHOutputScript(ECKey key) {
-        checkArgument(key.isCompressed());
-        return createP2PKHOutputScript(key.getPubKeyHash());
+    public static Script createP2PKOutputScript(PublicKey pubKey) {
+        return createP2PKOutputScript(pubKey.getEncoded());
     }
 
     /**
      * Creates a segwit scriptPubKey that sends to the given public key hash.
+     *
+     * @param hash
+     * @return
      */
     public static Script createP2WPKHOutputScript(byte[] hash) {
         checkArgument(hash.length == SegwitAddress.WITNESS_PROGRAM_LENGTH_PKH);
@@ -527,16 +616,18 @@ public class ScriptBuilder {
 
     /**
      * Creates a segwit scriptPubKey that sends to the given public key.
+     *
+     * @param key
+     * @return
      */
-    public static Script createP2WPKHOutputScript(ECKey key) {
-        checkArgument(key.isCompressed());
-        return createP2WPKHOutputScript(key.getPubKeyHash());
+    public static Script createP2WPKHOutputScript(PublicKey key) {
+        return createP2WPKHOutputScript(key.getEncoded());
     }
 
     /**
      * Creates a scriptPubKey that sends to the given script hash. Read
-     * <a href="https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki">BIP 16</a> to learn more about this
-     * kind of script.
+     * <a href="https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki">BIP
+     * 16</a> to learn more about this kind of script.
      *
      * @param hash The hash of the redeem script
      * @return an output script that sends to the redeem script
@@ -566,6 +657,9 @@ public class ScriptBuilder {
 
     /**
      * Creates a segwit scriptPubKey that sends to the given script hash.
+     *
+     * @param hash
+     * @return
      */
     public static Script createP2WSHOutputScript(byte[] hash) {
         checkArgument(hash.length == SegwitAddress.WITNESS_PROGRAM_LENGTH_SH);
@@ -574,6 +668,9 @@ public class ScriptBuilder {
 
     /**
      * Creates a segwit scriptPubKey for the given redeem script.
+     *
+     * @param redeemScript
+     * @return
      */
     public static Script createP2WSHOutputScript(Script redeemScript) {
         byte[] hash = Sha256Hash.hash(redeemScript.program());
@@ -581,36 +678,41 @@ public class ScriptBuilder {
     }
 
     /**
-     * Creates a P2SH output script for n-of-m multisig with given public keys and threshold. Given public keys will
-     * be placed in redeem script in the lexicographical sorting order.
+     * Creates a P2SH output script for n-of-m multisig with given public keys
+     * and threshold. Given public keys will be placed in redeem script in the
+     * lexicographical sorting order.
      *
      * @param threshold The threshold number of keys that must sign (n)
      * @param pubkeys A list of m public keys
      * @return The P2SH multisig output script
      */
-    public static Script createP2SHOutputScript(int threshold, List<ECKey> pubkeys) {
+    public static Script createP2SHOutputScript(int threshold, List<PublicKey> pubkeys) {
         Script redeemScript = createRedeemScript(threshold, pubkeys);
         return createP2SHOutputScript(redeemScript);
     }
 
     /**
-     * Creates an n-of-m multisig redeem script with given public keys and threshold. Given public keys will be placed in
-     * redeem script in the lexicographical sorting order.
+     * Creates an n-of-m multisig redeem script with given public keys and
+     * threshold. Given public keys will be placed in redeem script in the
+     * lexicographical sorting order.
      *
      * @param threshold The threshold number of keys that must sign (n)
      * @param pubkeys A list of m public keys
      * @return The P2SH multisig redeem script
      */
-    public static Script createRedeemScript(int threshold, List<ECKey> pubkeys) {
-        pubkeys = new ArrayList<>(pubkeys);
-        Collections.sort(pubkeys, ECKey.PUBKEY_COMPARATOR);
+    public static Script createRedeemScript(int threshold, List<PublicKey> pubkeys) {
+//        Collections.sort(pubkeys);// TODO: sort public keys
         return ScriptBuilder.createMultiSigOutputScript(threshold, pubkeys);
     }
 
     /**
-     * Creates a script of the form OP_RETURN [data]. This feature allows you to attach a small piece of data (like
-     * a hash of something stored elsewhere) to a zero valued output which can never be spent and thus does not pollute
-     * the ledger.
+     * Creates a script of the form OP_RETURN [data].This feature allows you to
+     * attach a small piece of data (like a hash of something stored elsewhere)
+     * to a zero valued output which can never be spent and thus does not
+     * pollute the ledger.
+     *
+     * @param data
+     * @return
      */
     public static Script createOpReturnScript(byte[] data) {
         checkArgument(data.length <= 80);
