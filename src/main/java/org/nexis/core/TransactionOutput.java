@@ -21,7 +21,7 @@ import org.nexis.script.ScriptException;
 import org.nexis.script.ScriptPattern;
 import static org.nexis.utilities.Preconditions.checkArgument;
 import static org.nexis.utilities.Preconditions.checkState;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.Sha256Hash;
 import org.nexus.base.proto.NexusProtocol;
 
 /**

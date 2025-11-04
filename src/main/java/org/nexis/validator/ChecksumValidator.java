@@ -8,9 +8,9 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.logging.Logger;
 import org.nexis.base.NetworkConfiguration;
-import org.nexis.base.NexusMessage;
+import org.nexis.core.NexusMessage;
 import org.nexus.base.proto.NexusProtocol;
-import org.nexis.utilities.ByteUtils;
+import org.nexis.base.utils.ByteUtils;
 import org.nexis.base.Validator;
 
 /**

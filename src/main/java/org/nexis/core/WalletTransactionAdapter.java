@@ -6,7 +6,7 @@ package org.nexis.core;
 
 import java.util.Map;
 import org.nexis.base.Identity;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.Sha256Hash;
 import org.nexis.wallet.WalletTransaction;
 
 /**

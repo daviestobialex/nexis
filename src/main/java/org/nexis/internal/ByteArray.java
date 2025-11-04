@@ -17,7 +17,7 @@
 package org.nexis.internal;
 
 import java.util.Arrays;
-import org.nexis.utilities.ByteUtils;
+import org.nexis.base.utils.ByteUtils;
 
 /**
  * An effectively-immutable byte array.

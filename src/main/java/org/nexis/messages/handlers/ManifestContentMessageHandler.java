@@ -35,7 +35,7 @@ import org.nexis.core.NexusEnvelopBuilder;
 import org.nexis.core.PeerRegistry;
 import org.nexis.internal.MessageHandler;
 import org.nexis.store.Storage;
-import org.nexis.utilities.ByteUtils;
+import org.nexis.base.utils.ByteUtils;
 import org.nexis.utilities.HexFormat;
 import org.nexus.base.proto.NexusProtocol;
 

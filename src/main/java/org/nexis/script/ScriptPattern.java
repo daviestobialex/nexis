@@ -17,7 +17,7 @@
 
 package org.nexis.script;
 
-import org.nexis.utilities.ByteUtils;
+import org.nexis.base.utils.ByteUtils;
 import org.nexis.base.SegwitAddress;
 
 import java.util.Arrays;
@@ -34,7 +34,7 @@ import static org.nexis.script.ScriptOpCodes.OP_DUP;
 import static org.nexis.script.ScriptOpCodes.OP_EQUAL;
 import static org.nexis.script.ScriptOpCodes.OP_EQUALVERIFY;
 import static org.nexis.script.ScriptOpCodes.OP_HASH160;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.Sha256Hash;
 
 /**
  * This is a Script pattern matcher with some typical script patterns

@@ -17,7 +17,7 @@ public class NexusStartInstanceExample {
     // for test purposes alone and will be removed
     public static void main(String[] args) throws Exception {
 
-        NexisInstance businessInstance = new NexisInstance(NexusNetwork.TESTNET, false);
+        NexisInstance businessInstance = new NexisInstance(NexusNetwork.TESTNET, true);
 
         businessInstance
                 .start(9004)

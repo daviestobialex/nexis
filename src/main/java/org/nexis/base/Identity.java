@@ -49,6 +49,12 @@ public interface Identity {
         return provider.loadOrCreateIdentity();
     }
 
-    public boolean isPubKeyHashMine(byte[] extractHashFromP2WH);
+    /**
+     * validates if the hash is the same as double hash of the public key
+     *
+     * @param hash
+     * @return
+     */
+    public boolean isPubKeyHashMine(byte[] hash);
 
 }

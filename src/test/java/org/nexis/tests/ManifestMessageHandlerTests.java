@@ -125,7 +125,7 @@ public class ManifestMessageHandlerTests {
                         .build())
                 .build();
 
-        Set<String> mockedSet = new HashSet<>(Arrays.asList("a"));
+        Set<byte[]> mockedSet = new HashSet<>(Arrays.asList("a".getBytes()));
 
         when(manifestRegistry.getByCategory(any())).thenReturn(mockedSet);
 

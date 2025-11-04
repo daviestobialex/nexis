@@ -1,6 +1,17 @@
 /*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ * Copyright 2014 Andreas Schildbach
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.nexis.base;
 
@@ -9,9 +20,7 @@ import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
-import static org.nexis.base.NexusNetwork.MAINNET;
-import static org.nexis.base.NexusNetwork.REGTEST;
-import static org.nexis.base.NexusNetwork.TESTNET;
+import static org.nexis.base.NexusNetwork.*;
 import org.nexis.exceptions.AddressFormatException;
 
 /**
@@ -43,7 +52,8 @@ public class SegwitAddress implements Address {
     public enum SegwitHrp {
         BC(MAINNET),
         TB(TESTNET),
-        BCRT(REGTEST);
+        BCRT(REGTEST),
+        LB(LOCALHOSTTEST);
 
         private final EnumSet<NexusNetwork> networks;
 
@@ -61,6 +71,7 @@ public class SegwitAddress implements Address {
          *
          * @return HRP in lowercase.
          */
+        @Override
         public String toString() {
             return name().toLowerCase();
         }

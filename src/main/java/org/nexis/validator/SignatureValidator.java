@@ -12,7 +12,7 @@ import org.nexis.base.NetworkConfiguration;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexis.base.PeerAddress;
 import org.nexis.core.PeerRegistry;
-import org.nexis.utilities.ByteUtils;
+import org.nexis.base.utils.ByteUtils;
 import static org.nexis.utilities.CryptographyUtils.ED25519_ALGO;
 import static org.nexis.utilities.CryptographyUtils.bytesToPublicKey;
 import org.nexis.base.Validator;
@@ -72,7 +72,6 @@ public class SignatureValidator implements Validator {
             pubKey = nodeProps.getPublicKey();
 
         }
-        System.out.println("PUB KEY GOTTEN LEN " + pubKey.length);
         try {
 
             Signature sig = Signature.getInstance(ED25519_ALGO, "BC");

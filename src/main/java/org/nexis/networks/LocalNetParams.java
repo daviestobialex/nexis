@@ -5,7 +5,7 @@
 package org.nexis.networks;
 
 import org.nexis.base.NexusNetwork;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.Sha256Hash;
 
 /**
  *

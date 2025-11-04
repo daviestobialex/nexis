@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.nexis.base;
 
 import org.nexis.base.utils.MonetaryFormat;
@@ -27,26 +26,39 @@ import java.nio.ByteOrder;
 import static org.nexis.internal.Preconditions.checkArgument;
 
 /**
- * Represents a monetary Bitcoin value. This class is immutable and should be treated as a Java <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/doc-files/ValueBased.html#Value-basedClasses">Value-based class</a>.
- * We recommend using the {@code Coin} class wherever possible to represent Bitcoin monetary values. If you have existing
- * code that uses other numeric types and need to convert there are conversion methods.
+ * Represents a monetary Bitcoin value. This class is immutable and should be
+ * treated as a Java
+ * <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/doc-files/ValueBased.html#Value-basedClasses">Value-based
+ * class</a>. We recommend using the {@code Coin} class wherever possible to
+ * represent Bitcoin monetary values. If you have existing code that uses other
+ * numeric types and need to convert there are conversion methods.
  * <p>
- * Internally {@code Coin} is implemented as a {@code long} (see {@link #value}) that represents a number of <a href="https://en.bitcoin.it/wiki/Satoshi_(unit)">satoshis</a>. It
- * can also be considered a <a href="https://en.wikipedia.org/wiki/Fixed-point_arithmetic">fixed-point</a> number of <a href="https://en.bitcoin.it/wiki/Units">bitcoins</a>.
+ * Internally {@code Coin} is implemented as a {@code long} (see {@link #value})
+ * that represents a number of
+ * <a href="https://en.bitcoin.it/wiki/Satoshi_(unit)">satoshis</a>. It can also
+ * be considered a
+ * <a href="https://en.wikipedia.org/wiki/Fixed-point_arithmetic">fixed-point</a>
+ * number of <a href="https://en.bitcoin.it/wiki/Units">bitcoins</a>.
  * <p>
- * To create a {@code Coin} from an integer number of satoshis, use {@link #ofSat(long)}. To convert to a {@code long} number
- * of satoshis use {@link #toSat()}. (You can also use {@link #valueOf(long)}, {@link #getValue()} or {@link #value}.)
+ * To create a {@code Coin} from an integer number of satoshis, use
+ * {@link #ofSat(long)}. To convert to a {@code long} number of satoshis use
+ * {@link #toSat()}. (You can also use
+ * {@link #valueOf(long)}, {@link #getValue()} or {@link #value}.)
  * <p>
- * To create a {@code Coin} from a decimal number of bitcoins, use {@link #ofBtc(BigDecimal)}. To convert to a {@link BigDecimal}
- * of bitcoins use {@link #toBtc()}. (Performing fixed-point <a href="https://en.wikipedia.org/wiki/Fixed-point_arithmetic#Conversion_to_and_from_floating-point">conversion</a>, these methods essentially multiply or divide by {@code Coin.COIN.toSat()}.)
+ * To create a {@code Coin} from a decimal number of bitcoins, use
+ * {@link #ofBtc(BigDecimal)}. To convert to a {@link BigDecimal} of bitcoins
+ * use {@link #toBtc()}. (Performing fixed-point
+ * <a href="https://en.wikipedia.org/wiki/Fixed-point_arithmetic#Conversion_to_and_from_floating-point">conversion</a>,
+ * these methods essentially multiply or divide by {@code Coin.COIN.toSat()}.)
  * <p>
- * <b>Never ever</b> use {@code float} or {@code double} to represent monetary values.
+ * <b>Never ever</b> use {@code float} or {@code double} to represent monetary
+ * values.
  */
 public final class Coin implements Monetary, Comparable<Coin> {
 
     /**
-     * Number of decimals for one Bitcoin. This constant is useful for quick adapting to other coins because a lot of
-     * constants derive from it.
+     * Number of decimals for one Bitcoin. This constant is useful for quick
+     * adapting to other coins because a lot of constants derive from it.
      */
     public static final int SMALLEST_UNIT_EXPONENT = 8;
 
@@ -71,17 +83,18 @@ public final class Coin implements Monetary, Comparable<Coin> {
     public static final Coin CENT = COIN.divide(100);
 
     /**
-     * 0.001 Bitcoins, also known as 1 mBTC.
+     * 0.001 Bitcoins, also known as 1 mNXS.
      */
     public static final Coin MILLICOIN = COIN.divide(1000);
 
     /**
-     * 0.000001 Bitcoins, also known as 1 µBTC or 1 uBTC.
+     * 0.000001 Bitcoins, also known as 1 µNXS or 1 uNXS.
      */
     public static final Coin MICROCOIN = MILLICOIN.divide(1000);
 
     /**
-     * A satoshi is the smallest unit that can be transferred. 100 million of them fit into a Bitcoin.
+     * A satoshi is the smallest unit that can be transferred. 100 million of
+     * them fit into a Bitcoin.
      */
     public static final Coin SATOSHI = Coin.valueOf(1);
 
@@ -92,7 +105,9 @@ public final class Coin implements Monetary, Comparable<Coin> {
      */
     public static final Coin NEGATIVE_SATOSHI = Coin.valueOf(-1);
 
-    /** Number of bytes to store this amount. */
+    /**
+     * Number of bytes to store this amount.
+     */
     public static final int BYTES = 8;
 
     /**
@@ -116,11 +131,13 @@ public final class Coin implements Monetary, Comparable<Coin> {
     }
 
     /**
-     * Read a Coin amount from the given buffer as 8 bytes in little-endian order.
+     * Read a Coin amount from the given buffer as 8 bytes in little-endian
+     * order.
      *
      * @param buf buffer to read from
      * @return read amount
-     * @throws BufferUnderflowException if the read value extends beyond the remaining bytes of the buffer
+     * @throws BufferUnderflowException if the read value extends beyond the
+     * remaining bytes of the buffer
      */
     public static Coin read(ByteBuffer buf) throws BufferUnderflowException {
         return valueOf(buf.order(ByteOrder.LITTLE_ENDIAN).getLong());
@@ -140,7 +157,8 @@ public final class Coin implements Monetary, Comparable<Coin> {
     }
 
     /**
-     * Create a {@code Coin} from an amount expressed in "the way humans are used to".
+     * Create a {@code Coin} from an amount expressed in "the way humans are
+     * used to".
      *
      * @param coins Number of bitcoins
      * @param cents Number of bitcents (0.01 bitcoin)
@@ -155,32 +173,34 @@ public final class Coin implements Monetary, Comparable<Coin> {
     }
 
     /**
-     * Convert a decimal amount of BTC into satoshis.
+     * Convert a decimal amount of NXS into satoshis.
      *
      * @param coins number of coins
      * @return number of satoshis
-     * @throws ArithmeticException if value has too much precision or will not fit in a long
+     * @throws ArithmeticException if value has too much precision or will not
+     * fit in a long
      */
     public static long btcToSatoshi(BigDecimal coins) throws ArithmeticException {
         return coins.movePointRight(SMALLEST_UNIT_EXPONENT).longValueExact();
     }
 
     /**
-     * Convert an amount in satoshis to an amount in BTC.
+     * Convert an amount in satoshis to an amount in NXS.
      *
      * @param satoshis number of satoshis
-     * @return number of bitcoins (in BTC)
+     * @return number of bitcoins (in NXS)
      */
     public static BigDecimal satoshiToBtc(long satoshis) {
         return new BigDecimal(satoshis).movePointLeft(SMALLEST_UNIT_EXPONENT);
     }
 
     /**
-     * Create a {@code Coin} from a decimal amount of BTC.
+     * Create a {@code Coin} from a decimal amount of NXS.
      *
-     * @param coins number of coins (in BTC)
+     * @param coins number of coins (in NXS)
      * @return {@code Coin} object containing value in satoshis
-     * @throws ArithmeticException if value has too much precision or will not fit in a long
+     * @throws ArithmeticException if value has too much precision or will not
+     * fit in a long
      */
     public static Coin ofBtc(BigDecimal coins) throws ArithmeticException {
         return Coin.valueOf(btcToSatoshi(coins));
@@ -197,13 +217,15 @@ public final class Coin implements Monetary, Comparable<Coin> {
     }
 
     /**
-     * Create a {@code Coin} by parsing a {@code String} amount expressed in "the way humans are used to".
-     * 
-     * @param str string in a format understood by {@link BigDecimal#BigDecimal(String)}, for example "0", "1", "0.10",
-     *      * "1.23E3", "1234.5E-5".
+     * Create a {@code Coin} by parsing a {@code String} amount expressed in
+     * "the way humans are used to".
+     *
+     * @param str string in a format understood by
+     * {@link BigDecimal#BigDecimal(String)}, for example "0", "1", "0.10", *
+     * "1.23E3", "1234.5E-5".
      * @return {@code Coin} object containing value in satoshis
-     * @throws IllegalArgumentException
-     *             if you try to specify fractional satoshis, or a value out of range.
+     * @throws IllegalArgumentException if you try to specify fractional
+     * satoshis, or a value out of range.
      */
     public static Coin parseCoin(final String str) {
         try {
@@ -215,14 +237,15 @@ public final class Coin implements Monetary, Comparable<Coin> {
     }
 
     /**
-     * Create a {@code Coin} by parsing a {@code String} amount expressed in "the way humans are used to".
-     * The amount is cut to satoshi precision.
-     * 
-     * @param str string in a format understood by {@link BigDecimal#BigDecimal(String)}, for example "0", "1", "0.10",
-     *      * "1.23E3", "1234.5E-5".
+     * Create a {@code Coin} by parsing a {@code String} amount expressed in
+     * "the way humans are used to". The amount is cut to satoshi precision.
+     *
+     * @param str string in a format understood by
+     * {@link BigDecimal#BigDecimal(String)}, for example "0", "1", "0.10", *
+     * "1.23E3", "1234.5E-5".
      * @return {@code Coin} object containing value in satoshis
-     * @throws IllegalArgumentException
-     *             if you try to specify a value out of range.
+     * @throws IllegalArgumentException if you try to specify a value out of
+     * range.
      */
     public static Coin parseCoinInexact(final String str) {
         try {
@@ -237,7 +260,12 @@ public final class Coin implements Monetary, Comparable<Coin> {
         return Coin.valueOf(Math.addExact(this.value, value.value));
     }
 
-    /** Alias for add */
+    /**
+     * Alias for add
+     *
+     * @param value
+     * @return
+     */
     public Coin plus(final Coin value) {
         return add(value);
     }
@@ -246,7 +274,12 @@ public final class Coin implements Monetary, Comparable<Coin> {
         return Coin.valueOf(Math.subtractExact(this.value, value.value));
     }
 
-    /** Alias for subtract */
+    /**
+     * Alias for subtract
+     *
+     * @param value
+     * @return
+     */
     public Coin minus(final Coin value) {
         return subtract(value);
     }
@@ -255,12 +288,21 @@ public final class Coin implements Monetary, Comparable<Coin> {
         return Coin.valueOf(Math.multiplyExact(this.value, factor));
     }
 
-    /** Alias for multiply */
+    /**
+     * Alias for multiply
+     *
+     * @param factor
+     * @return
+     */
     public Coin times(final long factor) {
         return multiply(factor);
     }
 
-    /** Alias for multiply */
+    /**
+     * Alias for multiply
+     * @param factor
+     * @return 
+     */
     public Coin times(final int factor) {
         return multiply(factor);
     }
@@ -269,18 +311,28 @@ public final class Coin implements Monetary, Comparable<Coin> {
         return Coin.valueOf(this.value / divisor);
     }
 
-    /** Alias for divide */
+    /**
+     * Alias for divide
+     *
+     * @param divisor
+     * @return
+     */
     public Coin div(final long divisor) {
         return divide(divisor);
     }
 
-    /** Alias for divide */
+    /**
+     * Alias for divide
+     *
+     * @param divisor
+     * @return
+     */
     public Coin div(final int divisor) {
         return divide(divisor);
     }
 
     public Coin[] divideAndRemainder(final long divisor) {
-        return new Coin[] { Coin.valueOf(this.value / divisor), Coin.valueOf(this.value % divisor) };
+        return new Coin[]{Coin.valueOf(this.value / divisor), Coin.valueOf(this.value % divisor)};
     }
 
     public long divide(final Coin divisor) {
@@ -288,16 +340,20 @@ public final class Coin implements Monetary, Comparable<Coin> {
     }
 
     /**
-     * Returns true if and only if this instance represents a monetary value greater than zero,
-     * otherwise false.
+     * Returns true if and only if this instance represents a monetary value
+     * greater than zero, otherwise false.
+     *
+     * @return
      */
     public boolean isPositive() {
         return signum() == 1;
     }
 
     /**
-     * Returns true if and only if this instance represents a monetary value less than zero,
-     * otherwise false.
+     * Returns true if and only if this instance represents a monetary value
+     * less than zero, otherwise false.
+     *
+     * @return
      */
     public boolean isNegative() {
         return signum() == -1;
@@ -306,22 +362,30 @@ public final class Coin implements Monetary, Comparable<Coin> {
     /**
      * Returns true if and only if this instance represents zero monetary value,
      * otherwise false.
+     *
+     * @return
      */
     public boolean isZero() {
         return signum() == 0;
     }
 
     /**
-     * Returns true if the monetary value represented by this instance is greater than that
-     * of the given other Coin, otherwise false.
+     * Returns true if the monetary value represented by this instance is
+     * greater than that of the given other Coin, otherwise false.
+     *
+     * @param other
+     * @return
      */
     public boolean isGreaterThan(Coin other) {
         return compareTo(other) > 0;
     }
 
     /**
-     * Returns true if the monetary value represented by this instance is less than that
-     * of the given other Coin, otherwise false.
+     * Returns true if the monetary value represented by this instance is less
+     * than that of the given other Coin, otherwise false.
+     *
+     * @param other
+     * @return
      */
     public boolean isLessThan(Coin other) {
         return compareTo(other) < 0;
@@ -337,8 +401,9 @@ public final class Coin implements Monetary, Comparable<Coin> {
 
     @Override
     public int signum() {
-        if (this.value == 0)
+        if (this.value == 0) {
             return 0;
+        }
         return this.value < 0 ? -1 : 1;
     }
 
@@ -347,8 +412,10 @@ public final class Coin implements Monetary, Comparable<Coin> {
     }
 
     /**
-     * Returns the number of satoshis of this monetary value. It's deprecated in favour of accessing {@link #value}
-     * directly.
+     * Returns the number of satoshis of this monetary value.It's deprecated in
+     * favour of accessing {@link #value} directly.
+     *
+     * @return
      */
     public long longValue() {
         return this.value;
@@ -364,9 +431,9 @@ public final class Coin implements Monetary, Comparable<Coin> {
     }
 
     /**
-     * Convert to number of bitcoin (in BTC)
+     * Convert to number of bitcoin (in NXS)
      *
-     * @return decimal number of bitcoin (in BTC)
+     * @return decimal number of bitcoin (in NXS)
      */
     public BigDecimal toBtc() {
         return satoshiToBtc(this.value);
@@ -377,7 +444,8 @@ public final class Coin implements Monetary, Comparable<Coin> {
      *
      * @param buf buffer to write into
      * @return the buffer
-     * @throws BufferOverflowException if the value doesn't fit the remaining buffer
+     * @throws BufferOverflowException if the value doesn't fit the remaining
+     * buffer
      */
     public ByteBuffer write(ByteBuffer buf) throws BufferOverflowException {
         return buf.order(ByteOrder.LITTLE_ENDIAN).putLong(this.value);
@@ -393,24 +461,28 @@ public final class Coin implements Monetary, Comparable<Coin> {
         return write(buf).array();
     }
 
-    private static final MonetaryFormat FRIENDLY_FORMAT = MonetaryFormat.BTC.minDecimals(2).repeatOptionalDecimals(1, 6).postfixCode();
+    private static final MonetaryFormat FRIENDLY_FORMAT = MonetaryFormat.NXS.minDecimals(2).repeatOptionalDecimals(1, 6).postfixCode();
 
     /**
-     * Returns the value as a 0.12 type string. More digits after the decimal place will be used
-     * if necessary, but two will always be present.
+     * Returns the value as a 0.12 type string.More digits after the decimal
+     * place will be used if necessary, but two will always be present.
+     *
+     * @return
      */
     public String toFriendlyString() {
         return FRIENDLY_FORMAT.format(this).toString();
     }
 
-    private static final MonetaryFormat PLAIN_FORMAT = MonetaryFormat.BTC.minDecimals(0).repeatOptionalDecimals(1, 8).noCode();
+    private static final MonetaryFormat PLAIN_FORMAT = MonetaryFormat.NXS.minDecimals(0).repeatOptionalDecimals(1, 8).noCode();
 
     /**
      * <p>
-     * Returns the value as a plain string denominated in BTC.
-     * The result is unformatted with no trailing zeroes.
-     * For instance, a value of 150000 satoshis gives an output string of "0.0015" BTC
+     * Returns the value as a plain string denominated in NXS.The result is
+     * unformatted with no trailing zeroes. For instance, a value of 150000
+     * satoshis gives an output string of "0.0015" NXS
      * </p>
+     *
+     * @return
      */
     public String toPlainString() {
         return PLAIN_FORMAT.format(this).toString();
@@ -423,9 +495,13 @@ public final class Coin implements Monetary, Comparable<Coin> {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        return this.value == ((Coin)o).value;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        return this.value == ((Coin) o).value;
     }
 
     @Override

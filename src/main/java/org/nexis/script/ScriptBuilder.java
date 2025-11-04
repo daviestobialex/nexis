@@ -21,7 +21,7 @@ import java.security.PublicKey;
 import org.nexis.base.Address;
 import org.nexis.internal.TimeUtils;
 import org.nexis.base.SegwitAddress;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.Sha256Hash;
 import org.nexis.core.Transaction;
 import org.nexis.internal.CryptoUtils;
 

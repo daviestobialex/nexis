@@ -90,10 +90,10 @@ public class ManifestMessageHandler implements MessageHandler {
 
         // persist manifest CID to category against CID(IPFS) manifest registry
         String category = envelop.getMessage().getManifest().getCategory();
-        String cid = envelop.getMessage().getManifest().getCid().toString();
+        byte[] cid = envelop.getMessage().getManifest().getCid().toByteArray();
         byte[] publicKey = envelop.getMessage().getManifest().getPublicKey().toByteArray();
         manifestRegistry.put(category, cid);
-        
+
         // save public key
         String remoteAddress = ctx.channel().remoteAddress().toString();
         registery.removePendingPeer(new Peer(remoteAddress, nodeId));

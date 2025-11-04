@@ -4,7 +4,6 @@
  */
 package org.nexis.core;
 
-
 import com.google.common.annotations.VisibleForTesting;
 import io.netty.channel.ChannelFuture;
 import java.util.Collections;
@@ -41,7 +40,7 @@ public class TransactionBroadcast {
 
     // This future completes when we have verified that more than numWaitingFor Peers have seen the broadcast
     private final CompletableFuture<TransactionBroadcast> seenFuture = new CompletableFuture<>();
-    private final PeerGroup peerGroup;
+//    private final PeerGroup peerGroup;
     private final Transaction tx;
     private int numWaitingFor;
 
@@ -55,17 +54,21 @@ public class TransactionBroadcast {
     // Tracks which nodes sent us a reject message about this broadcast, if any. Useful for debugging.
     private final Map<Peer, RejectMessage> rejects = Collections.synchronizedMap(new HashMap<>());
 
-    public TransactionBroadcast(PeerGroup peerGroup, Transaction tx) {
-        this.peerGroup = peerGroup;
+    public TransactionBroadcast(Transaction tx) {
+//        this.peerGroup = peerGroup;
         this.tx = tx;
     }
 
     // Only for mock broadcasts.
-    private TransactionBroadcast(Transaction tx) {
-        this.peerGroup = null;
-        this.tx = tx;
-    }
+//    private TransactionBroadcast(Transaction tx) {
+    ////        this.peerGroup = null;
+//        this.tx = tx;
+//    }
 
+    /**
+     * 
+     * @return 
+     */
     public Transaction transaction() {
         return tx;
     }
@@ -116,15 +119,12 @@ public class TransactionBroadcast {
      * successfully which means the message has been sent to the "OS network
      * buffer" -- see {@link org.bitcoinj.net.MessageWriteTarget#writeBytes} or
      * its implementation.
-     * <p>
-     * @return A future that completes when the message has been sent (or at
-     * least buffered) to the correct number of remote Peers. The future will
-     * complete exceptionally if <i>any</i> of the peer broadcasts fails.
+     *
      */
     public void broadcastOnly() {
 
         final Context context = Context.get();
-        peerGroup.getPeerRegistry().getActivePeers().forEach(peer -> {
+        PeerRegistry.getInstance().getActivePeers().forEach(peer -> {
             Context.propagate(context);
             // Prepare to send the transaction by adding a listener that'll be called when confidence changes.
             tx.getConfidence().addEventListener(new ConfidenceChange());
@@ -144,7 +144,6 @@ public class TransactionBroadcast {
 //        return broadcastOnly()
 //                .thenCompose(broadcast -> this.seenFuture);
 //    }
-
     /**
      * Wait for confirmation the transaction has been relayed.
      *
@@ -182,7 +181,7 @@ public class TransactionBroadcast {
         public void onConfidenceChanged(TransactionConfidence conf, ChangeReason reason) {
             // The number of peers that announced this tx has gone up.
             int numSeenPeers = conf.numBroadcastPeers() + rejects.size();
-            boolean mined = tx.getAppearsInHashes() != null;
+//            boolean mined = tx.getAppearsInHashes() != null;
             log.log(Level.INFO, "broadcastTransaction: {0}:  TX {1} seen by {2} peers{3}", new Object[]{reason, tx.getTxId(),
                 numSeenPeers, mined ? " and mined" : ""});
 

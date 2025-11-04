@@ -5,12 +5,10 @@
 package org.nexis.networks;
 
 import java.time.Instant;
-import org.nexis.base.Network;
 import org.nexis.base.NetworkConfiguration;
 import org.nexis.base.NexusNetwork;
 import static org.nexis.base.NexusNetwork.LOCALHOSTTEST;
 import org.nexis.core.Block;
-import org.nexis.utilities.Sha256Hash;
 
 /**
  *
@@ -18,9 +16,9 @@ import org.nexis.utilities.Sha256Hash;
  */
 public class NexusNetworkConfiguration extends NetworkConfiguration {
 
-    private static final Sha256Hash GENESIS_HASH = Sha256Hash.wrap("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f");
+//    private static final Sha256Hash GENESIS_HASH = Sha256Hash.wrap("000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f");
     private static final Instant GENESIS_TIME = Instant.ofEpochSecond(1231006505);
-    private static final long GENESIS_NONCE = 2083236893;
+//    private static final long GENESIS_NONCE = 2083236893;
 
     public NexusNetworkConfiguration(NexusNetwork network, int packetMagic) {
         super(network, packetMagic);
@@ -63,6 +61,7 @@ public class NexusNetworkConfiguration extends NetworkConfiguration {
 
     @Override
     public Block getGenesisBlock() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        return Block.createGenesis(GENESIS_TIME);
+
     }
 }

@@ -20,7 +20,7 @@ import java.util.Locale;
 import java.util.Objects;
 import org.nexis.base.Coin;
 import org.nexis.script.Script;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.Sha256Hash;
 
 // TODO: Fix this class: should not talk about addresses, height should be optional/support mempool height etc
 /**

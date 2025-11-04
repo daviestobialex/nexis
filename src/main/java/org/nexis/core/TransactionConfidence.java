@@ -18,7 +18,7 @@ package org.nexis.core;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Iterators;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.Sha256Hash;
 import org.nexis.internal.TimeUtils;
 import org.nexis.internal.ListenableCompletableFuture;
 import org.nexis.internal.ListenerRegistration;

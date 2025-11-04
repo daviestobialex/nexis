@@ -24,7 +24,6 @@ import java.security.SignatureException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.Identity;
-import org.nexis.base.NexusMessage;
 import org.nexis.utilities.CryptographyUtils;
 import org.nexus.base.proto.NexusProtocol;
 

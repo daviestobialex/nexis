@@ -20,7 +20,7 @@ package org.nexis.script;
 
 import org.nexis.base.Network;
 import org.nexis.base.ScriptType;
-import org.nexis.utilities.ByteUtils;
+import org.nexis.base.utils.ByteUtils;
 import org.nexis.base.Coin;
 import org.nexis.core.LockTime;
 import org.nexis.core.Transaction;
@@ -174,7 +174,7 @@ import static org.nexis.script.ScriptOpCodes.OP_WITHIN;
 import static org.nexis.script.ScriptOpCodes.OP_XOR;
 import org.nexis.utilities.CryptographyUtils;
 import static org.nexis.utilities.CryptographyUtils.ED25519_ALGO;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.Sha256Hash;
 
 // TODO: Redesign this entire API to be more type safe and organised.
 /**

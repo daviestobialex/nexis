@@ -38,9 +38,9 @@ public final class ManifestRegistry {
     /**
      * contains categories and CIDs
      */
-    private final ConcurrentHashMap<String, Set<String>> manifests;
+    private final ConcurrentHashMap<String, Set<byte[]>> manifests;
 
-    private final ConcurrentHashMap<String, CompletableFuture<String>> pendingRequests;
+    private final ConcurrentHashMap<byte[], CompletableFuture<String>> pendingRequests;
 
     /**
      * Singleton instance (lazy-loaded, thread-safe)
@@ -66,9 +66,9 @@ public final class ManifestRegistry {
         return ManifestRegistry.Holder.INSTANCE;
     }
 
-    public void put(String category, String cid) {
+    public void put(String category, byte[] cid) {
         System.out.println("ADDING TO MANIFEST :: category : " + category + " cid :" + cid);
-        Set<String> cids = manifests.get(category);
+        Set<byte[]> cids = manifests.get(category);
         if (cids == null) {
             cids = new HashSet();
             cids.add(cid);
@@ -82,16 +82,16 @@ public final class ManifestRegistry {
         return manifestStore.contains(new BigInteger(cid.getBytes()));
     }
 
-    public byte[] getContent(String cid) {
+    public byte[] getContent(byte[] cid) {
         try {
-            return manifestStore.get(new BigInteger(cid.getBytes()));
+            return manifestStore.get(new BigInteger(cid));
         } catch (IOException ex) {
             Logger.getLogger(ManifestRegistry.class.getName()).log(Level.SEVERE, null, ex);
         }
         return null;
     }
 
-    public CompletableFuture<String> register(String cid) {
+    public CompletableFuture<String> register(byte[] cid) {
         CompletableFuture<String> future = new CompletableFuture<>();
         pendingRequests.put(cid, future);
         return future;
@@ -117,7 +117,7 @@ public final class ManifestRegistry {
      * @param category
      * @return
      */
-    public Set<String> getByCategory(String category) {
+    public Set<byte[]> getByCategory(String category) {
         return manifests.get(category);
     }
 
@@ -125,7 +125,7 @@ public final class ManifestRegistry {
         manifestStore.put(new BigInteger(cid.getBytes()), content);
     }
 
-    public ConcurrentHashMap<String, Set<String>> getManifests() {
+    public ConcurrentHashMap<String, Set<byte[]>> getManifests() {
         return manifests;
     }
 

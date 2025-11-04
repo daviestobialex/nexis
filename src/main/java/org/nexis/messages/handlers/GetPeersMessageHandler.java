@@ -145,7 +145,7 @@ public class GetPeersMessageHandler implements MessageHandler {
 
         int requestedPeerSize = envelop.getMessage().getPeersDiscovery().getSize();
         String category = envelop.getMessage().getPeersDiscovery().getCategory();
-        String cid = envelop.getMessage().getPeersDiscovery().getCid().toString();
+        byte[] cid = envelop.getMessage().getPeersDiscovery().getCid().toByteArray();
 
         LOGGER.log(Level.INFO, "Received get peers message of size {0}", requestedPeerSize);
 

@@ -55,6 +55,10 @@ public enum NexusNetwork implements Network {
      * {@code id} string {@code "org.nexus.regtest"}
      */
     REGTEST("org.nexus.regtest"),
+    /**
+     * a local nexus network for local testing, known as {@code "localhost"},
+     * with {@code id} string {@code "localhost"}
+     */
     LOCALHOSTTEST("127.0.0.3", "localhost");
 
     /**
@@ -178,8 +182,8 @@ public enum NexusNetwork implements Network {
 
     @Override
     public boolean exceedsMaxMoney(Monetary amount) {
-        if (amount instanceof Coin) {
-            return ((Coin) amount).compareTo(MAX_MONEY) > 0;
+        if (amount instanceof Coin coin) {
+            return coin.compareTo(MAX_MONEY) > 0;
         } else {
             throw new IllegalArgumentException("amount must be a Coin type");
         }
@@ -215,30 +219,16 @@ public enum NexusNetwork implements Network {
      * @return {@code true} if valid on this network, {@code false} otherwise
      */
     public boolean isValidAddress(Address address) {
-        boolean valid;
-        switch (this) {
-            case MAINNET:
-                valid = address.network() == MAINNET;
-                break;
-            case TESTNET:
-//            case SIGNET:
-                // SIGNET uses the same addresses as TESTNET
-                valid = address.network() == TESTNET;
-                break;
-            case REGTEST:
-//                if (address instanceof LegacyAddress) {
-                // For Legacy addresses, REGTEST uses TESTNET addresses
-//                    valid = ((LegacyAddress) address).network == TESTNET;
-//                } else {
-                // On segwit, REGTEST has its own address type
-                valid = address.network() == REGTEST;
-//                }
-                break;
-            default:
-                valid = false;
-                break;
-        }
-        return valid;
+        return switch (this) {
+            case MAINNET ->
+                address.network() == MAINNET;
+            case TESTNET ->
+                address.network() == TESTNET;
+            case REGTEST ->
+                address.network() == REGTEST;
+            default ->
+                false;
+        };
     }
 
     /**

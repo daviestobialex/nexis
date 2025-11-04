@@ -6,7 +6,7 @@ package org.nexis.networks;
 
 import java.time.Instant;
 import org.nexis.base.NexusNetwork;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.Sha256Hash;
 
 /**
  *
@@ -56,5 +56,7 @@ public class TestNetParams extends NexusNetworkConfiguration {
         }
         return instance;
     }
+    
+    
 
 }

@@ -8,6 +8,7 @@ import java.security.NoSuchAlgorithmException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.nexis.base.Address;
+import org.nexis.base.Coin;
 import org.nexis.base.Identity;
 import org.nexis.base.IdentityProvider;
 import org.nexis.base.NexusNetwork;
@@ -34,5 +35,24 @@ public class WalletTests {
         System.out.println("CURRENT ADDRESS " + currentAddress.toString());
         System.out.println("BASE 58 " + wallet.currentAddress().toStringBase58());
         Assertions.assertNotNull(currentAddress, "current address can not be null");
+    }
+    
+    @Test
+    public void zeroBalanceTest() throws NoSuchAlgorithmException {
+        
+        IdentityProvider identityProvider = new Ed25519IdentityProvider();
+        Identity identity = identityProvider.loadOrCreateIdentity();
+
+        // Mock network config    
+        Wallet wallet = Wallet.of(identity, NexusNetworkConfiguration.of(NexusNetwork.TESTNET));
+        Address currentAddress = wallet.currentAddress();
+        System.out.println("NODE ID LEN " + identity.getNodeId().getId().length);
+        System.out.println("CURRENT ADDRESS " + currentAddress.toString());
+        System.out.println("BASE 58 " + wallet.currentAddress().toStringBase58());
+        Assertions.assertNotNull(currentAddress, "current address can not be null");
+        
+        Coin balance = wallet.getBalance();
+        System.out.println("BALANCE COIN " + balance.getValue());
+        Assertions.assertTrue(balance.getValue() == 0, "default balamnce must be zero");
     }
 }

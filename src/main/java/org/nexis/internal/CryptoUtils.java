@@ -16,7 +16,7 @@
 package org.nexis.internal;
 
 import org.bouncycastle.crypto.digests.RIPEMD160Digest;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.Sha256Hash;
 
 /**
  * Utilities for the crypto module (e.g. using Bouncy Castle)

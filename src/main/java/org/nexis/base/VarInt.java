@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.nexis.base;
 
 import java.nio.BufferOverflowException;
@@ -26,9 +25,11 @@ import java.util.Objects;
 import static org.nexis.internal.Preconditions.check;
 
 /**
- * A variable-length encoded unsigned integer using Satoshi's encoding (a.k.a. "CompactSize").
+ * A variable-length encoded unsigned integer using Satoshi's encoding (a.k.a.
+ * "CompactSize").
  */
 public class VarInt {
+
     private final long value;
     private final int originallyEncodedSize;
 
@@ -40,23 +41,27 @@ public class VarInt {
     /**
      * Constructs a new VarInt with the given unsigned long value.
      *
-     * @param value the unsigned long value (beware widening conversion of negatives!)
+     * @param value the unsigned long value (beware widening conversion of
+     * negatives!)
+     * @return
      */
     public static VarInt of(long value) {
         return new VarInt(value, sizeOf(value));
     }
 
     /**
-     * Constructs a new VarInt with the value parsed from the specified offset of the given buffer.
+     * Constructs a new VarInt with the value parsed from the specified offset
+     * of the given buffer.
      *
      * @param buf the buffer containing the value
      * @param offset the offset of the value
-     * @throws ArrayIndexOutOfBoundsException if offset points outside of the buffer, or
-     *                                        if the value doesn't fit the remaining buffer
+     * @return
+     * @throws ArrayIndexOutOfBoundsException if offset points outside of the
+     * buffer, or if the value doesn't fit the remaining buffer
      */
     public static VarInt ofBytes(byte[] buf, int offset) throws ArrayIndexOutOfBoundsException {
-        check(offset >= 0 && offset < buf.length, () ->
-                new ArrayIndexOutOfBoundsException(offset));
+        check(offset >= 0 && offset < buf.length, ()
+                -> new ArrayIndexOutOfBoundsException(offset));
         return read(ByteBuffer.wrap(buf, offset, buf.length - offset));
     }
 
@@ -64,7 +69,9 @@ public class VarInt {
      * Constructs a new VarInt by reading from the given buffer.
      *
      * @param buf buffer to read from
-     * @throws BufferUnderflowException if the read value extends beyond the remaining bytes of the buffer
+     * @return
+     * @throws BufferUnderflowException if the read value extends beyond the
+     * remaining bytes of the buffer
      */
     public static VarInt read(ByteBuffer buf) throws BufferUnderflowException {
         buf.order(ByteOrder.LITTLE_ENDIAN);
@@ -92,24 +99,10 @@ public class VarInt {
         this.originallyEncodedSize = originallyEncodedSize;
     }
 
-    /** @deprecated use {@link #of(long)} */
-    @Deprecated
-    public VarInt(long value) {
-        this.value = value;
-        originallyEncodedSize = getSizeInBytes();
-    }
-
-    /** @deprecated use {@link #ofBytes(byte[], int)} */
-    @Deprecated
-    public VarInt(byte[] buf, int offset) {
-        VarInt copy = read(ByteBuffer.wrap(buf, offset, buf.length));
-        value = copy.value;
-        originallyEncodedSize = copy.originallyEncodedSize;
-    }
-
     /**
-     * Gets the value as a long. For values greater than {@link Long#MAX_VALUE} the returned long
-     * will be negative. It is still to be interpreted as an unsigned value.
+     * Gets the value as a long. For values greater than {@link Long#MAX_VALUE}
+     * the returned long will be negative. It is still to be interpreted as an
+     * unsigned value.
      *
      * @return value as a long
      */
@@ -118,8 +111,9 @@ public class VarInt {
     }
 
     /**
-     * Determine if the value would fit an int, i.e. it is in the range of {@code 0} to {@link Integer#MAX_VALUE}.
-     * If this is true, it's safe to call {@link #intValue()}.
+     * Determine if the value would fit an int, i.e. it is in the range of
+     * {@code 0} to {@link Integer#MAX_VALUE}. If this is true, it's safe to
+     * call {@link #intValue()}.
      *
      * @return true if the value fits an int, false otherwise
      */
@@ -128,20 +122,24 @@ public class VarInt {
     }
 
     /**
-     * Gets the value as an unsigned int in the range of {@code 0} to {@link Integer#MAX_VALUE}.
+     * Gets the value as an unsigned int in the range of {@code 0} to
+     * {@link Integer#MAX_VALUE}.
      *
      * @return value as an unsigned int
      * @throws ArithmeticException if the value doesn't fit an int
      */
     public int intValue() throws ArithmeticException {
-        check(fitsInt(), () ->
-                new ArithmeticException("value too large for an int: " + Long.toUnsignedString(value)));
+        check(fitsInt(), ()
+                -> new ArithmeticException("value too large for an int: " + Long.toUnsignedString(value)));
         return (int) value;
     }
 
     /**
      * Returns the original number of bytes used to encode the value if it was
-     * deserialized from a byte array, or the minimum encoded size if it was not.
+     * deserialized from a byte array, or the minimum encoded size if it was
+     * not.
+     *
+     * @return
      */
     public int getOriginalSizeInBytes() {
         return originallyEncodedSize;
@@ -149,6 +147,8 @@ public class VarInt {
 
     /**
      * Returns the minimum encoded size of the value.
+     *
+     * @return
      */
     public final int getSizeInBytes() {
         return sizeOf(value);
@@ -157,19 +157,30 @@ public class VarInt {
     /**
      * Returns the minimum encoded size of the given unsigned long value.
      *
-     * @param value the unsigned long value (beware widening conversion of negatives!)
+     * @param value the unsigned long value (beware widening conversion of
+     * negatives!)
+     * @return
      */
     public static int sizeOf(long value) {
         // if negative, it's actually a very large unsigned long value
-        if (value < 0) return SIZE_LONG;
-        if (value < 253) return SIZE_BYTE;
-        if (value <= 0xFFFFL) return SIZE_SHORT;
-        if (value <= 0xFFFFFFFFL) return SIZE_INT;
+        if (value < 0) {
+            return SIZE_LONG;
+        }
+        if (value < 253) {
+            return SIZE_BYTE;
+        }
+        if (value <= 0xFFFFL) {
+            return SIZE_SHORT;
+        }
+        if (value <= 0xFFFFFFFFL) {
+            return SIZE_INT;
+        }
         return SIZE_LONG;
     }
 
     /**
-     * Allocates a byte array and serializes the value into its minimal representation.
+     * Allocates a byte array and serializes the value into its minimal
+     * representation.
      *
      * @return the minimal encoded bytes of the value
      */
@@ -183,26 +194,26 @@ public class VarInt {
      *
      * @param buf buffer to write into
      * @return the buffer
-     * @throws BufferOverflowException if the value doesn't fit the remaining buffer
+     * @throws BufferOverflowException if the value doesn't fit the remaining
+     * buffer
      */
     public ByteBuffer write(ByteBuffer buf) throws BufferOverflowException {
         buf.order(ByteOrder.LITTLE_ENDIAN);
         switch (sizeOf(value)) {
-            case 1:
+            case 1 ->
                 buf.put((byte) value);
-                break;
-            case 3:
+            case 3 -> {
                 buf.put((byte) 253);
                 buf.putShort((short) value);
-                break;
-            case 5:
+            }
+            case 5 -> {
                 buf.put((byte) 254);
                 buf.putInt((int) value);
-                break;
-            default:
+            }
+            default -> {
                 buf.put((byte) 255);
                 buf.putLong(value);
-                break;
+            }
         }
         return buf;
     }
@@ -215,8 +226,12 @@ public class VarInt {
     @Override
     public boolean equals(Object o) {
         // originallyEncodedSize is not considered on purpose
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         return value == ((VarInt) o).value;
     }
 

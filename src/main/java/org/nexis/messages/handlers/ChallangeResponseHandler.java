@@ -127,8 +127,6 @@ public class ChallangeResponseHandler implements MessageHandler {
         try {
             SignedManifest signedManifest = new SignedManifest(manifest, builder.getNode());
 
-            System.out.println("pub key LEN" + builder.getNode().getKeyPair().getPublic().getEncoded().length);
-            
             NexusProtocol.Manifest manifestRequest = NexusProtocol.Manifest.newBuilder()
                     .setCategory(manifest.getCategory())
                     .setCid(ByteString.copyFrom(signedManifest.getSignature()))

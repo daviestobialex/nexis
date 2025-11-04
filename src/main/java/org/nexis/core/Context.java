@@ -65,7 +65,7 @@ public class Context {
      * app).
      */
     public Context() {
-        this(DEFAULT_EVENT_HORIZON, Transaction.DEFAULT_TX_FEE, true, false);
+        this(DEFAULT_EVENT_HORIZON, Transaction.DEFAULT_TX_FEE, true);
     }
 
     /**
@@ -81,28 +81,21 @@ public class Context {
      * @param ensureMinRequiredFee Whether to ensure the minimum required fee by
      * default when completing transactions. For details, see
      * {@link SendRequest#ensureMinRequiredFee}.
-     * @param relaxProofOfWork If true, proof of work is not enforced. This is
-     * useful for unit-testing. See {@link Block#checkProofOfWork(boolean)}.
      */
-    public Context(int eventHorizon, Coin feePerKb, boolean ensureMinRequiredFee, boolean relaxProofOfWork) {
+    public Context(int eventHorizon, Coin feePerKb, boolean ensureMinRequiredFee) {
 //        log.info("Creating bitcoinj {} context.", VersionMessage.BITCOINJ_VERSION);
         this.confidenceTable = new TxConfidenceTable();
         this.eventHorizon = eventHorizon;
         this.ensureMinRequiredFee = ensureMinRequiredFee;
         this.feePerKb = feePerKb;
-        this.relaxProofOfWork = relaxProofOfWork;
-        lastConstructed = this;
+        this.relaxProofOfWork = true;
     }
 
     /**
-     * Note that NetworkConfiguration have been removed from this class. Thus,
-     * this constructor just swallows them.
-     *
-     * @deprecated Use {@link Context#Context(int, Coin, boolean, boolean)}
+     * to initialize the context
      */
-    @Deprecated
-    public Context(NetworkConfiguration params, int eventHorizon, Coin feePerKb, boolean ensureMinRequiredFee) {
-        this(eventHorizon, feePerKb, ensureMinRequiredFee, false);
+    public void initialize() {
+        lastConstructed = this;
     }
 
     private static volatile Context lastConstructed;

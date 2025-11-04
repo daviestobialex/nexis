@@ -16,7 +16,7 @@
  */
 package org.nexis.script;
 
-import org.nexis.utilities.ByteUtils;
+import org.nexis.base.utils.ByteUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

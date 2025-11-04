@@ -20,12 +20,15 @@ package org.nexis.base;
  * <p>
  * Implementations of this interface expose:
  * <ul>
- *   <li>A unique node identifier, derived from cryptographic keys or assigned IDs.</li>
- *   <li>The node's public key, used for message signing verification and secure peer communication.</li>
+ * <li>A unique node identifier, derived from cryptographic keys or assigned
+ * IDs.</li>
+ * <li>The node's public key, used for message signing verification and secure
+ * peer communication.</li>
  * </ul>
  * <p>
- * This interface is used during handshake, peer discovery, and message validation
- * to ensure nodes can authenticate and interact securely within the network.
+ * This interface is used during handshake, peer discovery, and message
+ * validation to ensure nodes can authenticate and interact securely within the
+ * network.
  * </p>
  *
  * Example usage:
@@ -34,22 +37,25 @@ package org.nexis.base;
  * byte[] publicKey = node.getPublicKey();
  * }</pre>
  *
- * <p><b>Suggested alternative names:</b></p>
+ * <p>
+ * <b>Suggested alternative names:</b></p>
  * <ul>
- *   <li>{@code NodeInfo} – simpler, conveys node metadata.</li>
- *   <li>{@code PeerIdentity} – emphasizes peer identity for cryptographic and network purposes.</li>
- *   <li>{@code NodeProfile} – conveys a structured view of a node’s public attributes.</li>
+ * <li>{@code NodeInfo} – simpler, conveys node metadata.</li>
+ * <li>{@code PeerIdentity} – emphasizes peer identity for cryptographic and
+ * network purposes.</li>
+ * <li>{@code NodeProfile} – conveys a structured view of a node’s public
+ * attributes.</li>
  * </ul>
- * 
- * @author 
- *   daviestobialex
+ *
+ * @author daviestobialex
  */
 public interface PublicNodeProperties {
 
     /**
      * Returns the unique identifier of this node.
      * <p>
-     * This ID may be derived from the node's public key or assigned by the network.
+     * This ID may be derived from the node's public key or assigned by the
+     * network.
      * </p>
      *
      * @return a byte array representing the node ID
@@ -59,8 +65,8 @@ public interface PublicNodeProperties {
     /**
      * Returns the public key associated with this node.
      * <p>
-     * This key is used for verifying signatures, establishing secure connections,
-     * and validating protocol messages.
+     * This key is used for verifying signatures, establishing secure
+     * connections, and validating protocol messages.
      * </p>
      *
      * @return a byte array containing the node's public key

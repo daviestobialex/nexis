@@ -15,7 +15,7 @@
  */
 package org.nexis.messages;
 
-import org.nexis.base.AbstractNexusMessage;
+import org.nexis.core.AbstractNexusMessage;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexis.networks.NexusNetworkConfiguration;
 

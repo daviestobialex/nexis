@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.nexis.utilities;
+package org.nexis.base;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import org.nexis.base.utils.ByteUtils;
 import static org.nexis.utilities.Preconditions.checkArgument;
 
 /**
@@ -207,9 +208,13 @@ public class Sha256Hash implements Comparable<Sha256Hash> {
     }
 
     /**
-     * Calculates the hash of hash on the given chunks of bytes. This is
+     * Calculates the hash of hash on the given chunks of bytes.This is
      * equivalent to concatenating the two chunks and then passing the result to
      * {@link #hashTwice(byte[])}.
+     *
+     * @param input1
+     * @param input2
+     * @return
      */
     public static byte[] hashTwice(byte[] input1, byte[] input2) {
         MessageDigest digest = newDigest();
@@ -234,11 +239,20 @@ public class Sha256Hash implements Comparable<Sha256Hash> {
     }
 
     /**
-     * Calculates the hash of hash on the given byte ranges. This is equivalent
+     * Calculates the hash of hash on the given byte ranges.This is equivalent
      * to concatenating the two ranges and then passing the result to
      * {@link #hashTwice(byte[])}.
+     *
+     * @param input1
+     * @param offset1
+     * @param length1
+     * @param input2
+     * @param offset2
+     * @param length2
+     * @return
      */
-    public static byte[] hashTwice(byte[] input1, int offset1, int length1,
+    public static byte[] hashTwice(
+            byte[] input1, int offset1, int length1,
             byte[] input2, int offset2, int length2) {
         MessageDigest digest = newDigest();
         digest.update(input1, offset1, length1);
@@ -258,10 +272,11 @@ public class Sha256Hash implements Comparable<Sha256Hash> {
     }
 
     /**
-     * Returns the last four bytes of the wrapped hash. This should be unique
-     * enough to be a suitable hash code even for blocks, where the goal is to
-     * try and get the first bytes to be zeros (i.e. the value as a big integer
-     * lower than the target value).
+     * Returns the last four bytes of the wrapped hash.This should be unique
+ enough to be a suitable hash code even for blocks, where the goal is to
+ try and get the first bytes to be zeros (i.e. the value as a big integer
+ lower than the target value).
+     * @return 
      */
     @Override
     public int hashCode() {
@@ -276,14 +291,16 @@ public class Sha256Hash implements Comparable<Sha256Hash> {
 
     /**
      * Returns the bytes interpreted as a positive integer.
+     * @return 
      */
     public BigInteger toBigInteger() {
         return ByteUtils.bytesToBigInteger(bytes);
     }
 
     /**
-     * Returns the internal byte array, without defensively copying. Therefore
-     * do NOT modify the returned array.
+     * Returns the internal byte array, without defensively copying.Therefore
+ do NOT modify the returned array.
+     * @return 
      */
     public byte[] getBytes() {
         return bytes;

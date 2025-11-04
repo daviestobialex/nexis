@@ -25,7 +25,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Stream;
 import org.nexis.base.VarInt;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.Sha256Hash;
 import org.nexus.base.proto.NexusProtocol;
 
 /**

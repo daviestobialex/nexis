@@ -115,7 +115,7 @@ public class GetPeersMessageHandlerTests {
                         .setPeersDiscovery(NexusProtocol.GetPeers.newBuilder().setSize(5).build())
                         .build())
                 .build();
-        Set<String> mockedSet = new HashSet<>(Arrays.asList("a", "b"));
+        Set<byte[]> mockedSet = new HashSet<>(Arrays.asList("a".getBytes(), "b".getBytes()));
 
         when(manifestRegistry.getByCategory(any())).thenReturn(mockedSet);
 

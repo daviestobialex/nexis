@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.nexis.base;
+package org.nexis.core;
 
 import java.nio.ByteBuffer;
+import org.nexis.base.Sha256Hash;
 import org.nexus.base.proto.NexusProtocol;
-import org.nexis.utilities.ByteUtils;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.utils.ByteUtils;
 
 /**
  * Represents the abstract contract for a Nexus protocol message.

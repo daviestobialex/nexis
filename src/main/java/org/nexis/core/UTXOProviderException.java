@@ -1,5 +1,5 @@
 /*
- * Copyright by the original author or authors.
+ * Copyright 2014 Kalpesh Parmar.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.nexis.base;
 
-import io.netty.channel.Channel;
+package org.nexis.core;
 
-/**
- *
- * @author daviestobialex
- */
-public record PeerConnection(PeerAddress peer, Channel channel) {
-    
+public class UTXOProviderException extends Exception {
+    public UTXOProviderException() {
+        super();
+    }
+
+    public UTXOProviderException(String message) {
+        super(message);
+    }
+
+    public UTXOProviderException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public UTXOProviderException(Throwable cause) {
+        super(cause);
+    }
 }

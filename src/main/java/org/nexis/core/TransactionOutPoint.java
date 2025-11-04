@@ -14,9 +14,9 @@ import org.nexis.script.Script;
 import org.nexis.script.ScriptError;
 import org.nexis.script.ScriptException;
 import org.nexis.script.ScriptPattern;
-import org.nexis.utilities.ByteUtils;
+import org.nexis.base.utils.ByteUtils;
 import static org.nexis.utilities.Preconditions.checkArgument;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.Sha256Hash;
 import org.nexis.wallet.RedeemData;
 import org.nexus.base.proto.NexusProtocol;
 

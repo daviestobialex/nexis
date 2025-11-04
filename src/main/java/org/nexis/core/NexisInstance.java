@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.Address;
 import org.nexis.base.Coin;
@@ -41,7 +42,9 @@ import org.nexis.net.NioProtoServer;
 import org.nexis.networks.NexusNetworkConfiguration;
 import org.nexis.base.IdentityProvider;
 import org.nexis.base.Identity;
+import org.nexis.base.SegwitAddress;
 import org.nexis.base.StreamConnection;
+import org.nexis.exceptions.InsufficientMoneyException;
 import org.nexis.internal.MessageDispatcher;
 import org.nexis.messages.GetManifestContentMessage;
 import org.nexis.messages.handlers.ChallangeResponseHandler;
@@ -173,10 +176,16 @@ public class NexisInstance {
 
     private final Wallet wallet;
 
+    static {
+        new Context().initialize();
+    }
+
     // for testing
     public NexisInstance(NexusNetwork network, boolean doPropagate) throws FileNotFoundException {
         IdentityProvider identityProvider = new Ed25519IdentityProvider();
         this.identity = identityProvider.loadOrCreateIdentity();
+              log.info("identity PUB " + identity.getNodeId().toHex());
+
         this.manifest = Manifest.resolve("manifest.json", identity);
         this.network = network;
         this.builder = new NexusEnvelopBuilder(identity);
@@ -217,6 +226,22 @@ public class NexisInstance {
         Coin balance = wallet.getBalance();
         log.info("WALLET ADDRESS " + currentAddress.toString()
                 + "BASE 58 ADDRESS " + currentAddress.toStringBase58() + " BALANCE " + balance.getValue());
+
+        try {
+            wallet.setTransactionBroadcaster(new TransactionBroadcaster() {
+                @Override
+                public TransactionBroadcast broadcastTransaction(Transaction tx) {
+                    final TransactionBroadcast broadcast = new TransactionBroadcast(tx);
+                    broadcast.broadcastOnly();
+                    return broadcast;
+                }
+            });
+            wallet.sendCoins(SendRequest
+                    .to(SegwitAddress.fromBech32("tb1qkmfnxdkvuxrpkg5uz8t2e9dtqd6edsjdnjyya0yd3pv4ucaa6tus7d0pgc",
+                            params.getNetwork()), Coin.valueOf(1000L)));
+        } catch (InsufficientMoneyException | Wallet.CompletionException ex) {
+            Logger.getLogger(NexisInstance.class.getName()).log(Level.SEVERE, null, ex);
+        }
 
     }
 
@@ -311,8 +336,8 @@ public class NexisInstance {
      *
      * @return
      */
-    public CompletableFuture<Map<String, String>> requestManifestsContent() {
-        Map<String, String> results = new ConcurrentHashMap<>();
+    public CompletableFuture<Map<byte[], String>> requestManifestsContent() {
+        Map<byte[], String> results = new ConcurrentHashMap<>();
         List<CompletableFuture<Void>> pending = new ArrayList<>();
 
         registry.getManifests().forEach((category, cids)
@@ -346,13 +371,13 @@ public class NexisInstance {
      * @return CompletableFuture that completes when all fetching is done
      */
     public CompletableFuture<Integer> requestManifestContentStreamingResults(
-            java.util.function.BiConsumer<String, String> onEachResult) {
+            java.util.function.BiConsumer<byte[], String> onEachResult) {
 
         List<CompletableFuture<Void>> pendingFutures = new ArrayList<>();
-        ConcurrentHashMap<String, Set<String>> manifests = registry.getManifests();
+        ConcurrentHashMap<String, Set<byte[]>> manifests = registry.getManifests();
 
         manifests.forEach((category, cids) -> {
-            for (String cid : cids) {
+            for (byte[] cid : cids) {
                 byte[] cachedContent = registry.getContent(cid);
 
                 if (cachedContent != null) {
@@ -388,11 +413,11 @@ public class NexisInstance {
      * @param cids Collection of CIDs to request
      * @return CompletableFuture with results map
      */
-    public CompletableFuture<Map<String, String>> requestManifests(Collection<String> cids) {
-        Map<String, String> results = new ConcurrentHashMap<>();
+    public CompletableFuture<Map<byte[], String>> requestManifests(Collection<byte[]> cids) {
+        Map<byte[], String> results = new ConcurrentHashMap<>();
         List<CompletableFuture<Void>> pendingFutures = new ArrayList<>();
 
-        for (String cid : cids) {
+        for (byte[] cid : cids) {
             byte[] cachedContent = registry.getContent(cid);
 
             if (cachedContent != null) {
@@ -421,9 +446,9 @@ public class NexisInstance {
      *
      * @param cid
      */
-    private void sendManifestRequest(String cid) {
+    private void sendManifestRequest(byte[] cid) {
         NexusProtocol.GetManifestContent getContent = NexusProtocol.GetManifestContent.newBuilder()
-                .setCid(ByteString.copyFrom(cid.getBytes()))
+                .setCid(ByteString.copyFrom(cid))
                 .build();
 
         NodeId nodeId = new NexusEnvelopBuilder(identity).getNode().getNodeId();
@@ -448,8 +473,8 @@ public class NexisInstance {
      * @return an iterator of CIDs
      * @throws UnsupportedOperationException currently not implemented
      */
-    public Iterator<String> getCidsByCategory(String... categories) {
-        ConcurrentHashMap<String, Set<String>> manifests = registry.getManifests();
+    public Iterator<byte[]> getCidsByCategory(String... categories) {
+        ConcurrentHashMap<String, Set<byte[]>> manifests = registry.getManifests();
 
         // If no categories are specified, return all CIDs from all categories
         if (categories == null || categories.length == 0) {
@@ -481,7 +506,7 @@ public class NexisInstance {
      * @param path
      * @param request
      */
-    public void call(String cid, String path, byte[] request) {
+    public void call(byte[] cid, String path, byte[] request) {
         byte[] manifestjson = registry.getContent(cid);
         // get spec from manifest json
         // owner of API may/may not charge 

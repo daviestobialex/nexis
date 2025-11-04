@@ -196,12 +196,11 @@ public class Bech32 {
         System.arraycopy(hrpExpanded, 0, combined, 0, hrpExpanded.length);
         System.arraycopy(values, 0, combined, hrpExpanded.length, values.length);
         final int check = polymod(combined);
-        if (check == BECH32_CONST)
-            return Encoding.BECH32;
-        else if (check == BECH32M_CONST)
-            return Encoding.BECH32M;
-        else
-            return null;
+        return switch (check) {
+            case BECH32_CONST -> Encoding.BECH32;
+            case BECH32M_CONST -> Encoding.BECH32M;
+            default -> null;
+        };
     }
 
     /** Create a checksum. */

@@ -5,8 +5,8 @@
 package org.nexis.messages;
 
 import java.nio.ByteBuffer;
-import org.nexis.base.AbstractNexusMessage;
-import org.nexis.base.NexusMessage;
+import org.nexis.core.AbstractNexusMessage;
+import org.nexis.core.NexusMessage;
 import org.nexis.networks.NexusNetworkConfiguration;
 import org.nexus.base.proto.NexusProtocol;
 

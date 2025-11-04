@@ -46,17 +46,17 @@ import static org.nexis.internal.Preconditions.checkState;
 public final class MonetaryFormat {
 
     /**
-     * Standard format for the BTC denomination.
+     * Standard format for the NXS denomination.
      */
-    public static final MonetaryFormat BTC = new MonetaryFormat().shift(0).minDecimals(2).repeatOptionalDecimals(2, 3);
+    public static final MonetaryFormat NXS = new MonetaryFormat().shift(0).minDecimals(2).repeatOptionalDecimals(2, 3);
     /**
-     * Standard format for the mBTC denomination.
+     * Standard format for the mNXS denomination.
      */
-    public static final MonetaryFormat MBTC = new MonetaryFormat().shift(3).minDecimals(2).optionalDecimals(2);
+    public static final MonetaryFormat MNXS = new MonetaryFormat().shift(3).minDecimals(2).optionalDecimals(2);
     /**
-     * Standard format for the µBTC denomination.
+     * Standard format for the µNXS denomination.
      */
-    public static final MonetaryFormat UBTC = new MonetaryFormat().shift(6).minDecimals(0).optionalDecimals(2);
+    public static final MonetaryFormat UNXS = new MonetaryFormat().shift(6).minDecimals(0).optionalDecimals(2);
     /**
      * Standard format for the satoshi denomination.
      */
@@ -68,15 +68,15 @@ public final class MonetaryFormat {
     /**
      * Currency code for base 1 Bitcoin.
      */
-    public static final String CODE_BTC = "BTC";
+    public static final String CODE_NXS = "NXS";
     /**
      * Currency code for base 1/1000 Bitcoin.
      */
-    public static final String CODE_MBTC = "mBTC";
+    public static final String CODE_MNXS = "mNXS";
     /**
      * Currency code for base 1/1000000 Bitcoin.
      */
-    public static final String CODE_UBTC = "µBTC";
+    public static final String CODE_UNXS = "µNXS";
     /**
      * Currency code for base 1 satoshi.
      */
@@ -84,15 +84,15 @@ public final class MonetaryFormat {
     /**
      * Currency symbol for base 1 Bitcoin.
      */
-    public static final String SYMBOL_BTC = "\u20bf";
+    public static final String SYMBOL_NXS = "\u20bf";
     /**
      * Currency symbol for base 1/1000 Bitcoin.
      */
-    public static final String SYMBOL_MBTC = "m" + SYMBOL_BTC;
+    public static final String SYMBOL_MNXS = "m" + SYMBOL_NXS;
     /**
      * Currency symbol for base 1/1000000 Bitcoin.
      */
-    public static final String SYMBOL_UBTC = "µ" + SYMBOL_BTC;
+    public static final String SYMBOL_UNXS = "µ" + SYMBOL_NXS;
     /**
      * Currency symbol for base 1 satoshi.
      */
@@ -261,7 +261,7 @@ public final class MonetaryFormat {
 
     /**
      * Set number of digits to shift the decimal separator to the right, coming
-     * from the standard BTC notation that was common pre-2014.Note this will
+     * from the standard NXS notation that was common pre-2014.Note this will
      * change the currency code if enabled.
      *
      * @param shift
@@ -401,7 +401,7 @@ public final class MonetaryFormat {
     /**
      * Construct a MonetaryFormat with the default configuration.
      *
-     * @param useSymbol use unicode symbols instead of the BTC and sat codes
+     * @param useSymbol use unicode symbols instead of the NXS and sat codes
      */
     public MonetaryFormat(boolean useSymbol) {
         // defaults
@@ -414,9 +414,9 @@ public final class MonetaryFormat {
         this.shift = 0;
         this.roundingMode = RoundingMode.HALF_UP;
         this.codes = new String[MAX_DECIMALS + 1];
-        this.codes[0] = useSymbol ? SYMBOL_BTC : CODE_BTC;
-        this.codes[3] = useSymbol ? SYMBOL_MBTC : CODE_MBTC;
-        this.codes[6] = useSymbol ? SYMBOL_UBTC : CODE_UBTC;
+        this.codes[0] = useSymbol ? SYMBOL_NXS : CODE_NXS;
+        this.codes[3] = useSymbol ? SYMBOL_MNXS : CODE_MNXS;
+        this.codes[6] = useSymbol ? SYMBOL_UNXS : CODE_UNXS;
         this.codes[8] = useSymbol ? SYMBOL_SAT : CODE_SAT;
         this.codeSeparator = ' ';
         this.codePrefixed = true;
@@ -518,7 +518,7 @@ public final class MonetaryFormat {
     }
 
     /**
-     * Convert a long number of satoshis to a decimal number of BTC
+     * Convert a long number of satoshis to a decimal number of NXS
      *
      * @param satoshis number of satoshis
      * @param roundingMode rounding mode

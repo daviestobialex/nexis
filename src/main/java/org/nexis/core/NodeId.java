@@ -11,7 +11,7 @@ package org.nexis.core;
 import java.math.BigInteger;
 import java.util.HexFormat;
 import org.nexis.base.PublicNodeProperties;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.Sha256Hash;
 
 /**
  *

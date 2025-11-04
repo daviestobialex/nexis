@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 import org.nexis.base.PeerAddress;
 import org.nexis.internal.Threading;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.Sha256Hash;
 
 /**
  * <p>Tracks transactions that are being announced across the network. Typically one is created for you by a

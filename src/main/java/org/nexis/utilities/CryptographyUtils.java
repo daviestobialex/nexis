@@ -4,6 +4,7 @@
  */
 package org.nexis.utilities;
 
+import org.nexis.base.Sha256Hash;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

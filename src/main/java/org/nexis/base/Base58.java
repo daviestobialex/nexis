@@ -14,49 +14,61 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.nexis.base;
-
 
 import java.math.BigInteger;
 import java.util.Arrays;
 import org.nexis.exceptions.AddressFormatException;
-import org.nexis.utilities.ByteUtils;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.utils.ByteUtils;
 
 /**
- * Base58 is a way to encode Bitcoin addresses (or arbitrary data) as alphanumeric strings.
+ * Base58 is a way to encode Bitcoin addresses (or arbitrary data) as
+ * alphanumeric strings.
  * <p>
- * Note that this is not the same base58 as used by Flickr, which you may find referenced around the Internet.
+ * Note that this is not the same base58 as used by Flickr, which you may find
+ * referenced around the Internet.
  * <p>
- * You may want to consider working with {@code org.bitcoinj.core.EncodedPrivateKey} instead, which
- * adds support for testing the prefix and suffix bytes commonly found in addresses.
+ * You may want to consider working with
+ * {@code org.bitcoinj.core.EncodedPrivateKey} instead, which adds support for
+ * testing the prefix and suffix bytes commonly found in addresses.
  * <p>
  * Satoshi explains: why base-58 instead of standard base-64 encoding?
  * <ul>
- * <li>Don't want 0OIl characters that look the same in some fonts and
- *     could be used to create visually identical looking account numbers.</li>
- * <li>A string with non-alphanumeric characters is not as easily accepted as an account number.</li>
- * <li>E-mail usually won't line-break if there's no punctuation to break at.</li>
- * <li>Doubleclicking selects the whole number as one word if it's all alphanumeric.</li>
+ * <li>Don't want 0OIl characters that look the same in some fonts and could be
+ * used to create visually identical looking account numbers.</li>
+ * <li>A string with non-alphanumeric characters is not as easily accepted as an
+ * account number.</li>
+ * <li>E-mail usually won't line-break if there's no punctuation to break
+ * at.</li>
+ * <li>Doubleclicking selects the whole number as one word if it's all
+ * alphanumeric.</li>
  * </ul>
  * <p>
- * However, note that the encoding/decoding runs in O(n&sup2;) time, so it is not useful for large data.
+ * However, note that the encoding/decoding runs in O(n&sup2;) time, so it is
+ * not useful for large data.
  * <p>
- * The basic idea of the encoding is to treat the data bytes as a large number represented using
- * base-256 digits, convert the number to be represented using base-58 digits, preserve the exact
- * number of leading zeros (which are otherwise lost during the mathematical operations on the
- * numbers), and finally represent the resulting base-58 digits as alphanumeric ASCII characters.
+ * The basic idea of the encoding is to treat the data bytes as a large number
+ * represented using base-256 digits, convert the number to be represented using
+ * base-58 digits, preserve the exact number of leading zeros (which are
+ * otherwise lost during the mathematical operations on the numbers), and
+ * finally represent the resulting base-58 digits as alphanumeric ASCII
+ * characters.
  */
 public class Base58 {
+
     public static final char[] ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".toCharArray();
     private static final char ENCODED_ZERO = ALPHABET[0];
     private static final int[] INDEXES = new int[128];
+
     static {
         Arrays.fill(INDEXES, -1);
         for (int i = 0; i < ALPHABET.length; i++) {
             INDEXES[ALPHABET[i]] = i;
         }
+    }
+
+    private Base58() {
+        throw new IllegalStateException("base58 class should not be instantiated");
     }
 
     /**
@@ -68,7 +80,7 @@ public class Base58 {
     public static String encode(byte[] input) {
         if (input.length == 0) {
             return "";
-        }       
+        }
         // Count leading zeros.
         int zeros = 0;
         while (zeros < input.length && input[zeros] == 0) {
@@ -78,7 +90,7 @@ public class Base58 {
         input = Arrays.copyOf(input, input.length); // since we modify it in-place
         char[] encoded = new char[input.length * 2]; // upper bound
         int outputStart = encoded.length;
-        for (int inputStart = zeros; inputStart < input.length; ) {
+        for (int inputStart = zeros; inputStart < input.length;) {
             encoded[--outputStart] = ALPHABET[divmod(input, inputStart, 256, 58)];
             if (input[inputStart] == 0) {
                 ++inputStart; // optimization - skip leading zeros
@@ -96,15 +108,17 @@ public class Base58 {
     }
 
     /**
-     * Encodes the given version and bytes as a base58 string. A checksum is appended.
-     * 
+     * Encodes the given version and bytes as a base58 string. A checksum is
+     * appended.
+     *
      * @param version the version to encode
      * @param payload the bytes to encode, e.g. pubkey hash
      * @return the base58-encoded string
      */
     public static String encodeChecked(int version, byte[] payload) {
-        if (version < 0 || version > 255)
+        if (version < 0 || version > 255) {
             throw new IllegalArgumentException("Version not in range.");
+        }
 
         // A stringified buffer is:
         // 1 byte version + data bytes + 4 bytes check code (a truncated hash)
@@ -121,7 +135,8 @@ public class Base58 {
      *
      * @param input the base58-encoded string to decode
      * @return the decoded data bytes
-     * @throws AddressFormatException if the given string is not a valid base58 string
+     * @throws AddressFormatException if the given string is not a valid base58
+     * string
      */
     public static byte[] decode(String input) throws AddressFormatException {
         if (input.length() == 0) {
@@ -145,7 +160,7 @@ public class Base58 {
         // Convert base-58 digits to base-256 digits.
         byte[] decoded = new byte[input.length()];
         int outputStart = decoded.length;
-        for (int inputStart = zeros; inputStart < input58.length; ) {
+        for (int inputStart = zeros; inputStart < input58.length;) {
             decoded[--outputStart] = divmod(input58, inputStart, 58, 256);
             if (input58[inputStart] == 0) {
                 ++inputStart; // optimization - skip leading zeros
@@ -158,40 +173,46 @@ public class Base58 {
         // Return decoded data (including original number of leading zeros).
         return Arrays.copyOfRange(decoded, outputStart - zeros, decoded.length);
     }
-    
+
     public static BigInteger decodeToBigInteger(String input) throws AddressFormatException {
         return ByteUtils.bytesToBigInteger(decode(input));
     }
 
     /**
-     * Decodes the given base58 string into the original data bytes, using the checksum in the
-     * last 4 bytes of the decoded data to verify that the rest are correct. The checksum is
-     * removed from the returned data.
+     * Decodes the given base58 string into the original data bytes, using the
+     * checksum in the last 4 bytes of the decoded data to verify that the rest
+     * are correct. The checksum is removed from the returned data.
      *
-     * @param input the base58-encoded string to decode (which should include the checksum)
-     * @throws AddressFormatException if the input is not base 58 or the checksum does not validate.
+     * @param input the base58-encoded string to decode (which should include
+     * the checksum)
+     * @throws AddressFormatException if the input is not base 58 or the
+     * checksum does not validate.
      */
     public static byte[] decodeChecked(String input) throws AddressFormatException {
-        byte[] decoded  = decode(input);
-        if (decoded.length < 4)
+        byte[] decoded = decode(input);
+        if (decoded.length < 4) {
             throw new AddressFormatException.InvalidDataLength("Input too short: " + decoded.length);
+        }
         byte[] data = Arrays.copyOfRange(decoded, 0, decoded.length - 4);
         byte[] checksum = Arrays.copyOfRange(decoded, decoded.length - 4, decoded.length);
         byte[] actualChecksum = Arrays.copyOfRange(Sha256Hash.hashTwice(data), 0, 4);
-        if (!Arrays.equals(checksum, actualChecksum))
+        if (!Arrays.equals(checksum, actualChecksum)) {
             throw new AddressFormatException.InvalidChecksum();
+        }
         return data;
     }
 
     /**
-     * Divides a number, represented as an array of bytes each containing a single digit
-     * in the specified base, by the given divisor. The given number is modified in-place
-     * to contain the quotient, and the return value is the remainder.
+     * Divides a number, represented as an array of bytes each containing a
+     * single digit in the specified base, by the given divisor. The given
+     * number is modified in-place to contain the quotient, and the return value
+     * is the remainder.
      *
      * @param number the number to divide
      * @param firstDigit the index within the array of the first non-zero digit
-     *        (this is used for optimization by skipping the leading zeros)
-     * @param base the base in which the number's digits are represented (up to 256)
+     * (this is used for optimization by skipping the leading zeros)
+     * @param base the base in which the number's digits are represented (up to
+     * 256)
      * @param divisor the number to divide by (up to 256)
      * @return the remainder of the division operation
      */

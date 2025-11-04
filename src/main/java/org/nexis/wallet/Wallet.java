@@ -74,10 +74,10 @@ import org.nexis.script.ScriptPattern;
 import org.nexis.signers.LocalTransactionSigner;
 import org.nexis.signers.MissingSigResolutionSigner;
 import org.nexis.signers.TransactionSigner;
-import org.nexis.utilities.ByteUtils;
+import org.nexis.base.utils.ByteUtils;
 import static org.nexis.utilities.Preconditions.checkArgument;
 import static org.nexis.utilities.Preconditions.checkState;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.Sha256Hash;
 import org.nexis.wallet.WalletTransaction.Pool;
 import org.slf4j.LoggerFactory;
 
@@ -233,11 +233,12 @@ public class Wallet implements WalletTransactionAdapter {
     /**
      * <p>
      * Adds given transaction signer to the list of signers.It will be added to
- the end of the signers list, so if this wallet already has some signers
- added, given signer will be executed after all of them.</p>
+     * the end of the signers list, so if this wallet already has some signers
+     * added, given signer will be executed after all of them.</p>
      * <p>
      * Transaction signer should be fully initialized before adding to the
      * wallet, otherwise {@link IllegalStateException} will be thrown</p>
+     *
      * @param signer
      */
     public final void addTransactionSigner(TransactionSigner signer) {
@@ -1982,8 +1983,9 @@ public class Wallet implements WalletTransactionAdapter {
 
     /**
      * Returns the AVAILABLE balance of this wallet.See
-    {@link BalanceType#AVAILABLE} for details on what this means.
-     * @return 
+     * {@link BalanceType#AVAILABLE} for details on what this means.
+     *
+     * @return
      */
     public Coin getBalance() {
         return getBalance(BalanceType.AVAILABLE);
@@ -1992,8 +1994,9 @@ public class Wallet implements WalletTransactionAdapter {
     /**
      * Returns the balance of this wallet as calculated by the provided
      * balanceType.
+     *
      * @param balanceType
-     * @return 
+     * @return
      */
     public Coin getBalance(BalanceType balanceType) {
         lock.lock();
@@ -2015,7 +2018,8 @@ public class Wallet implements WalletTransactionAdapter {
                         }
                         return value;
                     }
-                    default -> throw new AssertionError("Unknown balance type");  // Unreachable.
+                    default ->
+                        throw new AssertionError("Unknown balance type");  // Unreachable.
                 }
             }
         } finally {
@@ -2204,4 +2208,55 @@ public class Wallet implements WalletTransactionAdapter {
 
     //endregion
     // ***************************************************************************************************************
+    /**
+     * <p>
+     * Specifies that the given {@link TransactionBroadcaster}, typically a
+     * {@link PeerGroup}, should be used for sending transactions to the Bitcoin
+     * network by default.Some sendCoins methods let you specify a broadcaster
+     * explicitly, in that case, they don't use this broadcaster. If null is
+     * specified then the wallet won't attempt to broadcast transactions
+     * itself.</p>
+     *
+     * <p>
+     * You don't normally need to call this. A {@link PeerGroup} will
+     * automatically set itself as the wallets broadcaster when you use
+     * {@link PeerGroup#addWallet(Wallet)}. A wallet can use the broadcaster
+     * when you ask it to send money, but in future also at other times to
+     * implement various features that may require asynchronous re-organisation
+     * of the wallet contents on the block chain. For instance, in future the
+     * wallet may choose to optimise itself to reduce fees or improve
+     * privacy.</p>
+     *
+     * @param broadcaster
+     */
+    public void setTransactionBroadcaster(TransactionBroadcaster broadcaster) {
+        Transaction[] toBroadcast = {};
+        lock.lock();
+        try {
+            if (vTransactionBroadcaster == broadcaster) {
+                return;
+            }
+            vTransactionBroadcaster = broadcaster;
+            if (broadcaster == null) {
+                return;
+            }
+            toBroadcast = pending.values().toArray(toBroadcast);
+        } finally {
+            lock.unlock();
+        }
+        // Now use it to upload any pending transactions we have that are marked as not being seen by any peers yet.
+        // Don't hold the wallet lock whilst doing this, so if the broadcaster accesses the wallet at some point there
+        // is no inversion.
+        for (Transaction tx : toBroadcast) {
+            ConfidenceType confidenceType = getConfidence(tx).getConfidenceType();
+            checkState(confidenceType == ConfidenceType.PENDING || confidenceType == ConfidenceType.IN_CONFLICT, ()
+                    -> "Tx " + tx.getTxId() + ": expected PENDING or IN_CONFLICT, was " + confidenceType);
+            // Re-broadcast even if it's marked as already seen for two reasons
+            // 1) Old wallets may have transactions marked as broadcast by 1 peer when in reality the network
+            //    never saw it, due to bugs.
+            // 2) It can't really hurt.
+            log2.info("New broadcaster so uploading waiting tx {}", tx.getTxId());
+            broadcaster.broadcastTransaction(tx);
+        }
+    }
 }

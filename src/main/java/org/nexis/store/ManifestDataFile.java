@@ -19,7 +19,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import org.nexis.utilities.ByteUtils;
+import org.nexis.base.utils.ByteUtils;
 
 /**
  *

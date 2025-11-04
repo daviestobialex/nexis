@@ -15,7 +15,6 @@
  */
 package org.nexis.base;
 
-import org.nexis.utilities.Sha256Hash;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;

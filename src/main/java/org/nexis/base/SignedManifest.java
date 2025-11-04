@@ -22,7 +22,6 @@ import java.security.SignatureException;
 import java.util.Arrays;
 import org.nexis.utilities.CryptographyUtils;
 import org.nexis.utilities.HexFormat;
-import org.nexis.utilities.Sha256Hash;
 
 /**
  *

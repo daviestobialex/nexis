@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 import org.nexis.base.Identity;
 import org.nexis.base.Manifest;
 import org.nexis.core.NodeId;
-import org.nexis.utilities.ByteUtils;
+import org.nexis.base.utils.ByteUtils;
 import static org.nexis.utilities.CryptographyUtils.ED25519_ALGO;
 
 /**

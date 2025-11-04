@@ -17,7 +17,7 @@ package org.nexis.store;
 
 import org.nexis.core.StoredBlock;
 import org.nexis.exceptions.BlockStoreException;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.Sha256Hash;
 
 /**
  * An implementor of BlockStore saves StoredBlock objects to disk. Different

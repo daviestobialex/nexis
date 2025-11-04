@@ -40,12 +40,12 @@ import static org.nexis.internal.Preconditions.checkArgument;
 import org.nexis.script.Script;
 import org.nexis.script.ScriptException;
 import org.nexis.script.ScriptOpCodes;
-import org.nexis.utilities.ByteUtils;
-import static org.nexis.utilities.ByteUtils.writeInt32LE;
-import static org.nexis.utilities.ByteUtils.writeInt64LE;
+import org.nexis.base.utils.ByteUtils;
+import static org.nexis.base.utils.ByteUtils.writeInt32LE;
+import static org.nexis.base.utils.ByteUtils.writeInt64LE;
 import org.nexis.utilities.CryptographyUtils;
 import org.nexis.utilities.ExchangeRate;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.Sha256Hash;
 import org.nexis.wallet.WalletTransaction.Pool;
 import org.nexus.base.proto.NexusProtocol;
 
@@ -115,7 +115,6 @@ public class Transaction {
      */
     public static final Coin DEFAULT_TX_FEE = Coin.valueOf(100_000); // 1 mBTC
 
-    private final int protocolVersion;
 
     // These are bitcoin serialized.
     private long version;
@@ -159,8 +158,7 @@ public class Transaction {
      * {@link TxConfidenceTable} referenced by the given {@link Context}.
      */
     TransactionConfidence getConfidence(Context context) {
-//        return getConfidence(context.getConfidenceTable());
-        throw new UnsupportedOperationException("operation not implemented yet");
+        return getConfidence(context.getConfidenceTable());
     }
 
     /**
@@ -407,11 +405,10 @@ public class Transaction {
     }
 
     private Transaction(int protocolVersion) {
-        this.protocolVersion = protocolVersion;
+        this.version = protocolVersion;
     }
 
     public Transaction() {
-        this.protocolVersion = 1; //ProtocolVersion.CURRENT.intValue(); hard coded for now
         version = 1;
         inputs = new ArrayList<>();
         outputs = new ArrayList<>();

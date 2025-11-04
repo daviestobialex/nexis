@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.nexis.utilities;
+package org.nexis.base.utils;
 
-import com.google.common.io.BaseEncoding;
 import java.io.ByteArrayOutputStream;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -31,6 +29,7 @@ import java.util.UUID;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
+import org.nexis.utilities.HexFormat;
 import static org.nexis.utilities.Preconditions.check;
 import static org.nexis.utilities.Preconditions.checkArgument;
 
@@ -53,27 +52,15 @@ public class ByteUtils {
      */
     public static final long MAX_UNSIGNED_INTEGER = Integer.toUnsignedLong(-1);
 
-    /**
-     * Hex encoding used throughout the framework. Use with
-     * ByteUtils.formatHex(byte[]) or ByteUtils.parseHex(CharSequence).
-     *
-     * @deprecated Use {@link ByteUtils#hexFormat} or
-     * {@link ByteUtils#parseHex(String)} or other available options.
-     */
-    @Deprecated
-    public static final BaseEncoding HEX = BaseEncoding.base16().lowerCase();
     // 00000001, 00000010, 00000100, 00001000, ...
     private static final int[] bitMask = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
 
-    // This should be functionally equivalent to a subset of JDK 17 HexFormat.of()
-    private static final HexFormat hexFormat = new HexFormat();
-
     public static String formatHex(byte[] bytes) {
-        return hexFormat.formatHex(bytes);
+        return HexFormat.formatHex(bytes);
     }
 
     public static byte[] parseHex(String string) {
-        return hexFormat.parseHex(string);
+        return HexFormat.parseHex(string);
     }
 
     /**
@@ -416,6 +403,7 @@ public class ByteUtils {
      * format.
      *
      * @param buf buffer to be read from
+     * @return
      * @throws BufferUnderflowException if the read value extends beyond the
      * remaining bytes of the buffer
      */
@@ -429,6 +417,7 @@ public class ByteUtils {
      *
      * @param bytes buffer to be read from
      * @param offset offset into the buffer
+     * @return
      * @throws ArrayIndexOutOfBoundsException if offset points outside of the
      * buffer, or if the read value extends beyond the remaining bytes of the
      * buffer
@@ -444,6 +433,7 @@ public class ByteUtils {
      * format.
      *
      * @param buf buffer to be read from
+     * @return
      * @throws BufferUnderflowException if the read value extends beyond the
      * remaining bytes of the buffer
      */
@@ -457,6 +447,7 @@ public class ByteUtils {
      *
      * @param bytes buffer to be read from
      * @param offset offset into the buffer
+     * @return
      * @throws ArrayIndexOutOfBoundsException if offset points outside of the
      * buffer, or if the read value extends beyond the remaining bytes of the
      * buffer
@@ -472,6 +463,7 @@ public class ByteUtils {
      * format.
      *
      * @param buf buffer to be read from
+     * @return
      * @throws BufferUnderflowException if the read value extends beyond the
      * remaining bytes of the buffer
      */
@@ -498,6 +490,7 @@ public class ByteUtils {
      *
      * @param bytes buffer to be read from
      * @param offset offset into the buffer
+     * @return
      * @throws ArrayIndexOutOfBoundsException if offset points outside of the
      * buffer, or if the read value extends beyond the remaining bytes of the
      * buffer
@@ -513,6 +506,7 @@ public class ByteUtils {
      * format.
      *
      * @param buf buffer to be read from
+     * @return
      * @throws BufferUnderflowException if the read value extends beyond the
      * remaining bytes of the buffer
      */
@@ -526,6 +520,7 @@ public class ByteUtils {
      *
      * @param bytes buffer to be read from
      * @param offset offset into the buffer
+     * @return
      * @throws ArrayIndexOutOfBoundsException if offset points outside of the
      * buffer, or if the read value extends beyond the remaining bytes of the
      * buffer
@@ -541,6 +536,7 @@ public class ByteUtils {
      * format.
      *
      * @param buf buffer to be read from
+     * @return
      * @throws BufferUnderflowException if the read value extends beyond the
      * remaining bytes of the buffer
      */
@@ -554,6 +550,7 @@ public class ByteUtils {
      *
      * @param bytes buffer to be read from
      * @param offset offset into the buffer
+     * @return
      * @throws ArrayIndexOutOfBoundsException if offset points outside of the
      * buffer, or if the read value extends beyond the remaining bytes of the
      * buffer
@@ -569,6 +566,7 @@ public class ByteUtils {
      * format.
      *
      * @param is stream to be read from
+     * @return
      */
     public static int readUint16(InputStream is) {
         byte[] buf = new byte[2];
@@ -585,6 +583,7 @@ public class ByteUtils {
      * format.
      *
      * @param is stream to be read from
+     * @return
      */
     public static long readUint32(InputStream is) {
         byte[] buf = new byte[4];
@@ -598,6 +597,9 @@ public class ByteUtils {
 
     /**
      * Returns a copy of the given byte array in reverse order.
+     *
+     * @param bytes
+     * @return
      */
     public static byte[] reverseBytes(byte[] bytes) {
         // We could use the XOR trick here but it's easier to understand if we don't. If we find this is really a
@@ -610,13 +612,15 @@ public class ByteUtils {
     }
 
     /**
-     * MPI encoded numbers are produced by the OpenSSL BN_bn2mpi function. They
+     * MPI encoded numbers are produced by the OpenSSL BN_bn2mpi function.They
      * consist of a 4 byte big endian length field, followed by the stated
      * number of bytes representing the number in big endian format (with a sign
      * bit).
      *
+     * @param mpi
      * @param hasLength can be set to false if the given array is missing the 4
      * byte length field
+     * @return
      */
     public static BigInteger decodeMPI(byte[] mpi, boolean hasLength) {
         byte[] buf;
@@ -639,13 +643,15 @@ public class ByteUtils {
     }
 
     /**
-     * MPI encoded numbers are produced by the OpenSSL BN_bn2mpi function. They
+     * MPI encoded numbers are produced by the OpenSSL BN_bn2mpi function.They
      * consist of a 4 byte big endian length field, followed by the stated
      * number of bytes representing the number in big endian format (with a sign
      * bit).
      *
+     * @param value
      * @param includeLength indicates whether the 4 byte length field should be
      * included
+     * @return
      */
     public static byte[] encodeMPI(BigInteger value, boolean includeLength) {
         if (value.equals(BigInteger.ZERO)) {
@@ -690,8 +696,8 @@ public class ByteUtils {
     /**
      * <p>
      * The "compact" format is a representation of a whole number N using an
-     * unsigned 32 bit number similar to a floating point format. The most
-     * significant 8 bits are the unsigned exponent of base 256. This exponent
+     * unsigned 32 bit number similar to a floating point format.The most
+     * significant 8 bits are the unsigned exponent of base 256.This exponent
      * can be thought of as "number of bytes of N". The lower 23 bits are the
      * mantissa. Bit number 24 (0x800000) represents the sign of N. Therefore, N
      * = (-1^sign) * mantissa * 256^(exponent-3).</p>
@@ -706,6 +712,9 @@ public class ByteUtils {
      * Bitcoin only uses this "compact" format for encoding difficulty targets,
      * which are unsigned 256bit quantities. Thus, all the complexities of the
      * sign bit and using base 256 are probably an implementation accident.</p>
+     *
+     * @param compact
+     * @return
      */
     public static BigInteger decodeCompactBits(long compact) {
         int size = ((int) (compact >> 24)) & 0xFF;
@@ -724,6 +733,8 @@ public class ByteUtils {
     }
 
     /**
+     * @param value
+     * @return
      * @see #decodeCompactBits(long)
      */
     public static long encodeCompactBits(BigInteger value) {
@@ -748,6 +759,9 @@ public class ByteUtils {
     /**
      * Checks if the given bit is set in data, using little endian (not the same
      * as Java native big endian)
+     * @param data
+     * @param index
+     * @return 
      */
     public static boolean checkBitLE(byte[] data, int index) {
         return (data[index >>> 3] & bitMask[7 & index]) != 0;
@@ -756,6 +770,9 @@ public class ByteUtils {
     /**
      * Sets the given bit in data to one, using little endian (not the same as
      * Java native big endian)
+     *
+     * @param data
+     * @param index
      */
     public static void setBitLE(byte[] data, int index) {
         data[index >>> 3] |= bitMask[7 & index];

@@ -29,8 +29,7 @@ import org.nexis.core.ManifestObject;
 import org.nexis.core.ManifestSchemaV1;
 import org.nexis.exceptions.ManifestValidationException;
 import org.nexis.internal.ManifestSchema;
-import org.nexis.utilities.ByteUtils;
-import org.nexis.utilities.Sha256Hash;
+import org.nexis.base.utils.ByteUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
