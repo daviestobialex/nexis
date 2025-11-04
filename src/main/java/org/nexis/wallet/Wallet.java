@@ -5,10 +5,18 @@
 package org.nexis.wallet;
 
 import com.google.common.math.IntMath;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
+import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PublicKey;
+import java.security.SignatureException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -27,6 +35,7 @@ import org.nexis.base.Coin;
 import org.nexis.base.Identity;
 import org.nexis.base.Network;
 import org.nexis.base.NetworkConfiguration;
+import org.nexis.base.NexusNetwork;
 import org.nexis.base.PeerConnection;
 import org.nexis.base.ScriptType;
 import org.nexis.base.SegwitAddress;
@@ -48,6 +57,7 @@ import org.nexis.exceptions.InsufficientMoneyException;
 import org.nexis.exceptions.UTXOProviderException;
 import org.nexis.exceptions.VerificationException;
 import org.nexis.internal.FutureUtils;
+import org.nexis.internal.ListenableCompletableFuture;
 import org.nexis.internal.ListenerRegistration;
 import org.nexis.internal.StreamUtils;
 import org.nexis.internal.Threading;
@@ -61,6 +71,9 @@ import org.nexis.listeners.WalletReorganizeEventListener;
 import org.nexis.script.Script;
 import org.nexis.script.ScriptException;
 import org.nexis.script.ScriptPattern;
+import org.nexis.signers.LocalTransactionSigner;
+import org.nexis.signers.MissingSigResolutionSigner;
+import org.nexis.signers.TransactionSigner;
 import org.nexis.utilities.ByteUtils;
 import static org.nexis.utilities.Preconditions.checkArgument;
 import static org.nexis.utilities.Preconditions.checkState;
@@ -144,6 +157,10 @@ public class Wallet implements WalletTransactionAdapter {
         }
     };
 
+    // Objects that perform transaction signing. Applied subsequently one after another
+    @GuardedBy("lock")
+    private final List<TransactionSigner> signers;
+
     private final List<ListenerRegistration<WalletChangeEventListener>> changeListeners
             = new CopyOnWriteArrayList<>();
     private final List<ListenerRegistration<WalletCoinsReceivedEventListener>> coinsReceivedListeners
@@ -208,7 +225,41 @@ public class Wallet implements WalletTransactionAdapter {
         transactions = new HashMap<>();
         // Use a linked hash map to ensure ordering of event listeners is correct.
         confidenceChanged = new LinkedHashMap<>();
+        signers = new ArrayList<>();
+        addTransactionSigner(new LocalTransactionSigner());
         // TODO: check locally for saved wallet file, else create a new one
+    }
+
+    /**
+     * <p>
+     * Adds given transaction signer to the list of signers.It will be added to
+ the end of the signers list, so if this wallet already has some signers
+ added, given signer will be executed after all of them.</p>
+     * <p>
+     * Transaction signer should be fully initialized before adding to the
+     * wallet, otherwise {@link IllegalStateException} will be thrown</p>
+     * @param signer
+     */
+    public final void addTransactionSigner(TransactionSigner signer) {
+        lock.lock();
+        try {
+            if (signer.isReady()) {
+                signers.add(signer);
+            } else {
+                throw new IllegalStateException("Signer instance is not ready to be added into Wallet: " + signer.getClass());
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public List<TransactionSigner> getTransactionSigners() {
+        lock.lock();
+        try {
+            return Collections.unmodifiableList(signers);
+        } finally {
+            lock.unlock();
+        }
     }
 
     public Address currentAddress() {
@@ -700,6 +751,75 @@ public class Wallet implements WalletTransactionAdapter {
     }
 
     /**
+     * <p>
+     * Given a send request containing transaction, attempts to sign it's
+     * inputs.This method expects transaction to have all necessary inputs
+     * connected or they will be ignored.</p>
+     * <p>
+     * Actual signing is done by pluggable {@link #signers} and it's not
+     * guaranteed that transaction will be complete in the end.</p>
+     *
+     * @param req
+     * @throws BadWalletEncryptionKeyException if the supplied
+     * {@link SendRequest#aesKey} is wrong.
+     */
+    public void signTransaction(SendRequest req) throws BadWalletEncryptionKeyException {
+        lock.lock();
+        try {
+            Transaction tx = req.tx;
+            List<TransactionInput> inputs = tx.getInputs();
+            List<TransactionOutput> outputs = tx.getOutputs();
+            checkState(inputs.size() > 0);
+            checkState(outputs.size() > 0);
+
+            int numInputs = tx.getInputs().size();
+            for (int i = 0; i < numInputs; i++) {
+                TransactionInput txIn = tx.getInput(i);
+                TransactionOutput connectedOutput = txIn.getConnectedOutput();
+                if (connectedOutput == null) {
+                    // Missing connected output, assuming already signed.
+                    continue;
+                }
+                Script scriptPubKey = connectedOutput.getScriptPubKey();
+
+                try {
+                    // We assume if its already signed, its hopefully got a SIGHASH type that will not invalidate when
+                    // we sign missing pieces (to check this would require either assuming any signatures are signing
+                    // standard output types or a way to get processed signatures out of script execution)
+                    txIn.getScriptSig().correctlySpends(tx, i, txIn.getWitness(), connectedOutput.getValue(),
+                            connectedOutput.getScriptPubKey(), Script.ALL_VERIFY_FLAGS);
+                    log2.warn("Input {} already correctly spends output, assuming SIGHASH type used will be safe and skipping signing.", i);
+                    continue;
+                } catch (ScriptException e) {
+                    log2.debug("Input contained an incorrect signature", e);
+                    // Expected.
+                } catch (NoSuchAlgorithmException | NoSuchProviderException | SignatureException | InvalidKeySpecException | InvalidKeyException ex) {
+                    Logger.getLogger(Wallet.class.getName()).log(Level.SEVERE, null, ex);
+                }
+
+                RedeemData redeemData = txIn.getConnectedRedeemData(identity);
+                Objects.requireNonNull(redeemData, ()
+                        -> "Transaction exists in wallet that we cannot redeem: " + txIn.getOutpoint().hash());
+                txIn.setScriptSig(scriptPubKey.createEmptyInputScript(redeemData.key, redeemData.redeemScript));
+            }
+
+            TransactionSigner.ProposedTransaction proposal = new TransactionSigner.ProposedTransaction(tx);
+            for (TransactionSigner signer : signers) {
+                if (!signer.signInputs(proposal, identity)) {
+                    log2.info("{} returned false for the tx", signer.getClass().getName());
+                }
+            }
+
+            // resolve missing sigs if any
+            new MissingSigResolutionSigner(req.missingSigsMode).signInputs(proposal, identity);
+        } catch (ScriptException e) {
+            throw new BadWalletEncryptionKeyException(e);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
      * Returns a list of the outputs that can potentially be spent, i.e.that we
      * have the keys for and are unspent according to our knowledge of the block
      * chain.
@@ -833,8 +953,8 @@ public class Wallet implements WalletTransactionAdapter {
             List<TransactionOutput> candidates;
             if (vUTXOProvider == null) {
                 candidates = myUnspents.stream()
-                        .filter(output -> (!excludeUnsignable || canSignFor(output.getScriptPubKey()))
-                        && (!excludeImmatureCoinbases || isTransactionMature(output.getParentTransaction())))
+                        .filter(output -> (!excludeUnsignable) && (!excludeImmatureCoinbases
+                        || isTransactionMature(output.getParentTransaction())))
                         .collect(StreamUtils.toUnmodifiableList());
             } else {
                 candidates = calculateAllSpendCandidatesFromUTXOProvider(excludeImmatureCoinbases);
@@ -915,9 +1035,10 @@ public class Wallet implements WalletTransactionAdapter {
     protected List<UTXO> getStoredOutputsFromUTXOProvider() throws UTXOProviderException {
         UTXOProvider utxoProvider = Objects.requireNonNull(vUTXOProvider, "No UTXO provider has been set");
         List<UTXO> candidates = new ArrayList<>();
-        List<PublicKey> keys = getImportedKeys();
-        keys.addAll(getActiveKeyChain().getLeafKeys());
-        candidates.addAll(utxoProvider.getOpenTransactionOutputs(keys));
+//        List<PublicKey> keys = getImportedKeys();
+//        keys.addAll(getActiveKeyChain().getLeafKeys());
+        candidates.addAll(utxoProvider.getOpenTransactionOutputs(Arrays
+                .asList(identity.getKeyPair().getPublic())));
         return candidates;
     }
 
@@ -994,21 +1115,22 @@ public class Wallet implements WalletTransactionAdapter {
             if (ScriptPattern.isP2WPKH(script)) {
                 byte[] extractHashFromP2WH = ScriptPattern.extractHashFromP2WH(script);
 
-                PublicKey key;
+                PublicKey key = null;
                 if (Arrays.equals(extractHashFromP2WH, identity.getNodeId().getId())) {
                     key = identity.getKeyPair().getPublic();
                 }
 
                 Objects.requireNonNull(key, "Coin selection includes unspendable outputs");
-                return IntMath.divide(script.getNumberOfBytesRequiredToSpend(key, null), 4,
+                return IntMath.divide(script.getNumberOfBytesRequiredToSpend(key, Script.parse(extractHashFromP2WH)), 4,
                         RoundingMode.CEILING); // round up
             } else if (ScriptPattern.isP2WSH(script)) {
-                Script redeemScript = findRedeemDataFromScriptHash(ScriptPattern
-                        .extractHashFromP2SH(script)).redeemScript;
+                byte[] extractHashFromP2SH = ScriptPattern.extractHashFromP2SH(script);
+
+                Script redeemScript = Script.parse(extractHashFromP2SH);
                 Objects.requireNonNull(redeemScript, "Coin selection includes unspendable outputs");
-                return script.getNumberOfBytesRequiredToSpend(null, redeemScript);
+                return script.getNumberOfBytesRequiredToSpend(identity.getKeyPair().getPublic(), redeemScript);
             } else {
-                return script.getNumberOfBytesRequiredToSpend(null, null);
+                return script.getNumberOfBytesRequiredToSpend(identity.getKeyPair().getPublic(), null);
             }
         } catch (ScriptException e) {
             // If this happens it means an output script in a wallet tx could not be understood. That should never
@@ -1805,5 +1927,281 @@ public class Wallet implements WalletTransactionAdapter {
         // registration requests. That makes the code in the wallet simpler.
         getConfidence(tx).addEventListener(Threading.SAME_THREAD, txConfidenceListener);
     }
+    // ***************************************************************************************************************
 
+    //region Balance and balance futures
+    /**
+     * <p>
+     * It's possible to calculate a wallets balance from multiple points of
+     * view. This enum selects which {@link #getBalance(BalanceType)} should
+     * use.</p>
+     *
+     * <p>
+     * Consider a real-world example: you buy a snack costing $5 but you only
+     * have a $10 bill. At the start you have $10 viewed from every possible
+     * angle. After you order the snack you hand over your $10 bill. From the
+     * perspective of your wallet you have zero dollars (AVAILABLE). But you
+     * know in a few seconds the shopkeeper will give you back $5 change so most
+     * people in practice would say they have $5 (ESTIMATED).</p>
+     *
+     * <p>
+     * The fact that the wallet can track transactions which are not spendable
+     * by itself ("watching wallets") adds another type of balance to the mix.
+     * Although the wallet won't do this by default, advanced use cases that
+     * override the relevancy checks can end up with a mix of spendable and
+     * unspendable transactions.</p>
+     */
+    public enum BalanceType {
+        /**
+         * Balance calculated assuming all pending transactions are in fact
+         * included into the best chain by miners. This includes the value of
+         * immature coinbase transactions.
+         */
+        ESTIMATED,
+        /**
+         * Balance that could be safely used to create new spends, if we had all
+         * the needed private keys. This is whatever the default coin selector
+         * would make available, which by default means transaction outputs with
+         * at least 1 confirmation and pending transactions created by our own
+         * wallet which have been propagated across the network. Whether we
+         * <i>actually</i> have the private keys or not is irrelevant for this
+         * balance type.
+         */
+        AVAILABLE,
+        /**
+         * Same as ESTIMATED but only for outputs we have the private keys for
+         * and can sign ourselves.
+         */
+        ESTIMATED_SPENDABLE,
+        /**
+         * Same as AVAILABLE but only for outputs we have the private keys for
+         * and can sign ourselves.
+         */
+        AVAILABLE_SPENDABLE
+    }
+
+    /**
+     * Returns the AVAILABLE balance of this wallet.See
+    {@link BalanceType#AVAILABLE} for details on what this means.
+     * @return 
+     */
+    public Coin getBalance() {
+        return getBalance(BalanceType.AVAILABLE);
+    }
+
+    /**
+     * Returns the balance of this wallet as calculated by the provided
+     * balanceType.
+     * @param balanceType
+     * @return 
+     */
+    public Coin getBalance(BalanceType balanceType) {
+        lock.lock();
+        try {
+            if (null == balanceType) {
+                throw new AssertionError("Unknown balance type");  // Unreachable.
+            } else {
+                switch (balanceType) {
+                    case AVAILABLE, AVAILABLE_SPENDABLE -> {
+                        List<TransactionOutput> candidates = calculateAllSpendCandidates(true, balanceType == BalanceType.AVAILABLE_SPENDABLE);
+                        CoinSelection selection = coinSelector.select(NexusNetwork.MAX_MONEY, candidates);
+                        return selection.totalValue();
+                    }
+                    case ESTIMATED, ESTIMATED_SPENDABLE -> {
+                        List<TransactionOutput> all = calculateAllSpendCandidates(false, balanceType == BalanceType.ESTIMATED_SPENDABLE);
+                        Coin value = Coin.ZERO;
+                        for (TransactionOutput out : all) {
+                            value = value.add(out.getValue());
+                        }
+                        return value;
+                    }
+                    default -> throw new AssertionError("Unknown balance type");  // Unreachable.
+                }
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Returns the balance that would be considered spendable by the given coin
+     * selector, including watched outputs (i.e.balance includes outputs we
+     * don't have the private keys for).Just asks it to select as many coins as
+     * possible and returns the total.
+     *
+     * @param selector
+     * @return
+     */
+    public Coin getBalance(CoinSelector selector) {
+        lock.lock();
+        try {
+            Objects.requireNonNull(selector);
+            List<TransactionOutput> candidates = calculateAllSpendCandidates(true, false);
+            CoinSelection selection = selector.select((Coin) network.maxMoney(), candidates);
+            return selection.totalValue();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private static class BalanceFutureRequest {
+
+        public final CompletableFuture<Coin> future;
+        public final Coin value;
+        public final BalanceType type;
+
+        private BalanceFutureRequest(CompletableFuture<Coin> future, Coin value, BalanceType type) {
+            this.future = future;
+            this.value = value;
+            this.type = type;
+        }
+    }
+    @GuardedBy("lock")
+    private final List<BalanceFutureRequest> balanceFutureRequests = new LinkedList<>();
+
+    /**
+     * <p>
+     * Returns a future that will complete when the balance of the given type
+     * has becom equal or larger to the given value.If the wallet already has a
+     * large enough balance the future is returned in a pre-completed state.Note
+     * that this method is not blocking, if you want to actually wait
+     * immediately, you have to call .get() on the result.</p>
+     *
+     * <p>
+     * Also note that by the time the future completes, the wallet may have
+     * changed yet again if something else is going on in parallel, so you
+     * should treat the returned balance as advisory and be prepared for sending
+     * money to fail! Finally please be aware that any listeners on the future
+     * will run either on the calling thread if it completes immediately, or
+     * eventually on a background thread if the balance is not yet at the right
+     * level. If you do something that means you know the balance should be
+     * sufficient to trigger the future, you can use
+     * {@link Threading#waitForUserCode()} to block until the future had a
+     * chance to be updated.</p>
+     *
+     * @param value
+     * @param type
+     * @return
+     */
+    public ListenableCompletableFuture<Coin> getBalanceFuture(final Coin value, final BalanceType type) {
+        lock.lock();
+        try {
+            final CompletableFuture<Coin> future = new CompletableFuture<>();
+            final Coin current = getBalance(type);
+            if (current.compareTo(value) >= 0) {
+                // Already have enough.
+                future.complete(current);
+            } else {
+                // Will be checked later in checkBalanceFutures. We don't just add an event listener for ourselves
+                // here so that running getBalanceFuture().get() in the user code thread works - generally we must
+                // avoid giving the user back futures that require the user code thread to be free.
+                balanceFutureRequests.add(new BalanceFutureRequest(future, value, type));
+            }
+            return ListenableCompletableFuture.of(future);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    // Runs any balance futures in the user code thread.
+    @SuppressWarnings("FieldAccessNotGuarded")
+    private void checkBalanceFuturesLocked() {
+        checkState(lock.isHeldByCurrentThread());
+        balanceFutureRequests.forEach(req -> {
+            Coin current = getBalance(req.type);   // This could be slow for lots of futures.
+            if (current.compareTo(req.value) >= 0) {
+                // Found one that's finished.
+                // Don't run any user-provided future listeners with our lock held.
+                Threading.USER_THREAD.execute(() -> req.future.complete(current));
+            }
+        });
+        balanceFutureRequests.removeIf(req -> req.future.isDone());
+    }
+
+    /**
+     * Returns the amount of bitcoin ever received via output. <b>This is not
+     * the balance!</b> If an output spends from a transaction whose inputs are
+     * also to our wallet, the input amounts are deducted from the outputs
+     * contribution, with a minimum of zero contribution. The idea behind this
+     * is we avoid double counting money sent to us.
+     *
+     * @return the total amount of satoshis received, regardless of whether it
+     * was spent or not.
+     */
+    public Coin getTotalReceived() {
+        Coin total = Coin.ZERO;
+
+        // Include outputs to us if they were not just change outputs, ie the inputs to us summed to less
+        // than the outputs to us.
+        for (Transaction tx : transactions.values()) {
+            Coin txTotal = Coin.ZERO;
+            for (TransactionOutput output : tx.getOutputs()) {
+                if (output.isMine(identity)) {
+                    txTotal = txTotal.add(output.getValue());
+                }
+            }
+            for (TransactionInput in : tx.getInputs()) {
+                TransactionOutput prevOut = in.getConnectedOutput();
+                if (prevOut != null && prevOut.isMine(identity)) {
+                    txTotal = txTotal.subtract(prevOut.getValue());
+                }
+            }
+            if (txTotal.isPositive()) {
+                total = total.add(txTotal);
+            }
+        }
+        return total;
+    }
+
+    /**
+     * Returns the amount of bitcoin ever sent via output. If an output is sent
+     * to our own wallet, because of change or rotating keys or whatever, we do
+     * not count it. If the wallet was involved in a shared transaction, i.e.
+     * there is some input to the transaction that we don't have the key for,
+     * then we multiply the sum of the output values by the proportion of
+     * satoshi coming in to our inputs. Essentially we treat inputs as pooling
+     * into the transaction, becoming fungible and being equally distributed to
+     * all outputs.
+     *
+     * @return the total amount of satoshis sent by us
+     */
+    public Coin getTotalSent() {
+        Coin total = Coin.ZERO;
+
+        for (Transaction tx : transactions.values()) {
+            // Count spent outputs to only if they were not to us. This means we don't count change outputs.
+            Coin txOutputTotal = Coin.ZERO;
+            for (TransactionOutput out : tx.getOutputs()) {
+                if (out.isMine(identity) == false) {
+                    txOutputTotal = txOutputTotal.add(out.getValue());
+                }
+            }
+
+            // Count the input values to us
+            Coin txOwnedInputsTotal = Coin.ZERO;
+            for (TransactionInput in : tx.getInputs()) {
+                TransactionOutput prevOut = in.getConnectedOutput();
+                if (prevOut != null && prevOut.isMine(identity)) {
+                    txOwnedInputsTotal = txOwnedInputsTotal.add(prevOut.getValue());
+                }
+            }
+
+            // If there is an input that isn't from us, i.e. this is a shared transaction
+            Coin txInputsTotal = tx.getInputSum();
+            if (!txOwnedInputsTotal.equals(txInputsTotal)) {
+
+                // multiply our output total by the appropriate proportion to account for the inputs that we don't own
+                BigInteger txOutputTotalNum = new BigInteger(txOutputTotal.toString());
+                txOutputTotalNum = txOutputTotalNum.multiply(new BigInteger(txOwnedInputsTotal.toString()));
+                txOutputTotalNum = txOutputTotalNum.divide(new BigInteger(txInputsTotal.toString()));
+                txOutputTotal = Coin.valueOf(txOutputTotalNum.longValue());
+            }
+            total = total.add(txOutputTotal);
+
+        }
+        return total;
+    }
+
+    //endregion
+    // ***************************************************************************************************************
 }

@@ -4,6 +4,7 @@
  */
 package org.nexis.core;
 
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -93,6 +94,22 @@ public class TransactionWitness {
             size += VarInt.sizeOf(push.length) + push.length;
         }
         return size;
+    }
+
+    /**
+     * Creates the stack pushes necessary to redeem a P2WPKH output.If given
+ signature is null, an empty push will be used as a placeholder.
+     * @param signature
+     * @param pubKey
+     * @return 
+     */
+    public static TransactionWitness redeemP2WPKH(byte[] signature, PublicKey pubKey) {
+//        checkArgument(pubKey.isCompressed(), ()
+//                -> "only compressed keys allowed");// TODO: No comoression, using raw public key but you need to check again here
+        List<byte[]> pushes = new ArrayList<>(2);
+        pushes.add(signature != null ? signature: new byte[0]); // signature
+        pushes.add(pubKey.getEncoded()); // pubkey
+        return TransactionWitness.of(pushes);
     }
 
 }

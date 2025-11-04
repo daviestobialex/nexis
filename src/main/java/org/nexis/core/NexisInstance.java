@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 import org.nexis.base.Address;
+import org.nexis.base.Coin;
 import org.nexis.base.Manifest;
 import org.nexis.base.NexusNetwork;
 import org.nexis.net.NioProtoServer;
@@ -212,6 +213,10 @@ public class NexisInstance {
 
         //TODO: load wallet
         wallet = Wallet.of(identity, params);
+        Address currentAddress = wallet.currentAddress();
+        Coin balance = wallet.getBalance();
+        log.info("WALLET ADDRESS " + currentAddress.toString()
+                + "BASE 58 ADDRESS " + currentAddress.toStringBase58() + " BALANCE " + balance.getValue());
 
     }
 

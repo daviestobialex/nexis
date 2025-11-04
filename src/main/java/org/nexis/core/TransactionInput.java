@@ -8,11 +8,14 @@ import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.Objects;
 import org.nexis.base.Coin;
+import org.nexis.base.Identity;
 import org.nexis.base.VarInt;
 import org.nexis.script.Script;
+import org.nexis.script.ScriptException;
 import org.nexis.utilities.ByteUtils;
 import static org.nexis.utilities.Preconditions.checkArgument;
 import org.nexis.utilities.Sha256Hash;
+import org.nexis.wallet.RedeemData;
 import org.nexus.base.proto.NexusProtocol;
 
 /**
@@ -295,6 +298,22 @@ public class TransactionInput {
     }
 
     /**
+     * Returns the script that is fed to the referenced output (scriptPubKey)
+     * script in order to satisfy it: usually contains signatures and maybe
+     * keys, but can contain arbitrary data if the output script accepts it.
+     */
+    public Script getScriptSig() throws ScriptException {
+        // Transactions that generate new coins don't actually have a script. Instead this
+        // parameter is overloaded to be something totally different.
+        Script script = scriptSig == null ? null : scriptSig.get();
+        if (script == null) {
+            script = Script.parse(scriptBytes);
+            scriptSig = new WeakReference<>(script);
+        }
+        return script;
+    }
+
+    /**
      * Locates the referenced output from the given pool of transactions.
      *
      * @param transactions
@@ -308,6 +327,18 @@ public class TransactionInput {
             return null;
         }
         return tx.getOutput(outpoint);
+    }
+
+    /**
+     * Alias for getOutpoint().getConnectedRedeemData(keyBag)
+     *
+     * @param identity
+     * @return
+     * @see TransactionOutPoint#getConnectedRedeemData(KeyBag)
+     */
+//    @Nullable
+    public RedeemData getConnectedRedeemData(Identity identity) throws ScriptException {
+        return getOutpoint().getConnectedRedeemData(identity);
     }
 
     /**
@@ -419,6 +450,7 @@ public class TransactionInput {
     /**
      * Internal use only: connects this TransactionInput to the given output
      * (updates pointers and spent flags)
+     *
      * @param out
      */
     public void connect(TransactionOutput out) {
@@ -427,4 +459,14 @@ public class TransactionInput {
         value = out.getValue();
     }
 
+    /**
+     * Set the given program as the scriptSig that is supposed to satisfy the
+     * connected output script.
+     * @param scriptSig
+     */
+    public void setScriptSig(Script scriptSig) {
+        this.scriptSig = new WeakReference<>(Objects.requireNonNull(scriptSig));
+        // TODO: This should all be cleaned up so we have a consistent internal representation.
+        setScriptBytes(scriptSig.program());
+    }
 }

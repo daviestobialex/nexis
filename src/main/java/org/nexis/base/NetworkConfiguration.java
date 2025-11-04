@@ -85,6 +85,11 @@ public abstract class NetworkConfiguration {
     protected final NexusNetwork network;
 
     /**
+     * The depth of blocks required for a coinbase transaction to be spendable.
+     */
+    protected int spendableCoinbaseDepth;
+
+    /**
      * Default peer-to-peer TCP port used by this network.
      */
     protected int port;
@@ -226,5 +231,9 @@ public abstract class NetworkConfiguration {
     @Override
     public int hashCode() {
         return Objects.hash(network.id());
+    }
+
+    public int getSpendableCoinbaseDepth() {
+        return spendableCoinbaseDepth;
     }
 }

@@ -6,10 +6,18 @@ package org.nexis.core;
 
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Objects;
+import org.nexis.base.Identity;
+import org.nexis.base.ScriptType;
+import org.nexis.script.Script;
+import org.nexis.script.ScriptError;
+import org.nexis.script.ScriptException;
+import org.nexis.script.ScriptPattern;
 import org.nexis.utilities.ByteUtils;
 import static org.nexis.utilities.Preconditions.checkArgument;
 import org.nexis.utilities.Sha256Hash;
+import org.nexis.wallet.RedeemData;
 import org.nexus.base.proto.NexusProtocol;
 
 /**
@@ -147,6 +155,32 @@ public class TransactionOutPoint {
      */
     public TransactionOutPoint connectTransaction(Transaction transaction) {
         return new TransactionOutPoint(hash, index, Objects.requireNonNull(transaction), connectedOutput);
+    }
+
+    /**
+     * Returns the RedeemData identified in the connected output, for either
+     * P2PKH, P2WPKH, P2PK or P2SH scripts. If the script forms cannot be
+     * understood, throws ScriptException.
+     *
+     * @return a RedeemData or null if the connected data cannot be found in the
+     * wallet.
+     */
+//    @Nullable
+    public RedeemData getConnectedRedeemData(Identity identity) throws ScriptException {
+        TransactionOutput connectedOutput = getConnectedOutput();
+        Objects.requireNonNull(connectedOutput, "Input is not connected so cannot retrieve key");
+        Script connectedScript = connectedOutput.getScriptPubKey();
+        if (ScriptPattern.isP2WPKH(connectedScript)) {
+            byte[] addressBytes = ScriptPattern.extractHashFromP2WH(connectedScript);
+            Arrays.equals(addressBytes, identity.getNodeId().getId());
+            return RedeemData.of(identity.getKeyPair().getPublic(), connectedScript);
+        } else if (ScriptPattern.isP2WSH(connectedScript)) {
+            byte[] pubkeyBytes = ScriptPattern.extractHashFromP2SH(connectedScript);
+            Arrays.equals(pubkeyBytes, identity.getNodeId().getId());
+            return RedeemData.of(identity.getKeyPair().getPublic(), connectedScript);
+        } else {
+            throw new ScriptException(ScriptError.SCRIPT_ERR_UNKNOWN_ERROR, "Could not understand form of connected output script: " + connectedScript);
+        }
     }
 
 }
