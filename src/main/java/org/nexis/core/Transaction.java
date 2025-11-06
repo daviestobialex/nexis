@@ -115,7 +115,6 @@ public class Transaction {
      */
     public static final Coin DEFAULT_TX_FEE = Coin.valueOf(100_000); // 1 mBTC
 
-
     // These are bitcoin serialized.
     private long version;
     private List<TransactionInput> inputs;
@@ -1243,5 +1242,33 @@ public class Transaction {
             v = v.add(o.getValue());
         }
         return v;
+    }
+
+    /**
+     * Returns the witness transaction id (aka witness id) as per BIP144.For
+     * transactions without witness, this is the same as {@link #getTxId()}.
+     *
+     * @return
+     */
+    public Sha256Hash getWTxId() {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            serializeToStream(baos, true);
+        } catch (IOException e) {
+            throw new RuntimeException(e); // cannot happen
+        }
+        return Sha256Hash.wrapReversed(Sha256Hash.hashTwice(baos.toByteArray()));
+    }
+
+    /**
+     * A coinbase transaction is one that creates a new coin. They are the first
+     * transaction in each block and their value is determined by a formula that
+     * all implementations of Bitcoin share. In 2011 the value of a coinbase
+     * transaction is 50 coins, but in future it will be less. A coinbase
+     * transaction is defined not only by its position in a block but by the
+     * data in the inputs.
+     */
+    public boolean isCoinBase() {
+        return inputs.size() == 1 && inputs.get(0).isCoinBase();
     }
 }

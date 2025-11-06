@@ -58,6 +58,7 @@ import org.nexus.base.proto.NexusProtocol;
 public final class MessageDispatcher {
 
     private final List<MessageHandler> handlers = new CopyOnWriteArrayList<>();
+    private MessageHandler currentHandler;// consider thread safety here
 
     /**
      * Register a new handler with the dispatcher. Handlers are evaluated in the
@@ -80,10 +81,18 @@ public final class MessageDispatcher {
         for (MessageHandler handler : handlers) {
             if (handler.canHandle(envelop.getMessage())) {
                 handler.handle(envelop, ctx);
+                currentHandler = handler;
                 return; // stop at first capable handler
             }
         }
         throw new UnsupportedOperationException(
                 "No handler found for message: " + envelop.getMessage().getPayloadCase());
+    }
+
+    /**
+     * retrieves handler potential outward message and respond
+     */
+    public void respond() {
+        currentHandler.sendMessage();
     }
 }

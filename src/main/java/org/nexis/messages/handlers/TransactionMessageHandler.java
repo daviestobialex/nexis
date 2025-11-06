@@ -29,4 +29,9 @@ public class TransactionMessageHandler implements MessageHandler {
         Transaction transaction = Transaction.read(protoTransaction);
     }
 
+    @Override
+    public void sendMessage() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
 }

@@ -138,6 +138,10 @@ public class ProtoConnectionHandler extends SimpleChannelInboundHandler<NexusPro
         VirtualThreadExecutor.chain()
                 .run(() -> pipeline.validate(msg))// Always validate before dispatch
                 .thenRun(() -> dispatcher.dispatch(msg, ctx)) //  Dispatch to correct handler
+
+                // note that the handlers should not send the messages out themselves, the handlers can build
+                // the outgoing messages and the message is sent out
+                .thenRun(() -> dispatcher.respond())// send message out
                 .onError(e -> {
                     if (e instanceof DropMessageException) {
                         return; // Silently skip

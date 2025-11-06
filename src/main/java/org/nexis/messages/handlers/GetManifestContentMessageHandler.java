@@ -19,6 +19,7 @@ import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandlerContext;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.NetworkConfiguration;
@@ -44,6 +45,10 @@ public class GetManifestContentMessageHandler implements MessageHandler {
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
     private final Storage manifestStore;
+    private NexusProtocol.NexusEnvelop envelop;
+    private NodeId nodeServerId;
+    private ChannelHandlerContext ctx;
+    private BigInteger cid;
 
     public GetManifestContentMessageHandler(
             NexusEnvelopBuilder builder,
@@ -60,10 +65,19 @@ public class GetManifestContentMessageHandler implements MessageHandler {
 
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
-        NodeId nodeServerId = builder.getNode().getNodeId();
-
+        nodeServerId = builder.getNode().getNodeId();
+        this.envelop = envelop;
+        this.ctx = ctx;
         // check manifest index for cid
-        BigInteger cid = new BigInteger(envelop.getMessage().getGetManifestContent().getCid().toByteArray());
+        cid = new BigInteger(envelop.getMessage().getGetManifestContent().getCid().toByteArray());
+    }
+
+    @Override
+    public void sendMessage() {
+        Objects.requireNonNull(envelop, "nexus message envelope can not be null");
+        Objects.requireNonNull(ctx, "channel handler context can not be null");
+        Objects.requireNonNull(nodeServerId, "node server id can not be null");
+        Objects.requireNonNull(cid, "Cid can not be null");
         try {
             byte[] rawJson = manifestStore.get(cid);
             // if found return manifest
@@ -85,17 +99,17 @@ public class GetManifestContentMessageHandler implements MessageHandler {
                 PeerRegistry.getInstance()
                         .getActivePeers()
                         .forEach(peerConnection -> {
-                    NexusProtocol.GetManifestContent getManifestContent = NexusProtocol.GetManifestContent.newBuilder()
-                            .setCid(envelop.getMessage().getGetManifestContent().getCid())
-                            .build();
+                            NexusProtocol.GetManifestContent getManifestContent = NexusProtocol.GetManifestContent.newBuilder()
+                                    .setCid(envelop.getMessage().getGetManifestContent().getCid())
+                                    .build();
 
-                    GetManifestContentRequest getManifestContentRequest = new GetManifestContentRequest(
-                            NexusNetworkConfiguration.of(params.getNetwork()),
-                            getManifestContent,
-                            nodeServerId.getId());
+                            GetManifestContentRequest getManifestContentRequest = new GetManifestContentRequest(
+                                    NexusNetworkConfiguration.of(params.getNetwork()),
+                                    getManifestContent,
+                                    nodeServerId.getId());
 
-                    peerConnection.channel().writeAndFlush(builder.build(getManifestContentRequest));
-                });
+                            peerConnection.channel().writeAndFlush(builder.build(getManifestContentRequest));
+                        });
             }
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, "error fetching manifest from store");

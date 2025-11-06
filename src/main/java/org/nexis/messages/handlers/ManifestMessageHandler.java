@@ -41,7 +41,7 @@ import org.nexus.base.proto.NexusProtocol;
  */
 public class ManifestMessageHandler implements MessageHandler {
 
-    private static final Logger LOGGER = Logger.getLogger(GetManifestContentMessageHandler.class.getName());
+    private static final Logger log = Logger.getLogger(GetManifestContentMessageHandler.class.getName());
 
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
@@ -50,6 +50,11 @@ public class ManifestMessageHandler implements MessageHandler {
 
     private final PeerRegistry registery;
     private final ManifestRegistry manifestRegistry;
+
+    private NodeId nodeServerId;
+    private NexusProtocol.NexusEnvelop envelop;
+
+    private ChannelHandlerContext ctx;
 
     public ManifestMessageHandler(
             NexusEnvelopBuilder builder,
@@ -83,9 +88,10 @@ public class ManifestMessageHandler implements MessageHandler {
 
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
-        LOGGER.info("Received manifest message step 3");
-
-        NodeId nodeServerId = builder.getNode().getNodeId();
+        log.info("Received manifest message step 3");
+        this.envelop = envelop;
+        this.ctx = ctx;
+        nodeServerId = builder.getNode().getNodeId();
         byte[] nodeId = envelop.getNodeId().toByteArray();
 
         // persist manifest CID to category against CID(IPFS) manifest registry
@@ -98,7 +104,10 @@ public class ManifestMessageHandler implements MessageHandler {
         String remoteAddress = ctx.channel().remoteAddress().toString();
         registery.removePendingPeer(new Peer(remoteAddress, nodeId));
         registery.addActivePeer(new Peer(remoteAddress, nodeId, publicKey), ctx.channel());
+    }
 
+    @Override
+    public void sendMessage() {
         try {
             SignedManifest signedManifest = new SignedManifest(manifest, builder.getNode());
 

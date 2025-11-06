@@ -23,6 +23,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SignatureException;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.Manifest;
@@ -53,6 +54,8 @@ public class ManifestContentMessageHandler implements MessageHandler {
     private final NetworkConfiguration params;
     private final Storage manifestStore;
     private final Manifest manifest;
+    private NexusProtocol.NexusEnvelop envelop;
+    private ByteString cid;
 
     public ManifestContentMessageHandler(
             NexusEnvelopBuilder builder,
@@ -71,8 +74,8 @@ public class ManifestContentMessageHandler implements MessageHandler {
 
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
-
-        ByteString cid = envelop.getMessage().getManifestContent().getCid();
+        this.envelop = envelop;
+        cid = envelop.getMessage().getManifestContent().getCid();
         ByteString rawJson = envelop.getMessage().getManifestContent().getRaw();
 
         ManifestRegistry.getInstance().complete(cid.toString(), rawJson.toString());
@@ -83,13 +86,18 @@ public class ManifestContentMessageHandler implements MessageHandler {
         } catch (IOException ex) {
             throw new RuntimeException("failed to store received manifest");
         }
+    }
 
+    @Override
+    public void sendMessage() {
+        Objects.requireNonNull(envelop, "nexus message envelope can not be null");
+        Objects.requireNonNull(cid, "content ID context can not be null");
         try {
             // validate cid is same as node
             SignedManifest signedManifest = new SignedManifest(manifest, builder.getNode());
             String hexedCid = HexFormat.bytesToHex(cid.toByteArray());
             // TODO: validate signers or approvers of the manifest and ensure it traces back to the genesis manifest or is part of the markel chain via validation
-            
+
             // forward manifest content to request if current node is not the requesting node
             if (!signedManifest.getHexSignature().equalsIgnoreCase(hexedCid)) {
                 // check if cid is present in manifest, forward to peer directly or gossip to all active peers
@@ -107,6 +115,5 @@ public class ManifestContentMessageHandler implements MessageHandler {
         } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | SignatureException ex) {
             Logger.getLogger(ChallangeResponseHandler.class.getName()).log(Level.SEVERE, null, ex);
         }
-
     }
 }

@@ -78,6 +78,15 @@ public class TransactionInput {
 
     private TransactionWitness witness;
 
+    /**
+     * Coinbase transactions have special inputs with hashes of zero. If this is
+     * such an input, returns true.
+     */
+    public boolean isCoinBase() {
+        return outpoint.hash().equals(Sha256Hash.ZERO_HASH)
+                && (outpoint.index() & 0xFFFFFFFFL) == 0xFFFFFFFFL;  // -1 but all is serialized to the wire as unsigned int.
+    }
+
     public enum ConnectionResult {
         NO_SUCH_TX,
         ALREADY_SPENT,
@@ -462,6 +471,7 @@ public class TransactionInput {
     /**
      * Set the given program as the scriptSig that is supposed to satisfy the
      * connected output script.
+     *
      * @param scriptSig
      */
     public void setScriptSig(Script scriptSig) {

@@ -17,6 +17,7 @@ package org.nexis.messages.handlers;
 
 import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandlerContext;
+import java.util.Objects;
 import org.nexis.internal.MessageHandler;
 import org.nexis.base.NetworkConfiguration;
 import org.nexis.core.NexusEnvelopBuilder;
@@ -66,6 +67,9 @@ public class ChallengeMessageHandler implements MessageHandler {
     private final NexusEnvelopBuilder builder;
     private final NetworkConfiguration params;
     private final PeerRegistry registery;
+    private NexusProtocol.NexusEnvelop envelop;
+    private NodeId nodeServerId;
+    private ChannelHandlerContext ctx;
 
     /**
      * Constructs a new {@code ChallengeMessageHandler}.
@@ -118,22 +122,12 @@ public class ChallengeMessageHandler implements MessageHandler {
      */
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
-        NodeId nodeServerId = builder.getNode().getNodeId();
-        long nonce = envelop.getMessage().getHandshake().getNonce();
+        nodeServerId = builder.getNode().getNodeId();
+        this.envelop = envelop;
+        this.ctx = ctx;
         byte[] nodeId = envelop.getNodeId().toByteArray();
 
-        if (!registery.getNonceIndex().contains(nonce)) {
-            NexusProtocol.ChallengeResponse challenge
-                    = NexusProtocol.ChallengeResponse.newBuilder()
-                            .setPublicKey(ByteString.copyFrom(builder.getNode().getKeyPair().getPublic().getEncoded()))
-                            .setNonce(nonce)
-                            .build();
-
-            ChallengeResponseMessage challengeMessage = new ChallengeResponseMessage(
-                    NexusNetworkConfiguration.of(params.getNetwork()),
-                    challenge,
-                    nodeServerId.getId()
-            );
+        if (!registery.getNonceIndex().contains(envelop.getMessage().getHandshake().getNonce())) {
 
             PeerAddress nodeById = registery.getPeerById(nodeId);
             // update peer registery with node id
@@ -143,9 +137,29 @@ public class ChallengeMessageHandler implements MessageHandler {
                 registery.addPendingPeer(nodeById, ctx.channel());
             }
 
-            ctx.writeAndFlush(builder.build(challengeMessage));
         } else {
             throw new DropMessageException("nonce is found in index, peer is communicating with self");
         }
+    }
+
+    @Override
+    public void sendMessage() {
+        Objects.requireNonNull(envelop, "nexus message envelope can not be null");
+        Objects.requireNonNull(ctx, "channel handler context can not be null");
+        Objects.requireNonNull(nodeServerId, "node server id can not be null");
+
+        NexusProtocol.ChallengeResponse challenge
+                = NexusProtocol.ChallengeResponse.newBuilder()
+                        .setPublicKey(ByteString.copyFrom(builder.getNode().getKeyPair().getPublic().getEncoded()))
+                        .setNonce(envelop.getMessage().getHandshake().getNonce())
+                        .build();
+
+        ChallengeResponseMessage challengeMessage = new ChallengeResponseMessage(
+                NexusNetworkConfiguration.of(params.getNetwork()),
+                challenge,
+                nodeServerId.getId()
+        );
+
+        ctx.writeAndFlush(builder.build(challengeMessage));
     }
 }

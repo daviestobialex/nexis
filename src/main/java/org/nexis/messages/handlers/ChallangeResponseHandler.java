@@ -22,6 +22,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SignatureException;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.logging.Logger;
 import org.nexis.base.Manifest;
 import org.nexis.base.NetworkConfiguration;
@@ -46,6 +47,9 @@ public class ChallangeResponseHandler implements MessageHandler {
     private final NetworkConfiguration params;
     private final Manifest manifest;
     private final PeerRegistry registery;
+    private NexusProtocol.NexusEnvelop envelop;
+    private NodeId nodeServerId;
+    private ChannelHandlerContext ctx;
 
     public ChallangeResponseHandler(
             NetworkConfiguration params,
@@ -82,8 +86,9 @@ public class ChallangeResponseHandler implements MessageHandler {
      */
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
-        NodeId nodeServerId = builder.getNode().getNodeId();
-
+        nodeServerId = builder.getNode().getNodeId();
+        this.envelop = envelop;
+        this.ctx = ctx;
         log.info("challenge/handshake response received step 2");
         // validate node id 
         byte[] nodeId = envelop.getNodeId().toByteArray();
@@ -106,8 +111,6 @@ public class ChallangeResponseHandler implements MessageHandler {
         // make peer active from pending peers list if pass
         String remoteAddress = ctx.channel().remoteAddress().toString();
         registery.addActivePeer(new Peer(remoteAddress, nodeId, publicKey), ctx.channel());
-
-        sendSignedManifest(envelop, ctx, nodeServerId);
     }
 
     /**
@@ -145,5 +148,13 @@ public class ChallangeResponseHandler implements MessageHandler {
             throw new RuntimeException("unable to sign manifest");
         }
 
+    }
+
+    @Override
+    public void sendMessage() {
+        Objects.requireNonNull(envelop, "nexus message envelope can not be null");
+        Objects.requireNonNull(ctx, "channel handler context can not be null");
+        Objects.requireNonNull(nodeServerId, "node server id can not be null");
+        sendSignedManifest(envelop, ctx, nodeServerId);
     }
 }

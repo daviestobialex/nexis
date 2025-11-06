@@ -4,8 +4,12 @@
  */
 package org.nexis.messages.handlers;
 
+import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandlerContext;
-import org.nexis.core.Block;
+import java.net.ProtocolException;
+import java.util.ArrayList;
+import java.util.List;
+import org.nexis.base.Sha256Hash;
 import org.nexis.internal.MessageHandler;
 import org.nexus.base.proto.NexusProtocol;
 
@@ -13,24 +17,28 @@ import org.nexus.base.proto.NexusProtocol;
  *
  * @author daviestobialex
  */
-public class BlockMessageHandler  implements MessageHandler {
+public class GetHeaderMessageHandler implements MessageHandler {
 
     @Override
     public boolean canHandle(NexusProtocol.NexusMessage message) {
-        return message.hasBlock();
+        return message.hasGetHeader();
     }
 
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
-        
-        NexusProtocol.Block protoblock = envelop.getMessage().getBlock();
-        
-        Block block = Block.read(protoblock);
+        NexusProtocol.Header headers = envelop.getMessage().getGetHeader();
+        List<ByteString> hashes = headers.getHashList();
+
+        List<Sha256Hash> hashList = new ArrayList<>();
+        for (int i = 0; i < hashes.size(); i++) {
+            hashList.add(Sha256Hash.of(hashes.get(i).toByteArray()));
+        }
+        Sha256Hash stopHash = Sha256Hash.of(hashes.get(hashes.size() - 1).toByteArray());
     }
 
     @Override
     public void sendMessage() {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
-    
+
 }

@@ -16,8 +16,10 @@
 package org.nexis.messages.handlers;
 
 import io.netty.channel.ChannelHandlerContext;
+import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -74,6 +76,10 @@ public class GetPeersMessageHandler implements MessageHandler {
     private final NetworkConfiguration params;
     private final PeerRegistry registery;
     private final ManifestRegistry manifestRegistry;
+    private NexusProtocol.NexusEnvelop envelop;
+    private NodeId nodeServerId;
+    private ChannelHandlerContext ctx;
+    private int requestedPeerSize;
 
     /**
      * Creates a handler for responding to "GetPeers" messages.
@@ -140,15 +146,24 @@ public class GetPeersMessageHandler implements MessageHandler {
      */
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
-        System.out.println("Received Get Peers (peersDiscovery) step 4");
-        NodeId nodeServerId = builder.getNode().getNodeId();
+        nodeServerId = builder.getNode().getNodeId();
 
-        int requestedPeerSize = envelop.getMessage().getPeersDiscovery().getSize();
+        requestedPeerSize = envelop.getMessage().getPeersDiscovery().getSize();
         String category = envelop.getMessage().getPeersDiscovery().getCategory();
         byte[] cid = envelop.getMessage().getPeersDiscovery().getCid().toByteArray();
 
         LOGGER.log(Level.INFO, "Received get peers message of size {0}", requestedPeerSize);
 
+        // Update manifest registry with category/CID reference
+        manifestRegistry.put(category, cid);
+    }
+
+    @Override
+    public void sendMessage() {
+        Objects.requireNonNull(envelop, "nexus message envelope can not be null");
+        Objects.requireNonNull(ctx, "channel handler context can not be null");
+        Objects.requireNonNull(nodeServerId, "node server id can not be null");
+        Objects.requireNonNull(requestedPeerSize, "requested Peer Size can not be null");
         // Collect available active peers
         Iterable<PeerConnection> activePeers = registery.getActivePeers();
         int limit = Math.min(requestedPeerSize, registery.getActivePeerSize());
@@ -176,9 +191,6 @@ public class GetPeersMessageHandler implements MessageHandler {
                 getPeers,
                 nodeServerId.getId()
         );
-
-        // Update manifest registry with category/CID reference
-        manifestRegistry.put(category, cid);
 
         // Send response back to requester
         ctx.writeAndFlush(builder.build(getPeersResponse));

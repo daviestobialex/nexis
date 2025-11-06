@@ -13,6 +13,7 @@
  */
 package org.nexis.base;
 
+import java.net.ProtocolException;
 import org.nexus.base.proto.NexusProtocol;
 
 
@@ -68,6 +69,7 @@ public interface Validator {
      *
      * @param envelop the NexusEnvelop to validate
      * @throws SecurityException if the validation fails
+     * @throws java.net.ProtocolException
      */
-    void validate(NexusProtocol.NexusEnvelop envelop) throws SecurityException;
+    void validate(NexusProtocol.NexusEnvelop envelop) throws SecurityException, ProtocolException;
 }

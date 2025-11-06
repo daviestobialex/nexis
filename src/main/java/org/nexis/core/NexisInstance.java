@@ -184,7 +184,7 @@ public class NexisInstance {
     public NexisInstance(NexusNetwork network, boolean doPropagate) throws FileNotFoundException {
         IdentityProvider identityProvider = new Ed25519IdentityProvider();
         this.identity = identityProvider.loadOrCreateIdentity();
-              log.info("identity PUB " + identity.getNodeId().toHex());
+        log.info("identity PUB " + identity.getNodeId().toHex());
 
         this.manifest = Manifest.resolve("manifest.json", identity);
         this.network = network;
@@ -228,13 +228,10 @@ public class NexisInstance {
                 + "BASE 58 ADDRESS " + currentAddress.toStringBase58() + " BALANCE " + balance.getValue());
 
         try {
-            wallet.setTransactionBroadcaster(new TransactionBroadcaster() {
-                @Override
-                public TransactionBroadcast broadcastTransaction(Transaction tx) {
-                    final TransactionBroadcast broadcast = new TransactionBroadcast(tx);
-                    broadcast.broadcastOnly();
-                    return broadcast;
-                }
+            wallet.setTransactionBroadcaster((Transaction tx) -> {
+                final TransactionBroadcast broadcast = new TransactionBroadcast(tx);
+                broadcast.broadcastOnly();
+                return broadcast;
             });
             wallet.sendCoins(SendRequest
                     .to(SegwitAddress.fromBech32("tb1qkmfnxdkvuxrpkg5uz8t2e9dtqd6edsjdnjyya0yd3pv4ucaa6tus7d0pgc",
@@ -276,6 +273,20 @@ public class NexisInstance {
                 connectionClient,
                 identity);
 
+        return this;
+    }
+
+    /**
+     * begins the initiation of the block chain by request for headers and then
+     * ensuring they are on the same network fork, then it can then begin to
+     * download the rest of the block data
+     *
+     * @return
+     */
+    public NexisInstance startBlockChainSync() {
+
+        // get all header hashes
+        // send hashes to peer
         return this;
     }
 

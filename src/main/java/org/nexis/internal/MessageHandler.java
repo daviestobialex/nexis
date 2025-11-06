@@ -40,4 +40,6 @@ public interface MessageHandler {
      * @param ctx the Netty channel context
      */
     void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx);
+
+    void sendMessage();
 }

@@ -10,6 +10,10 @@ message Ping {
   uint32 ping = 1; // used to keep track of the number of pings between peers
 }
 
+message Header{// request get header
+    repeated bytes hash = 1;  // max of 500 items
+}
+
 message BlockHeader {
   bytes merkle_root = 4;
   bytes block_hash = 1;           // block header hash
@@ -155,6 +159,8 @@ message NexusMessage {
     Block block = 10;
     Transaction transaction = 11;
      RejectMessage rejectedMessage = 12;
+     Header header = 13;
+     Header getHeader = 14;
   }
 }
 

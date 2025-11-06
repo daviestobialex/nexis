@@ -17,6 +17,7 @@ package org.nexis.messages.handlers;
 
 import io.netty.channel.ChannelHandlerContext;
 import java.net.UnknownHostException;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.NetworkConfiguration;
@@ -61,6 +62,7 @@ public class GetPeersResponseHandler implements MessageHandler {
 
     private final StreamConnection connectionClient;
     private final NetworkConfiguration params;
+    private NexusProtocol.NexusEnvelop envelop;
 
     /**
      * Creates a new {@code GetPeersResponseHandler}.
@@ -91,6 +93,12 @@ public class GetPeersResponseHandler implements MessageHandler {
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
         LOGGER.info("RECIEVED PEER LIST AND CONNECTING");
         // trigger connection to peers functions
+        this.envelop = envelop;
+    }
+
+    @Override
+    public void sendMessage() {
+        Objects.requireNonNull(envelop, "nexus message envelope can not be null");
         envelop.getMessage().getPeers().getAddressesList().stream()
                 .forEach(address -> {// TODO: might have to search with the collection here than creating a O(n^2)
                     PeerConnection connecedPeer = PeerRegistry.getInstance().getPeerByAddress(address);
@@ -107,7 +115,6 @@ public class GetPeersResponseHandler implements MessageHandler {
                         LOGGER.log(Level.SEVERE, "error reading host address while connecting to peer", e);
                     }
                 });
-
     }
 
 }

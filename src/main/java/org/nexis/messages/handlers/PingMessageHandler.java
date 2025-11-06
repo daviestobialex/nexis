@@ -14,6 +14,9 @@ import org.nexus.base.proto.NexusProtocol;
  */
 public class PingMessageHandler implements MessageHandler {
 
+    private int pingValue;
+    private ChannelHandlerContext ctx;
+
     @Override
     public boolean canHandle(NexusProtocol.NexusMessage message) {
         return message.hasPing();
@@ -21,7 +24,12 @@ public class PingMessageHandler implements MessageHandler {
 
     @Override
     public void handle(NexusProtocol.NexusEnvelop envelop, ChannelHandlerContext ctx) {
-        int pingValue = envelop.getMessage().getPing().getPing();
+        pingValue = envelop.getMessage().getPing().getPing();
+        this.ctx = ctx;
+    }
+
+    @Override
+    public void sendMessage() {
         NexusProtocol.Ping pong = NexusProtocol.Ping.newBuilder()
                 .setPing(pingValue + 1)
                 .build();
