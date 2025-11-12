@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexis.base.Validator;
+import org.nexis.exceptions.ProtocolException;
 
 /**
  *
@@ -20,7 +21,7 @@ public class ValidationPipeline {
         validators.add(validator);
     }
 
-    public void validate(NexusProtocol.NexusEnvelop envelop) {
+    public void validate(NexusProtocol.NexusEnvelop envelop) throws ProtocolException{
         for (Validator validator : validators) {
             if (validator.supports(envelop.getMessage())) {
                 validator.validate(envelop);

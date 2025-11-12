@@ -4,6 +4,7 @@
  */
 package org.nexis.core;
 
+import com.google.protobuf.ByteString;
 import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.Objects;
@@ -79,10 +80,10 @@ public class TransactionInput {
     private TransactionWitness witness;
 
     /**
-     * Coinbase transactions have special inputs with hashes of zero. If this is
+     * genesis transactions have special inputs with hashes of zero. If this is
      * such an input, returns true.
      */
-    public boolean isCoinBase() {
+    public boolean isGenesis() {
         return outpoint.hash().equals(Sha256Hash.ZERO_HASH)
                 && (outpoint.index() & 0xFFFFFFFFL) == 0xFFFFFFFFL;  // -1 but all is serialized to the wire as unsigned int.
     }
@@ -162,10 +163,25 @@ public class TransactionInput {
     /**
      * Allocates a byte array and writes this transaction input into it.
      *
+     * @param useSegit
      * @return byte array containing the transaction input
      */
-    public NexusProtocol.TransactionInput toProto() {
-        throw new UnsupportedOperationException("no supported yet");
+    public NexusProtocol.TransactionInput toProto(boolean useSegit) {
+
+        if (useSegit) {
+            return NexusProtocol.TransactionInput.newBuilder()
+                    .setSequence(sequence)
+                    .setOutpoint(outpoint.toProto())
+                    .setWitness(witness.toProto())
+                    .setScriptBytes(ByteString.copyFrom(scriptBytes))
+                    .build();
+        } else {
+            return NexusProtocol.TransactionInput.newBuilder()
+                    .setSequence(sequence)
+                    .setOutpoint(outpoint.toProto())
+                    .setScriptBytes(ByteString.copyFrom(scriptBytes))
+                    .build();
+        }
     }
 
     /**

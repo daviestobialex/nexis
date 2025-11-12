@@ -1015,7 +1015,7 @@ public class Wallet extends BalanceOperations implements WalletTransactionAdapte
 
     private void addSuppliedInputs(Transaction tx, List<TransactionInput> originalInputs) {
         for (TransactionInput input : originalInputs) {
-            tx.addInput(TransactionInput.read(input.toProto(), tx));
+            tx.addInput(TransactionInput.read(input.toProto(input.hasWitness()), tx));
         }
     }
 
@@ -1467,7 +1467,7 @@ public class Wallet extends BalanceOperations implements WalletTransactionAdapte
      */
     private Set<Transaction> findDoubleSpendsAgainst(Transaction tx, Map<Sha256Hash, Transaction> candidates) {
         checkState(lock.isHeldByCurrentThread());
-//        if (tx.isCoinBase()) return new HashSet<>();// not related
+//        if (tx.isGenesis()) return new HashSet<>();// not related
         // Compile a set of outpoints that are spent by tx.
         HashSet<TransactionOutPoint> outpoints = new HashSet<>();
         for (TransactionInput input : tx.getInputs()) {
@@ -1531,7 +1531,7 @@ public class Wallet extends BalanceOperations implements WalletTransactionAdapte
         // This TX may spend our existing outputs even though it was not pending. This can happen in unit
         // tests, if keys are moved between wallets, if we're catching up to the chain given only a set of keys,
         // or if a dead coinbase transaction has moved back onto the best chain.
-//        boolean isDeadCoinbase = tx.isCoinBase() && dead.containsKey(tx.getTxId());
+//        boolean isDeadCoinbase = tx.isGenesis() && dead.containsKey(tx.getTxId());
         if (dead.containsKey(tx.getTxId())) {
             // There is a dead coinbase tx being received on the best chain. A coinbase tx is made dead when it moves
             // to a side chain but it can be switched back on a reorg and resurrected back to spent or unspent.

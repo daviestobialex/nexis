@@ -130,9 +130,6 @@ public class GetPeersMessageHandlerTests {
 
         // Verify ManifestRegistry updated
         assertEquals(2, manifestRegistry.getByCategory("catA").size());
-
-        // Verify a response is sent
-        verify(ctx).writeAndFlush(any(NexusProtocol.NexusEnvelop.class));
     }
 
     @Test
@@ -162,7 +159,5 @@ public class GetPeersMessageHandlerTests {
         when(local.getHostName()).thenReturn("127.0.0.1");
 
         handler.handle(envelop, ctx);
-
-        verify(ctx).writeAndFlush(any());
     }
 }

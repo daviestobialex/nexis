@@ -13,7 +13,7 @@
  */
 package org.nexis.base;
 
-import java.net.ProtocolException;
+import org.nexis.exceptions.ProtocolException;
 import org.nexus.base.proto.NexusProtocol;
 
 

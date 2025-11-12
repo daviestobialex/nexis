@@ -337,7 +337,7 @@ public class Transaction {
 
         // Add inputs
         for (TransactionInput input : inputs) {
-            builder.addInputs(input.toProto());
+            builder.addInputs(input.toProto(hasWitnesses()));
         }
 
         // Add outputs
@@ -346,6 +346,13 @@ public class Transaction {
         }
 
         return builder.build();
+    }
+
+    /**
+     * @return true of the transaction has any witnesses in any of its inputs
+     */
+    public boolean hasWitnesses() {
+        return inputs.stream().anyMatch(TransactionInput::hasWitness);
     }
 
     /**
@@ -386,7 +393,7 @@ public class Transaction {
         // txin_count, txins
         stream.write(ByteUtils.writInt32BE(inputs.size()));
         for (TransactionInput in : inputs) {
-            stream.write(in.toProto().toByteArray());//TODO: bullsit, to fix
+            stream.write(in.toProto(useSegwit).toByteArray());//TODO: bullsit, to fix
         }
         // txout_count, txouts
         stream.write(ByteUtils.writInt32BE(outputs.size()));
@@ -1261,14 +1268,14 @@ public class Transaction {
     }
 
     /**
-     * A coinbase transaction is one that creates a new coin. They are the first
+     * A genesis transaction is one that creates a new coin. They are the first
      * transaction in each block and their value is determined by a formula that
-     * all implementations of Bitcoin share. In 2011 the value of a coinbase
-     * transaction is 50 coins, but in future it will be less. A coinbase
+     * all implementations of Bitcoin share. In 2011 the value of a genesis
+     * transaction is 50 coins, but in future it will be less. A genesis
      * transaction is defined not only by its position in a block but by the
      * data in the inputs.
      */
-    public boolean isCoinBase() {
-        return inputs.size() == 1 && inputs.get(0).isCoinBase();
+    public boolean isGenesis() {
+        return inputs.size() == 1 && inputs.get(0).isGenesis();
     }
 }

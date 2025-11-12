@@ -4,6 +4,7 @@
  */
 package org.nexis.core;
 
+import com.google.protobuf.ByteString;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -182,5 +183,13 @@ public class TransactionOutPoint {
             throw new ScriptException(ScriptError.SCRIPT_ERR_UNKNOWN_ERROR, "Could not understand form of connected output script: " + connectedScript);
         }
     }
+    
+     public NexusProtocol.TransactionOutPoint toProto(){
+         return  NexusProtocol.TransactionOutPoint.newBuilder()
+                 .setIndex(index)
+                 .setHash(ByteString.copyFrom(hash.getBytes()))
+                 .build();
+                 
+     }
 
 }

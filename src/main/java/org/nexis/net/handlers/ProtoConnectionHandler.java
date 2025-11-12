@@ -25,6 +25,7 @@ import org.nexus.base.proto.NexusProtocol;
 import org.nexis.core.ValidationPipeline;
 import org.nexis.exceptions.DropMessageException;
 import org.nexis.utilities.VirtualThreadExecutor;
+import org.nexis.exceptions.ProtocolException;
 
 /**
  * {@code ProtoConnectionHandler} is the primary inbound handler for processing
@@ -132,7 +133,7 @@ public class ProtoConnectionHandler extends SimpleChannelInboundHandler<NexusPro
      * @throws Exception if validation or dispatching encounters an error
      */
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, NexusProtocol.NexusEnvelop msg) throws IOException, Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, NexusProtocol.NexusEnvelop msg) {
 
         // Run validation and dispatch in lightweight virtual threads
         VirtualThreadExecutor.chain()

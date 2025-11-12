@@ -16,6 +16,7 @@
 package org.nexis.core;
 
 import com.google.protobuf.ByteString;
+import org.nexis.store.BlockStore;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
@@ -47,6 +48,7 @@ import org.nexis.base.StreamConnection;
 import org.nexis.exceptions.InsufficientMoneyException;
 import org.nexis.internal.MessageDispatcher;
 import org.nexis.messages.GetManifestContentMessage;
+import org.nexis.messages.GetHeadersRequestMessage;
 import org.nexis.messages.handlers.ChallangeResponseHandler;
 import org.nexis.messages.handlers.ChallengeMessageHandler;
 import org.nexis.messages.handlers.GetManifestContentMessageHandler;
@@ -58,11 +60,15 @@ import org.nexis.messages.handlers.PingMessageHandler;
 import org.nexis.net.DnsDiscovery;
 import org.nexis.net.NioProducer;
 import org.nexis.store.ManifestStore;
+import org.nexis.store.BlockStore;
+import org.nexis.store.MemoryBlockStore;
 import org.nexis.validator.ChecksumValidator;
 import org.nexis.validator.IsSelfValidator;
 import org.nexis.validator.SignatureValidator;
 import org.nexis.wallet.Wallet;
 import org.nexus.base.proto.NexusProtocol;
+import org.nexis.base.Sha256Hash;
+import com.google.protobuf.ByteString;
 
 /**
  * {@code NexisInstance} is the main entry point for running a Nexus P2P node.
@@ -176,6 +182,11 @@ public class NexisInstance {
 
     private final Wallet wallet;
 
+    /**
+     * Block store for persisting and retrieving blocks.
+     */
+    private final BlockStore blockStore;
+
     static {
         new Context().initialize();
     }
@@ -192,6 +203,11 @@ public class NexisInstance {
         registry = ManifestRegistry.getInstance();
 
         NexusNetworkConfiguration params = NexusNetworkConfiguration.of(this.network);
+
+        // Initialize block store (in-memory for now)
+        this.blockStore = new MemoryBlockStore(
+                new StoredBlock(params.getGenesisBlock(), java.math.BigInteger.ONE, 0)
+        );
 
         // Configure validators
         pipeline.addValidator(new ChecksumValidator(params));
@@ -220,7 +236,6 @@ public class NexisInstance {
             this.connectionClient.connectionOpened();
         }
 
-        //TODO: load wallet
         wallet = Wallet.of(identity, params);
         Address currentAddress = wallet.currentAddress();
         Coin balance = wallet.getBalance();
@@ -284,9 +299,62 @@ public class NexisInstance {
      * @return
      */
     public NexisInstance startBlockChainSync() {
+        // Build a block locator following bitcoinj: chain head, previous blocks, fallback to genesis
+        NexusNetworkConfiguration params = NexusNetworkConfiguration.of(this.network);
+        List<Sha256Hash> locatorHashes = new ArrayList<>();
 
-        // get all header hashes
-        // send hashes to peer
+        // Try to get chain head from BlockStore
+        try {
+            StoredBlock chainHead = blockStore.getChainHead();
+            if (chainHead != null) {
+                // Add chain head hash to locator
+                locatorHashes.add(chainHead.getHash());
+                log.info("Block locator using chain head: " + chainHead.getHash() 
+                        + " at height " + chainHead.getHeight());
+            }
+        } catch (Exception ex) {
+            log.log(Level.WARNING, "Error accessing BlockStore chain head, will fallback to genesis", ex);
+        }
+
+        // Always add genesis as fallback if locator is empty
+        if (locatorHashes.isEmpty()) {
+            try {
+                Sha256Hash genesis = params.getGenesisBlock().getHash();
+                locatorHashes.add(genesis);
+                log.info("Block locator fallback to genesis hash: " + genesis);
+            } catch (Exception ex) {
+                log.log(Level.SEVERE, "Unable to determine genesis hash for block locator", ex);
+            }
+        }
+
+        // Build protobuf Header (used for getHeader messages)
+        NexusProtocol.Header.Builder headerBuilder = NexusProtocol.Header.newBuilder();
+        for (Sha256Hash h : locatorHashes) {
+            headerBuilder.addHash(ByteString.copyFrom(h.serialize()));
+        }
+        NexusProtocol.Header headerProto = headerBuilder.build();
+
+        // Wrap into our Nexus message and broadcast to active peers
+        GetHeadersRequestMessage msg = new GetHeadersRequestMessage(params, headerProto, new NexusEnvelopBuilder(identity).getNode().getNodeId().getId());
+        NexusProtocol.NexusEnvelop envelop = builder.build(msg);
+
+        if (envelop == null) {
+            log.warning("Could not build getheaders envelope (signing failed)");
+            return this;
+        }
+
+        PeerRegistry.getInstance().getActivePeers()
+                .forEach(peer -> {
+                    try {
+                        peer.channel().writeAndFlush(envelop);
+                        log.info("Sent getheaders to peer " + peer.peer().id());
+                    } catch (Exception e) {
+                        log.log(Level.WARNING, "Failed to send getheaders to peer", e);
+                    }
+                });
+
+        // The response handling should be in a Header/GetHeader message handler
+        // which will validate and store incoming headers and then request blocks.
         return this;
     }
 

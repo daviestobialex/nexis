@@ -389,7 +389,7 @@ public class Block {
         // Start by adding all the hashes of the transactions as leaves of the tree.
         for (Transaction tx : transactions) {
             final Sha256Hash hash;
-            if (useWTxId && tx.isCoinBase()) {
+            if (useWTxId && tx.isGenesis()) {
                 hash = Sha256Hash.ZERO_HASH;
             } else {
                 hash = useWTxId ? tx.getWTxId() : tx.getTxId();
@@ -470,4 +470,15 @@ public class Block {
         return getHash().toString();
     }
 
+    /**
+     * Returns the work represented by this block.<p>
+     *
+     * Work is defined as the number of tries needed to solve a block in the
+     * average case. Consider a difficulty target that covers 5% of all possible
+     * hash values. Then the work of the block will be 20. As the target gets
+     * lower, the amount of work goes up.
+     */
+    public BigInteger getWork() throws VerificationException {
+        throw new UnsupportedOperationException("I need to simplify how get work can be determined from an API service point of view.");
+    }
 }

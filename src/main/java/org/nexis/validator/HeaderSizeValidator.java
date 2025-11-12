@@ -4,7 +4,7 @@
  */
 package org.nexis.validator;
 
-import java.net.ProtocolException;
+import org.nexis.exceptions.ProtocolException;
 import org.nexis.base.Validator;
 import org.nexus.base.proto.NexusProtocol;
 

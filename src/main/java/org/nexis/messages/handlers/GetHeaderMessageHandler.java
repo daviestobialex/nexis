@@ -6,7 +6,6 @@ package org.nexis.messages.handlers;
 
 import com.google.protobuf.ByteString;
 import io.netty.channel.ChannelHandlerContext;
-import java.net.ProtocolException;
 import java.util.ArrayList;
 import java.util.List;
 import org.nexis.base.Sha256Hash;

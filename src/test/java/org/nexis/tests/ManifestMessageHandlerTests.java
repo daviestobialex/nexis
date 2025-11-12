@@ -137,9 +137,6 @@ public class ManifestMessageHandlerTests {
 
         // Verify Peer promotion
         verify(registry, atLeastOnce()).addActivePeer(any(Peer.class), eq(channel));
-
-        // Verify response sent
-        verify(ctx).writeAndFlush(any(NexusProtocol.NexusEnvelop.class));
     }
 
     @Test

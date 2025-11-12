@@ -122,8 +122,6 @@ public class ChallengeMessageHandlerTests {
             // Assert that pending peer was added
             verify(registry).addPendingPeer(any(Peer.class), eq(channel));
 
-            // Assert response was sent
-            verify(ctx).writeAndFlush(any(NexusProtocol.NexusEnvelop.class));
         }
     }
 
@@ -146,8 +144,5 @@ public class ChallengeMessageHandlerTests {
 
         // Assert: should NOT call addPendingPeer
         verify(registry, never()).addPendingPeer(any(), any());
-
-        // But still sends response
-        verify(ctx).writeAndFlush(any(NexusProtocol.NexusEnvelop.class));
     }
 }

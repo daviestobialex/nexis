@@ -60,7 +60,7 @@ public class TransactionWitness {
     }
 
     // Convert to proto Witness (use when serializing to wire)
-    public org.nexus.base.proto.NexusProtocol.Witness toProtoWitness() {
+    public org.nexus.base.proto.NexusProtocol.Witness toProto() {
         org.nexus.base.proto.NexusProtocol.Witness.Builder wb = org.nexus.base.proto.NexusProtocol.Witness.newBuilder();
         for (byte[] element : pushes) {
             wb.addStack(com.google.protobuf.ByteString.copyFrom(element));
