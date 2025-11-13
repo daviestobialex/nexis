@@ -30,6 +30,7 @@ message Block {// get block by hash
   bytes block_signature = 7;      // proposer or aggregated signature
   uint64 version = 5;
   fixed64 nonce = 2;
+  optional uint32 difficulty_target = 9; // compact representation (nBits)
   Policy policy = 8;    
 }
 

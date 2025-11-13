@@ -213,6 +213,20 @@ public class Wallet extends BalanceOperations implements WalletTransactionAdapte
     }
 
     /**
+     * Allows attaching a {@link UTXOProvider} which the wallet will consult
+     * when calculating balances and selecting coins. Passing null disables the
+     * provider and makes the wallet use its internal in-memory pools only.
+     */
+    public void setUTXOProvider(UTXOProvider provider) {
+        lock.lock();
+        try {
+            this.vUTXOProvider = provider;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
      * Enumerates possible resolutions for missing signatures.
      */
     public enum MissingSigsMode {

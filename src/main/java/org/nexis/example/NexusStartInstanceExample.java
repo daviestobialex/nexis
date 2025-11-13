@@ -17,11 +17,12 @@ public class NexusStartInstanceExample {
     // for test purposes alone and will be removed
     public static void main(String[] args) throws Exception {
 
-        NexisInstance businessInstance = new NexisInstance(NexusNetwork.TESTNET, true);
+        NexisInstance businessInstance = new NexisInstance(NexusNetwork.TESTNET, false);
 
         businessInstance
                 .start(9004)
-                .connect(5);
+                .connect(5)
+                .startBlockChainSync();
 
         // Keep the JVM alive
         Thread.currentThread().join();

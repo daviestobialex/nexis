@@ -35,7 +35,7 @@ public class UTXO {
     private final Sha256Hash hash;
     private final long index;
     private final int height;
-    private final boolean coinbase;// will always be false because minning not supported
+    private final boolean coinbase;// will always be false because minning not supported, nut would  alternative use
     private final String address;
 
     /**
@@ -127,13 +127,14 @@ public class UTXO {
     }
 
     /**
-     * Gets the flag of whether this was created by a coinbase tx.
+     * Gets the flag of whether this was created by a gensis tx or is intended
+     * for creating a new coin.
      *
      * @return
      */
-//    public boolean isCoinbase() {
-//        return coinbase;
-//    }
+    public boolean isCoinbase() {
+        return coinbase;
+    }
 
     /**
      * The address of this output, can be the empty string if none was provided

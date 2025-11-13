@@ -128,21 +128,21 @@ public abstract class WalletDefaultOperations {
      */
     protected List<TransactionOutput> calculateAllSpendCandidatesFromUTXOProvider(boolean excludeImmatureCoinbases) {
         checkState(getLock().isHeldByCurrentThread());
-//        UTXOProvider utxoProvider = Objects.requireNonNull(vUTXOProvider, "No UTXO provider has been set");
+        UTXOProvider utxoProvider = Objects.requireNonNull(getVUTXOProvider(), "No UTXO provider has been set");
         List<TransactionOutput> candidates = new LinkedList<>();
-//        try {
-//            int chainHeight = utxoProvider.getChainHeadHeight();
-//            for (UTXO output : getStoredOutputsFromUTXOProvider()) {
-//                boolean coinbase = output.isCoinbase();
-//                int depth = chainHeight - output.getHeight() + 1; // the current depth of the output (1 = same as head).
-//                // Do not try and spend coinbases that were mined too recently, the protocol forbids it.
-//                if (!excludeImmatureCoinbases || depth >= params.getSpendableCoinbaseDepth()) {
-//                    candidates.add(new FreeStandingTransactionOutput(output, chainHeight));
-//                }
-//            }
-//        } catch (UTXOProviderException e) {
-//            throw new RuntimeException("UTXO provider error", e);
-//        }
+        try {
+            int chainHeight = utxoProvider.getChainHeadHeight();
+            for (UTXO output : getStoredOutputsFromUTXOProvider()) {
+                boolean coinbase = output.isCoinbase();
+                int depth = chainHeight - output.getHeight() + 1; // the current depth of the output (1 = same as head).
+                // Do not try and spend coinbases that were mined too recently, the protocol forbids it.
+                if (!excludeImmatureCoinbases || !coinbase || depth >= getParams().getSpendableCoinbaseDepth()) {
+                    candidates.add(new FreeStandingTransactionOutput(output, chainHeight));
+                }
+            }
+        } catch (UTXOProviderException e) {
+            throw new RuntimeException("UTXO provider error", e);
+        }
 
         // We need to handle the pending transactions that we know about.
         for (Transaction tx : getPending().values()) {
@@ -198,6 +198,60 @@ public abstract class WalletDefaultOperations {
         candidates.addAll(utxoProvider.getOpenTransactionOutputs(Arrays
                 .asList(getIdentity().getKeyPair().getPublic())));
         return candidates;
+    }
+
+    // ***************************************************************************************************************
+    /**
+     * A custom {@link TransactionOutput} that is freestanding. This contains
+     * all the information required for spending without actually having all the
+     * linked data (i.e parent tx).
+     *
+     */
+    private static class FreeStandingTransactionOutput extends TransactionOutput {
+
+        private final UTXO output;
+        private final int chainHeight;
+
+        /**
+         * Construct a freestanding Transaction Output.
+         *
+         * @param output The stored output (freestanding).
+         */
+        public FreeStandingTransactionOutput(UTXO output, int chainHeight) {
+            super(null, output.getValue(), output.getScript().program());
+            this.output = output;
+            this.chainHeight = chainHeight;
+        }
+
+        /**
+         * Get the {@link UTXO}.
+         *
+         * @return The stored output.
+         */
+        public UTXO getUTXO() {
+            return output;
+        }
+
+        /**
+         * Get the depth withing the chain of the parent tx, depth is 1 if it
+         * the output height is the height of the latest block.
+         *
+         * @return The depth.
+         */
+        @Override
+        public int getParentTransactionDepthInBlocks() {
+            return chainHeight - output.getHeight() + 1;
+        }
+
+        @Override
+        public int getIndex() {
+            return (int) output.getIndex();
+        }
+
+        @Override
+        public Sha256Hash getParentTransactionHash() {
+            return output.getHash();
+        }
     }
 
 }

@@ -6,6 +6,7 @@ package org.nexis.utilities;
 
 import org.nexis.base.Sha256Hash;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.InvalidKeyException;
@@ -31,6 +32,8 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 public class CryptographyUtils {
 
     public static final String ED25519_ALGO = "Ed25519";
+    private static final BigInteger LARGEST_HASH = BigInteger.ONE.shiftLeft(256);
+
 
     /**
      * Loads an Ed25519 KeyPair from the given file paths.
@@ -121,5 +124,34 @@ public class CryptographyUtils {
         sig.update(data);
 
         return sig.verify(signature);
+    }
+
+    /**
+     * Decode Bitcoin's "compact" representation of a target (nBits) into a
+     * full BigInteger target value.
+     */
+    public static BigInteger decodeCompactBits(int compact) {
+        int size = (compact >>> 24) & 0xff;
+        int word = compact & 0x007fffff;
+        BigInteger result;
+        if (size <= 3) {
+            result = BigInteger.valueOf(word).shiftRight(8 * (3 - size));
+        } else {
+            result = BigInteger.valueOf(word).shiftLeft(8 * (size - 3));
+        }
+        if ((compact & 0x00800000) != 0) {
+            result = result.negate();
+        }
+        return result;
+    }
+
+    /**
+     * Compute the "work" represented by a compact target. Work is roughly the
+     * expected number of hashes required to find a block: floor((2^256) / (target + 1)).
+     */
+    public static BigInteger getWorkFromCompact(int compact) {
+        BigInteger target = decodeCompactBits(compact);
+        if (target.signum() <= 0) return BigInteger.ZERO;
+        return LARGEST_HASH.divide(target.add(BigInteger.ONE));
     }
 }

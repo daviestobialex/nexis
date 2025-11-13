@@ -69,7 +69,7 @@ public class SimpleNodeIdentity implements Identity {
 
     @Override
     public boolean isPubKeyHashMine(byte[] extractHashFromP2WH) {
-        return Arrays.equals(getNodeId().getId(), extractHashFromP2WH);
+        return Arrays.equals(getNodeId().getId(), extractHashFromP2WH);// TODO: need to look at other script types here
     }
 
 }

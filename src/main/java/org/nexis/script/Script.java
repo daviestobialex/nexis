@@ -34,7 +34,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -56,11 +55,9 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.Address;
-import org.nexis.base.NetworkConfiguration;
 import org.nexis.base.SegwitAddress;
 import org.nexis.exceptions.SignatureDecodeException;
 import org.nexis.exceptions.VerificationException;
-import org.nexis.internal.CryptoUtils;
 import org.nexis.internal.InternalUtils;
 
 import static org.nexis.internal.Preconditions.checkArgument;
@@ -1469,7 +1466,7 @@ public class Script {
                             throw new ScriptException(ScriptError.SCRIPT_ERR_INVALID_STACK_OPERATION, "Attempted OP_RIPEMD160 on an empty stack");
                         }
                         byte[] dataToHash = stack.pollLast();
-                        byte[] ripmeMdHash = CryptoUtils.digestRipeMd160(dataToHash);
+                        byte[] ripmeMdHash = CryptographyUtils.digestRipeMd160(dataToHash);
                         stack.add(ripmeMdHash);
                         break;
                     case OP_SHA1:
@@ -1492,7 +1489,7 @@ public class Script {
                         if (stack.size() < 1) {
                             throw new ScriptException(ScriptError.SCRIPT_ERR_INVALID_STACK_OPERATION, "Attempted OP_HASH160 on an empty stack");
                         }
-                        stack.add(CryptoUtils.sha256hash160(stack.pollLast()));
+                        stack.add(CryptographyUtils.sha256hash160(stack.pollLast()));
                         break;
                     case OP_HASH256:
                         if (stack.size() < 1) {

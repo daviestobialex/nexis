@@ -12,6 +12,7 @@ import java.math.BigInteger;
 import java.util.HexFormat;
 import org.nexis.base.PublicNodeProperties;
 import org.nexis.base.Sha256Hash;
+import static org.nexis.utilities.CryptographyUtils.sha256hash160;
 
 /**
  *
@@ -66,6 +67,26 @@ public final class NodeId implements PublicNodeProperties {
      */
     public static Sha256Hash stableNodeId(byte[] publicKey) {
         return Sha256Hash.twiceOf(publicKey);
+    }
+
+    /**
+     * return segwit address style of 20 bytes length
+     *
+     * @param publicKey public key bytes
+     * @return
+     */
+    public static byte[] toSegwit(byte[] publicKey) {
+        return sha256hash160(publicKey);
+    }
+    
+     /**
+     * return segwit address style of 20 bytes length
+     *
+     * @param publicKey public key bytes
+     * @return
+     */
+    public static String toSegwitHex(byte[] publicKey) {
+        return HexFormat.of().formatHex(toSegwit(publicKey));
     }
 
     @Override

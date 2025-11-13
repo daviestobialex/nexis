@@ -68,6 +68,38 @@ public class MemoryBlockStore implements BlockStore {
             throw new BlockStoreException("Cannot store null block");
         }
         blocks.put(block.getHash(), block);
+        // If this block has more chain work than the current chain head, update the chain head.
+        lock.readLock().lock();
+        try {
+            if (chainHead == null) {
+                // upgrade to write lock
+                lock.readLock().unlock();
+                lock.writeLock().lock();
+                try {
+                    this.chainHead = block;
+                } finally {
+                    lock.writeLock().unlock();
+                }
+            } else if (block.getChainWork().compareTo(chainHead.getChainWork()) > 0) {
+                // new best chain by work
+                lock.readLock().unlock();
+                lock.writeLock().lock();
+                try {
+                    this.chainHead = block;
+                } finally {
+                    lock.writeLock().unlock();
+                }
+            } else {
+                // keep current chain head
+                lock.readLock().unlock();
+            }
+        } catch (RuntimeException rex) {
+            // ensure lock is released in case of exception
+            if (lock.getReadHoldCount() > 0) {
+                lock.readLock().unlock();
+            }
+            throw rex;
+        }
     }
 
     @Override

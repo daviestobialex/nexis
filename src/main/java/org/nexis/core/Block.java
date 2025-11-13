@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
 import static org.nexis.base.Coin.FIFTY_COINS;
 import org.nexis.base.Sha256Hash;
 import static org.nexis.base.Sha256Hash.hashTwice;
@@ -25,6 +26,7 @@ import org.nexis.internal.InternalUtils;
 import org.nexis.internal.TimeUtils;
 import org.nexis.script.ScriptBuilder;
 import org.nexis.script.ScriptOpCodes;
+import static org.nexis.utilities.CryptographyUtils.digestRipeMd160;
 import org.nexus.base.proto.NexusProtocol;
 
 /**
@@ -77,6 +79,8 @@ public class Block {
     private final long version;
     private Sha256Hash prevBlockHash;
     private Sha256Hash merkleRoot, witnessRoot;
+    // compact difficulty target (nBits format). Stored as unsigned 32-bit value.
+    private int difficultyTarget = 0x1d07fff8; // default testnet/mainnet-like placeholder
     private Instant time;
     private long nonce;// used in minning but this may not be required
 
@@ -158,14 +162,22 @@ public class Block {
 
     // A script containing the difficulty bits and the following message:
     //
-    //   "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks"
+    //   "Times on 04/Dec/2025, building something I could not resist but needed to be created."
     private static final byte[] genesisTxInputScriptBytes = ByteUtils.parseHex("04ffff001d01044554696d6573206f6e2030342f4465632f323032352c206275696c64696e6720736f6d657468696e67204920636f756c64206e6f742072657369737420627574206e656564656420746f20626520637265617465642e");
 
-    private static final byte[] genesisTxScriptPubKeyBytes = new ScriptBuilder()
-            .data(ByteUtils.parseHex("fe7afe209b36127700166af92015cb1fd523885401987e99d61a831d4708cf71"))
-            .op(ScriptOpCodes.OP_CHECKSIG)
-            .build()
-            .program();
+    private static final byte[] genesisTxScriptPubKeyBytes
+            = new ScriptBuilder()
+                    .smallNum(0)
+                    .data(
+                            ByteUtils.
+                            parseHex("43332f52fa5163eee052675664db00e385b4388c"))
+                    .build()
+                    .program();
+
+//    private static final byte[] genesisTxScriptPubKeyBytes = new ScriptBuilder()
+//            .data(ByteUtils.parseHex("fe7afe209b36127700166af92015cb1fd523885401987e99d61a831d4708cf71"))
+//            .build()
+//            .program();// p2pk
 
     /**
      * Returns whether this block conforms to
@@ -216,6 +228,7 @@ public class Block {
             Sha256Hash hash,
             Instant time,
             long nonce,
+            int difficultyTarget,
             List<Transaction> transactions) {
         this.version = version;
         this.prevBlockHash = prevBlockHash;
@@ -223,6 +236,7 @@ public class Block {
         this.hash = hash;
         this.time = time;
         this.nonce = nonce;
+        this.difficultyTarget = difficultyTarget;
         this.transactions = transactions != null ? new ArrayList<>(transactions) : null;
     }
 
@@ -239,6 +253,10 @@ public class Block {
         Sha256Hash prevHash = Sha256Hash.of(payload.getHeader().getPrevHash().toByteArray());
         Sha256Hash merkelRoot = Sha256Hash.of(payload.getHeader().getMerkleRoot().toByteArray());
         Sha256Hash hash = Sha256Hash.of(payload.getHeader().getBlockHash().toByteArray());
+        int difficultyTarget = 0;
+        if (payload.hasDifficultyTarget()) {
+            difficultyTarget = payload.getDifficultyTarget();
+        }
         long timestamp = payload.getTimestamp();
         List<Transaction> transactions = payload.getTransactionsList()
                 .stream().map(proto -> Transaction.read(proto))
@@ -249,6 +267,7 @@ public class Block {
                 merkelRoot, hash,
                 Instant.ofEpochSecond(timestamp),
                 nonce,
+                difficultyTarget,
                 transactions);
     }
 
@@ -283,7 +302,8 @@ public class Block {
         stream.write(prevBlockHash.serialize());
         stream.write(getMerkleRoot().serialize());
         ByteUtils.writeInt32LE(time.getEpochSecond(), stream);
-//        ByteUtils.writeInt32LE(difficultyTarget, stream);
+        // write compact difficulty (nBits) then the nonce
+        ByteUtils.writeInt32LE(difficultyTarget, stream);
         ByteUtils.writeInt32LE(nonce, stream);
     }
 
@@ -291,8 +311,6 @@ public class Block {
      * The number that is one greater than the largest representable SHA-256
      * hash.
      */
-    private static BigInteger LARGEST_HASH = BigInteger.ONE.shiftLeft(256);
-
     /**
      * Returns a copy of the block, but without any transactions.
      *
@@ -479,6 +497,13 @@ public class Block {
      * lower, the amount of work goes up.
      */
     public BigInteger getWork() throws VerificationException {
-        throw new UnsupportedOperationException("I need to simplify how get work can be determined from an API service point of view.");
+        throw new UnsupportedOperationException("");
+    }
+
+    /**
+     * Returns the compact difficulty target (nBits) for this block.
+     */
+    public int getDifficultyTarget() {
+        return difficultyTarget;
     }
 }

@@ -23,7 +23,6 @@ import org.nexis.internal.TimeUtils;
 import org.nexis.base.SegwitAddress;
 import org.nexis.base.Sha256Hash;
 import org.nexis.core.Transaction;
-import org.nexis.internal.CryptoUtils;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -45,6 +44,7 @@ import static org.nexis.script.ScriptOpCodes.OP_PUSHDATA1;
 import static org.nexis.script.ScriptOpCodes.OP_PUSHDATA2;
 import static org.nexis.script.ScriptOpCodes.OP_PUSHDATA4;
 import static org.nexis.script.ScriptOpCodes.OP_RETURN;
+import org.nexis.utilities.CryptographyUtils;
 
 /**
  * <p>
@@ -651,7 +651,7 @@ public class ScriptBuilder {
      * @return an output script that sends to the redeem script
      */
     public static Script createP2SHOutputScript(Script redeemScript) {
-        byte[] hash = CryptoUtils.sha256hash160(redeemScript.program());
+        byte[] hash = CryptographyUtils.sha256hash160(redeemScript.program());
         return ScriptBuilder.createP2SHOutputScript(hash);
     }
 

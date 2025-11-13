@@ -15,8 +15,6 @@
  */
 package org.nexis.core;
 
-import com.google.protobuf.ByteString;
-import org.nexis.store.BlockStore;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
@@ -43,9 +41,7 @@ import org.nexis.net.NioProtoServer;
 import org.nexis.networks.NexusNetworkConfiguration;
 import org.nexis.base.IdentityProvider;
 import org.nexis.base.Identity;
-import org.nexis.base.SegwitAddress;
 import org.nexis.base.StreamConnection;
-import org.nexis.exceptions.InsufficientMoneyException;
 import org.nexis.internal.MessageDispatcher;
 import org.nexis.messages.GetManifestContentMessage;
 import org.nexis.messages.GetHeadersRequestMessage;
@@ -69,6 +65,7 @@ import org.nexis.wallet.Wallet;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexis.base.Sha256Hash;
 import com.google.protobuf.ByteString;
+import org.nexis.exceptions.UTXOProviderException;
 
 /**
  * {@code NexisInstance} is the main entry point for running a Nexus P2P node.
@@ -195,7 +192,8 @@ public class NexisInstance {
     public NexisInstance(NexusNetwork network, boolean doPropagate) throws FileNotFoundException {
         IdentityProvider identityProvider = new Ed25519IdentityProvider();
         this.identity = identityProvider.loadOrCreateIdentity();
-        log.info("identity PUB " + identity.getNodeId().toHex());
+        log.info("identity PUB " + identity.getNodeId().toHex()
+                + " segwit " + NodeId.toSegwitHex(identity.getNodeId().getPublicKey()));
 
         this.manifest = Manifest.resolve("manifest.json", identity);
         this.network = network;
@@ -237,24 +235,24 @@ public class NexisInstance {
         }
 
         wallet = Wallet.of(identity, params);
+
         Address currentAddress = wallet.currentAddress();
         Coin balance = wallet.getBalance();
         log.info("WALLET ADDRESS " + currentAddress.toString()
                 + "BASE 58 ADDRESS " + currentAddress.toStringBase58() + " BALANCE " + balance.getValue());
 
-        try {
-            wallet.setTransactionBroadcaster((Transaction tx) -> {
-                final TransactionBroadcast broadcast = new TransactionBroadcast(tx);
-                broadcast.broadcastOnly();
-                return broadcast;
-            });
-            wallet.sendCoins(SendRequest
-                    .to(SegwitAddress.fromBech32("tb1qkmfnxdkvuxrpkg5uz8t2e9dtqd6edsjdnjyya0yd3pv4ucaa6tus7d0pgc",
-                            params.getNetwork()), Coin.valueOf(1000L)));
-        } catch (InsufficientMoneyException | Wallet.CompletionException ex) {
-            Logger.getLogger(NexisInstance.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
+//        try {
+//            wallet.setTransactionBroadcaster((Transaction tx) -> {
+//                final TransactionBroadcast broadcast = new TransactionBroadcast(tx);
+//                broadcast.broadcastOnly();
+//                return broadcast;
+//            });
+//            wallet.sendCoins(SendRequest
+//                    .to(SegwitAddress.fromBech32("tb1qkmfnxdkvuxrpkg5uz8t2e9dtqd6edsjdnjyya0yd3pv4ucaa6tus7d0pgc",
+//                            params.getNetwork()), Coin.valueOf(1000L)));
+//        } catch (InsufficientMoneyException | Wallet.CompletionException ex) {
+//            Logger.getLogger(NexisInstance.class.getName()).log(Level.SEVERE, null, ex);
+//        }
     }
 
     /**
@@ -309,7 +307,7 @@ public class NexisInstance {
             if (chainHead != null) {
                 // Add chain head hash to locator
                 locatorHashes.add(chainHead.getHash());
-                log.info("Block locator using chain head: " + chainHead.getHash() 
+                log.info("Block locator using chain head: " + chainHead.getHash()
                         + " at height " + chainHead.getHeight());
             }
         } catch (Exception ex) {
@@ -353,6 +351,17 @@ public class NexisInstance {
                     }
                 });
 
+        MemoryBlockUTXOProvider memoryBlockUTXOProvider = new MemoryBlockUTXOProvider(blockStore, network);
+        try {
+            memoryBlockUTXOProvider.getOpenTransactionOutputs(
+                    Arrays.asList(identity.getKeyPair().getPublic())
+            );
+        } catch (UTXOProviderException ex) {
+            System.getLogger(NexisInstance.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
+        wallet.setUTXOProvider(memoryBlockUTXOProvider);// set provider at the end of sync
+        log.info("AFTER UTXO WALLET BALANCE " + wallet.getBalance().getValue());
+
         // The response handling should be in a Header/GetHeader message handler
         // which will validate and store incoming headers and then request blocks.
         return this;
@@ -363,10 +372,11 @@ public class NexisInstance {
      *
      * @param maxConnections
      */
-    public void connect(int maxConnections) {
+    public NexisInstance connect(int maxConnections) {
         if (this.canPropagate) {
             dnsDiscovery.seedPeers(maxConnections);
         }
+        return this;
     }
 
     /**
