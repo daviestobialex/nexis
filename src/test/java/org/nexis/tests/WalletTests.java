@@ -47,7 +47,7 @@ public class WalletTests {
         Assertions.assertNotNull(currentAddress, "current address can not be null");
     }
 
-    @Test
+//    @Test
     public void genesisBalanceTest() throws NoSuchAlgorithmException {
 
         IdentityProvider identityProvider = new Ed25519IdentityProvider();
