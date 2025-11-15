@@ -70,6 +70,6 @@ public class WalletTests {
 
         Coin balance = wallet.getBalance();
         System.out.println("BALANCE COIN " + balance.getValue());
-        Assertions.assertTrue(balance.getValue() == 100000000000000L, "default balamnce must be zero");
+        Assertions.assertTrue(balance.getValue() == 100000000000000L, "default balance must be 100000000000000L");
     }
 }
