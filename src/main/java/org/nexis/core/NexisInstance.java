@@ -34,7 +34,6 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.nexis.base.Address;
-import org.nexis.base.Coin;
 import org.nexis.base.Manifest;
 import org.nexis.base.NexusNetwork;
 import org.nexis.net.NioProtoServer;
@@ -65,7 +64,7 @@ import org.nexis.wallet.Wallet;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexis.base.Sha256Hash;
 import com.google.protobuf.ByteString;
-import org.nexis.exceptions.UTXOProviderException;
+import org.nexis.exceptions.InsufficientMoneyException;
 
 /**
  * {@code NexisInstance} is the main entry point for running a Nexus P2P node.
@@ -202,11 +201,6 @@ public class NexisInstance {
 
         NexusNetworkConfiguration params = NexusNetworkConfiguration.of(this.network);
 
-        // Initialize block store (in-memory for now)
-        this.blockStore = new MemoryBlockStore(
-                new StoredBlock(params.getGenesisBlock(), java.math.BigInteger.ONE, 0)
-        );
-
         // Configure validators
         pipeline.addValidator(new ChecksumValidator(params));
         pipeline.addValidator(new SignatureValidator(params));
@@ -234,25 +228,17 @@ public class NexisInstance {
             this.connectionClient.connectionOpened();
         }
 
-        wallet = Wallet.of(identity, params);
+        // Initialize block store (in-memory for now) and a UTXO provider before creating the wallet
+        this.blockStore = new MemoryBlockStore(
+                new StoredBlock(params.getGenesisBlock(), java.math.BigInteger.ONE, 0)
+        );
+        MemoryBlockUTXOProvider memoryBlockUTXOProvider = new MemoryBlockUTXOProvider(blockStore, network);
 
-        Address currentAddress = wallet.currentAddress();
-        Coin balance = wallet.getBalance();
-        log.info("WALLET ADDRESS " + currentAddress.toString()
-                + "BASE 58 ADDRESS " + currentAddress.toStringBase58() + " BALANCE " + balance.getValue());
-
-//        try {
-//            wallet.setTransactionBroadcaster((Transaction tx) -> {
-//                final TransactionBroadcast broadcast = new TransactionBroadcast(tx);
-//                broadcast.broadcastOnly();
-//                return broadcast;
-//            });
-//            wallet.sendCoins(SendRequest
-//                    .to(SegwitAddress.fromBech32("tb1qkmfnxdkvuxrpkg5uz8t2e9dtqd6edsjdnjyya0yd3pv4ucaa6tus7d0pgc",
-//                            params.getNetwork()), Coin.valueOf(1000L)));
-//        } catch (InsufficientMoneyException | Wallet.CompletionException ex) {
-//            Logger.getLogger(NexisInstance.class.getName()).log(Level.SEVERE, null, ex);
-//        }
+        // Create wallet with an immutable UTXO provider supplied from the NexisInstance. The provider is final
+        // for the lifetime of the wallet which simplifies lifecycle assumptions and avoids races where the
+        // provider can be swapped out mid-flight.
+        wallet = Wallet.of(identity, params, memoryBlockUTXOProvider);
+        wallet.setVersion(manifest.getVersion());
     }
 
     /**
@@ -350,17 +336,6 @@ public class NexisInstance {
                         log.log(Level.WARNING, "Failed to send getheaders to peer", e);
                     }
                 });
-
-        MemoryBlockUTXOProvider memoryBlockUTXOProvider = new MemoryBlockUTXOProvider(blockStore, network);
-        try {
-            memoryBlockUTXOProvider.getOpenTransactionOutputs(
-                    Arrays.asList(identity.getKeyPair().getPublic())
-            );
-        } catch (UTXOProviderException ex) {
-            System.getLogger(NexisInstance.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
-        }
-        wallet.setUTXOProvider(memoryBlockUTXOProvider);// set provider at the end of sync
-        log.info("AFTER UTXO WALLET BALANCE " + wallet.getBalance().getValue());
 
         // The response handling should be in a Header/GetHeader message handler
         // which will validate and store incoming headers and then request blocks.
@@ -606,12 +581,44 @@ public class NexisInstance {
         throw new UnsupportedOperationException("operation not supported yet");
     }
 
-    public CompletableFuture<TransactionBroadcast> sendTransaction(SendRequest sendRequest) {
-        throw new UnsupportedOperationException("operation not supported yet");
+    public void sendTransaction(SendRequest sendRequest) {
+        try {
+
+            TransactionBroadcaster broadcaster = (Transaction tx) -> {
+                final TransactionBroadcast broadcast = new TransactionBroadcast(tx);
+                broadcast.broadcastOnly();
+                return broadcast;
+            };
+
+            wallet.setTransactionBroadcaster(broadcaster);
+            wallet.sendCoins(sendRequest);
+
+        } catch (InsufficientMoneyException | Wallet.CompletionException ex) {
+            Logger.getLogger(NexisInstance.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
     }
 
-    public CompletableFuture<TransactionBroadcast> sendApproval(SendRequest sendRequest) {
-        throw new UnsupportedOperationException("operation not supported yet");
+    public void validatePeer(SendRequest sendRequest) {
+        if (manifest.canSignFor()) {
+            try {
+                sendRequest.setSystem(true);
+                TransactionBroadcaster broadcaster = (Transaction tx) -> {
+                    final TransactionBroadcast broadcast = new TransactionBroadcast(tx);
+                    broadcast.broadcastOnly();
+                    return broadcast;
+                };
+
+                wallet.setTransactionBroadcaster(broadcaster);
+                wallet.sendCoins(sendRequest);
+
+            } catch (InsufficientMoneyException | Wallet.CompletionException ex) {
+                Logger.getLogger(NexisInstance.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
+        } else {
+            throw new RuntimeException("operation would be rejected by network");
+        }
     }
 
     /**

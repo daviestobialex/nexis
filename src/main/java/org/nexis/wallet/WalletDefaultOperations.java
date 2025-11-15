@@ -104,16 +104,8 @@ public abstract class WalletDefaultOperations {
     public List<TransactionOutput> calculateAllSpendCandidates(boolean excludeImmatureCoinbases, boolean excludeUnsignable) {
         getLock().lock();
         try {
-            List<TransactionOutput> candidates;
-            if (getVUTXOProvider() == null) {
-                candidates = getMyUnspents().stream()
-                        .filter(output -> (!excludeUnsignable) && (!excludeImmatureCoinbases
-                        || isTransactionMature(output.getParentTransaction())))
-                        .collect(StreamUtils.toUnmodifiableList());
-            } else {
-                candidates = calculateAllSpendCandidatesFromUTXOProvider(excludeImmatureCoinbases);
-            }
-            return candidates;
+            return calculateAllSpendCandidatesFromUTXOProvider(excludeImmatureCoinbases);
+
         } finally {
             getLock().unlock();
         }

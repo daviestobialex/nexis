@@ -14,6 +14,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -63,7 +64,7 @@ public class ChallangeResponseHandlerTets {
         registry = mock(PeerRegistry.class);
 
         manifest = mock(Manifest.class);
-        when(manifest.getCategory()).thenReturn("test-category");
+        when(manifest.getCategories()).thenReturn(Arrays.asList("test-category"));
         when(manifest.manifestIdBytes()).thenReturn("test-id".getBytes());
 
         // generate a keypair

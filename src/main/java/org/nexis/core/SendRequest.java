@@ -109,6 +109,12 @@ public class SendRequest {
     public boolean signInputs = true;
 
     /**
+     * If false (the default), transaction will be treated normally, if true
+     * transaction is a governance request
+     */
+    public boolean system = false;
+
+    /**
      * If not null, the {@link CoinSelector} to use instead of the wallets
      * default. Coin selectors are responsible for choosing which transaction
      * outputs (coins) in a wallet to use given the desired send value amount.
@@ -175,9 +181,10 @@ public class SendRequest {
      * Be careful to check the output's value is reasonable using
      * {@link TransactionOutput#getMinNonDustValue(Coin)} afterwards or you risk
      * having the transaction rejected by the network.</p>
+     *
      * @param destination
      * @param value
-     * @return 
+     * @return
      */
     public static SendRequest to(Address destination, Coin value) {
         Transaction tx = new Transaction();
@@ -238,5 +245,14 @@ public class SendRequest {
         helper.add("shuffleOutputs", shuffleOutputs);
         helper.add("recipientsPayFees", recipientsPayFees);
         return helper.toString();
+    }
+
+    /**
+     * set message as a system message
+     *
+     * @param system
+     */
+    public void setSystem(boolean system) {
+        this.system = system;
     }
 }

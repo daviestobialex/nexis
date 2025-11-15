@@ -9,7 +9,7 @@
         "KE": "C.789012",
         "GB": "12345678"
     },
-    "category": "payments",
+    "category": ["payments", "governor"],
     "categoryMetadata": {
         "capabilities": ["forex", "remittance", "p2p-transfer"]
     },

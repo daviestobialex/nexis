@@ -131,7 +131,7 @@ public class ChallangeResponseHandler implements MessageHandler {
             SignedManifest signedManifest = new SignedManifest(manifest, builder.getNode());
 
             NexusProtocol.Manifest manifestRequest = NexusProtocol.Manifest.newBuilder()
-                    .setCategory(manifest.getCategory())
+                    .addAllCategory(manifest.getCategories())
                     .setCid(ByteString.copyFrom(signedManifest.getSignature()))
                     .setPublicKey(ByteString.copyFrom(builder.getNode().getKeyPair().getPublic().getEncoded()))
                     .build();

@@ -85,10 +85,11 @@ public final class ManifestSchemaV1 implements ManifestSchema {
             }
 
             // incase it changes to an array
-//            JsonNode categoryNode = root.get(CATEGORY);
-//            if (!categoryNode.isArray() || categoryNode.size() == 0) {
-//                throw new ManifestValidationException("Category must be a non-empty array");
-//            }
+            JsonNode categoryNode = root.get(CATEGORY);
+            if (!categoryNode.isArray() || categoryNode.size() == 0) {
+                throw new ManifestValidationException("Category must be a non-empty array");
+            }
+
             // Validate specifications if present
             if (root.has(SPECIFICATIONS)) {
                 validateSpecifications(root.get(SPECIFICATIONS));
@@ -252,7 +253,6 @@ public final class ManifestSchemaV1 implements ManifestSchema {
                 -> countryCodes.add(node.asText()));
 
         Map<String, String> registerationNumbers = new HashMap<>();
-
         root.get("organizationRegistrationNumbers").forEachEntry((key, value)
                 -> registerationNumbers.put(key, value.asText()));
 
@@ -289,7 +289,7 @@ public final class ManifestSchemaV1 implements ManifestSchema {
                 .organizationUrl(root.get("organizationUrl").asText())
                 .countryCodes(countryCodes)
                 .organizationRegistrationNumbers(registerationNumbers)
-                .category(root.get(CATEGORY).asText())
+                .categories(categories)
                 .contact(contact)
                 .baseUrl(baseUrl)
                 .policyUrl(root.get("organizationPolicy").asText())
@@ -312,4 +312,5 @@ public final class ManifestSchemaV1 implements ManifestSchema {
     public boolean requiresProtocolInitiation(String category) {
         return PROTOCOL_CATEGORIES.contains(category);
     }
+
 }

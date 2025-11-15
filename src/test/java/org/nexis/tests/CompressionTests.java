@@ -12,6 +12,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -57,7 +58,7 @@ public class CompressionTests {
         when(node.getNodeId()).thenAnswer(inv -> new NodeId((byte[]) inv.getArgument(0)));
 
         Manifest manifest = Manifest.resolve("manifest.json", node);
-        String category = manifest.getCategory();
+        List<String> category = manifest.getCategories();
 
         String raw = manifest.getRaw();
 
@@ -71,7 +72,7 @@ public class CompressionTests {
         LOGGER.log(Level.INFO, "compressed rawLength {0}", rawLength);
         LOGGER.log(Level.INFO, "compressedLength {0}", compressedLength);
 
-        Assertions.assertEquals("payments", category);
+        Assertions.assertEquals("payments", category.get(0));
         Assertions.assertTrue(compressedLength < rawLength);
 
         byte[] decompress = ByteUtils.decompress(compress);

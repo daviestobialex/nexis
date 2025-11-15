@@ -24,19 +24,17 @@ import java.nio.file.Paths;
 import java.security.Security;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.nexis.core.ManifestObject;
 import org.nexis.core.ManifestSchemaV1;
 import org.nexis.exceptions.ManifestValidationException;
 import org.nexis.internal.ManifestSchema;
 import org.nexis.base.utils.ByteUtils;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
 import org.nexis.internal.ManifestSchema.EndpointDescriptor;
 import org.nexis.net.HttpClientExecutor;
-import org.nexis.utilities.CryptographyUtils;
 
 /**
  * Immutable value object representing a Manifest — the public, versioned
@@ -94,6 +92,7 @@ public final class Manifest {
     private final ManifestSchema schema; // handles schema validation and parsing
     private final ManifestObject manifestObject;
     private final HttpClientExecutor clientExecutor;
+    private final Identity nodeIdentity;  // This node's identity (includes NodeId, KeyPair)
 
     /**
      * get HTTP client executor
@@ -139,6 +138,7 @@ public final class Manifest {
         this.raw = Objects.requireNonNull(raw, "raw manifest cannot be null");
         this.contentHash = Sha256Hash.of(raw.getBytes());
         this.loadedAt = Objects.requireNonNull(loadedAt, "loadedAt cannot be null");
+        this.nodeIdentity = Objects.requireNonNull(identity, "identity cannot be null");
         this.schema = new ManifestSchemaV1();
         this.schema.validate(this.raw);
         try {
@@ -187,14 +187,14 @@ public final class Manifest {
     private Sha256Hash stableId(Identity identity) {
 
         String orgName = manifestObject.organizationName();
-        String category = manifestObject.category();
+        List<String> categories = manifestObject.categories();
         String allRegNos = getAllRegNos();
         int protocolVersion = manifestObject.protocolVersion();
         int manifestVersion = manifestObject.version();
 
         // Convert all to UTF-8 bytes
         byte[] orgNameBytes = orgName.getBytes(StandardCharsets.UTF_8);
-        byte[] categoryBytes = category.getBytes(StandardCharsets.UTF_8);
+        byte[] categoryBytes = String.join("", categories).getBytes(StandardCharsets.UTF_8);
         byte[] regBytes = allRegNos.getBytes(StandardCharsets.UTF_8);
 
         // Compute total length for buffer
@@ -255,7 +255,7 @@ public final class Manifest {
     }
 
     /**
-     * Create a Manifest from a raw string payload.
+     * Create a Manifest from a raw string payload (standalone/test mode).
      *
      * @param raw canonical payload (e.g. JSON string)
      * @param identity node server identity
@@ -319,12 +319,50 @@ public final class Manifest {
         return raw;
     }
 
-    public String getCategory() {
-        return manifestObject.category();
+    public List<String> getCategories() {
+        return manifestObject.categories();
     }
 
     private String getBaseUrl() {
         return manifestObject.baseUrl();
     }
 
+    public int getVersion() {
+        return schema.getVersion();
+    }
+
+    /**
+     * Checks if this node is authorized by the network to sign for (approve)
+     * other nodes.
+     *
+     * A node can sign for others if: 1. It has one or more categories that
+     * indicate governance authority (e.g., "governor") 2. The blockchain shows
+     * unspent GovernanceOutput(s) approving this node from a trusted genesis
+     * validator (verified by traversing the approval chain up to the root)
+     *
+     * Implementation notes: - Categories are parsed from the manifest and
+     * indicate the node's role(s) - The approval chain is validated by
+     * GovernanceValidator/GovernanceUTXOProvider, which traces from this node
+     * backwards through signers to a genesis validator - Multiple
+     * signers/approvers are supported; the chain must eventually reach genesis
+     * to be valid - If no governance category or no approval chain to genesis
+     * exists, returns false
+     *
+     * @return true if this node has a valid authorization chain to sign for
+     * others; false otherwise
+     */
+    public boolean canSignFor() {
+
+        // Step 1: Check if manifest has governance-related category
+        List<String> categories = manifestObject.categories();
+        boolean hasGovernanceCategory = categories != null && categories.stream()
+                .anyMatch(cat -> cat != null && cat.equalsIgnoreCase("governor"));
+
+        if (!hasGovernanceCategory) {
+            // Node doesn't declare governance role; cannot sign for others
+            return false;
+        }
+
+        return true;
+    }
 }

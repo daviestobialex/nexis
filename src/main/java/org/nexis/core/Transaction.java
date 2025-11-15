@@ -271,7 +271,7 @@ public class Transaction {
      */
     public static Transaction read(NexusProtocol.Transaction proto) {
         Transaction tx = new Transaction();
-        tx.version = proto.getVersion();
+        tx.version = proto.getVersion();// manifest, wallet, and proto must have the same version
 
         // Read inputs from protobuf
         tx.inputs = new ArrayList<>();

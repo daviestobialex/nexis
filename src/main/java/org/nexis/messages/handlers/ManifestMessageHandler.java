@@ -16,6 +16,7 @@
 package org.nexis.messages.handlers;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.ProtocolStringList;
 import io.netty.channel.ChannelHandlerContext;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -95,10 +96,10 @@ public class ManifestMessageHandler implements MessageHandler {
         byte[] nodeId = envelop.getNodeId().toByteArray();
 
         // persist manifest CID to category against CID(IPFS) manifest registry
-        String category = envelop.getMessage().getManifest().getCategory();
+        ProtocolStringList categories = envelop.getMessage().getManifest().getCategoryList();
         byte[] cid = envelop.getMessage().getManifest().getCid().toByteArray();
         byte[] publicKey = envelop.getMessage().getManifest().getPublicKey().toByteArray();
-        manifestRegistry.put(category, cid);
+        categories.forEach(category -> manifestRegistry.put(category, cid));
 
         // save public key
         String remoteAddress = ctx.channel().remoteAddress().toString();
@@ -116,7 +117,7 @@ public class ManifestMessageHandler implements MessageHandler {
                     = NexusProtocol.GetPeers.newBuilder()
                             .setSize(NUMBER_OF_PEERS_TO_GET)
                             .setCid(ByteString.copyFrom(signedManifest.getSignature()))
-                            .setCategory(manifest.getCategory())
+                            .addAllCategory(manifest.getCategories())
                             .build();
 
             GetPeersRequestMessage getPeersRequest = new GetPeersRequestMessage(

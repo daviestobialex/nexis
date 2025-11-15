@@ -41,7 +41,7 @@ public class TransactionOutput {
     }
 
     public TransactionOutput(Transaction parent, Coin value, Script scriptPubKey) {
-        this(parent, value, scriptPubKey.getProgram());
+        this(parent, value, scriptPubKey.program());
         this.scriptPubKey = scriptPubKey;
     }
 
@@ -60,11 +60,17 @@ public class TransactionOutput {
         this(parent, value, ScriptBuilder.createOutputScript(to).program());
     }
 
+    public TransactionOutput(Transaction parentTransaction, Coin valueOf, byte[] script, boolean system) {
+        this(parentTransaction, valueOf, script);
+        this.system = system;
+    }
+
     public static TransactionOutput read(NexusProtocol.TransactionOutput proto, Transaction parentTransaction) {
         Objects.requireNonNull(proto, "TransactionOutput proto cannot be null");
         long value = proto.getValue();
         byte[] script = proto.getScriptBytes().toByteArray();
-        return new TransactionOutput(parentTransaction, Coin.valueOf(value), script);
+        boolean system = proto.getSystem();
+        return new TransactionOutput(parentTransaction, Coin.valueOf(value), script, system);
     }
 
 //    @Nullable
@@ -80,6 +86,10 @@ public class TransactionOutput {
     // The script bytes are parsed and turned into a Script on demand.
     private Script scriptPubKey;
 
+    // indicates that this is a governance transaction output and coin value 
+    // is to be allocated to receiver even if the system does not have, essentially minitng 
+    // new coin on demand based on real life exchanges baked into the system from root/genesis 
+    private boolean system = false;// default is false
     // These fields are not Bitcoin serialized. They are used for tracking purposes in our wallet
     // only. If set to true, this output is counted towards our balance. If false and spentBy is null the tx output
     // was owned by us and was sent to somebody else. If false and spentBy is set it means this output was owned by
@@ -357,23 +367,29 @@ public class TransactionOutput {
     /**
      * Returns true if this output is to a key, or an address we have the keys
      * for, in the wallet.
+     *
      * @param identity
-     * @return 
+     * @return
      */
     public boolean isMine(Identity identity) {
         try {
             Script script = getScriptPubKey();
-         if (ScriptPattern.isP2WPKH(script)) {
-                return identity.isPubKeyHashMine(ScriptPattern.extractHashFromP2WH(script));
+            if (ScriptPattern.isP2WPKH(script)) {
+                return identity.isPubKeyHashMine(ScriptPattern.extractHashFromP2WH(script));// ensure se
             } else {
                 return false;
             }
         } catch (ScriptException e) {
             // Just means we didn't understand the output of this transaction: ignore it.
+            System.err.println("Could not parse tx");
 //            log.debug("Could not parse tx {} output script: {}",
 //                    parent != null ? ((Transaction) parent).getTxId() : "(no parent)", e.toString());
             return false;
         }
+    }
+
+    public boolean isSystem() {
+        return system;
     }
 
 }

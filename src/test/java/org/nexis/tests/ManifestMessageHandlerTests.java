@@ -56,7 +56,7 @@ public class ManifestMessageHandlerTests {
     @BeforeEach
     void setUp() throws Exception {
         manifest = mock(Manifest.class);
-        when(manifest.getCategory()).thenReturn("category-x");
+        when(manifest.getCategories()).thenReturn(Arrays.asList("category-x"));
         when(manifest.manifestIdBytes()).thenReturn("manifext-x".getBytes());
 
         // Use the strongest available SecureRandom instance
@@ -99,7 +99,7 @@ public class ManifestMessageHandlerTests {
     void testCanHandleManifestMessage() {
         NexusProtocol.NexusMessage msg = NexusProtocol.NexusMessage.newBuilder()
                 .setManifest(NexusProtocol.Manifest.newBuilder()
-                        .setCategory("category-x")
+                        .addAllCategory(Arrays.asList("catX"))
                         .setCid(ByteString.copyFromUtf8("cid123"))
                         .setPublicKey(ByteString.copyFrom(keyPair.getPublic().getEncoded()))
                         .build())
@@ -113,7 +113,7 @@ public class ManifestMessageHandlerTests {
         byte[] nodeId = NodeId.stableNodeId(keyPair.getPublic().getEncoded()).getBytes();
 
         NexusProtocol.Manifest manifestProto = NexusProtocol.Manifest.newBuilder()
-                .setCategory("category-x")
+                .addAllCategory(Arrays.asList("category-x"))
                 .setCid(ByteString.copyFromUtf8("cid123"))
                 .setPublicKey(ByteString.copyFrom(keyPair.getPublic().getEncoded()))
                 .build();
@@ -150,7 +150,7 @@ public class ManifestMessageHandlerTests {
         byte[] nodeId = NodeId.stableNodeId(keyPair.getPublic().getEncoded()).getBytes();
 
         NexusProtocol.Manifest manifestProto = NexusProtocol.Manifest.newBuilder()
-                .setCategory("cat")
+                .addAllCategory(Arrays.asList("category-x"))
                 .setCid(ByteString.copyFromUtf8("cid999"))
                 .setPublicKey(ByteString.copyFrom(keyPair.getPublic().getEncoded()))
                 .build();

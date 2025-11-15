@@ -9,6 +9,7 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Calendar;
 import java.util.Objects;
+import org.nexis.base.Coin;
 
 /**
  * Immutable-ish holder of monetary policy parameters and helper checks. Use
@@ -53,6 +54,22 @@ public final class MonetaryPolicy {
         this.epochMintLimit = BigInteger.valueOf(START_EPOCH_LIMIT);
         this.maxTxPercentOfStake = 50;// 50% for default
         this.policyEffective = Calendar.getInstance().toInstant();
+    }
+
+    /**
+     * Returns the configured genesis/start amount as a {@link Coin} instance.
+     *
+     * <p>This is a convenience accessor so callers (eg. Wallet) can use the
+     * monetary policy configured genesis coins in the correct units. The value
+     * here is multiplied by {@link Coin#COIN} to convert from whole-coins into
+     * atomic satoshi units.</p>
+     *
+     * @return Coin representing the start coins configured by policy
+     */
+    public static Coin getStartCoinsAsCoin() {
+        // START_COINS is expressed in whole coins (policy units). Convert to satoshis.
+        long satoshis = Math.multiplyExact(START_COINS, Coin.COIN.getValue());
+        return Coin.valueOf(satoshis);
     }
 
 }

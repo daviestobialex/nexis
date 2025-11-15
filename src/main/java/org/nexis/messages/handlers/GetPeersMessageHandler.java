@@ -15,8 +15,8 @@
  */
 package org.nexis.messages.handlers;
 
+import com.google.protobuf.ProtocolStringList;
 import io.netty.channel.ChannelHandlerContext;
-import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Objects;
@@ -149,13 +149,13 @@ public class GetPeersMessageHandler implements MessageHandler {
         nodeServerId = builder.getNode().getNodeId();
 
         requestedPeerSize = envelop.getMessage().getPeersDiscovery().getSize();
-        String category = envelop.getMessage().getPeersDiscovery().getCategory();
+        ProtocolStringList categories = envelop.getMessage().getPeersDiscovery().getCategoryList();
         byte[] cid = envelop.getMessage().getPeersDiscovery().getCid().toByteArray();
 
         LOGGER.log(Level.INFO, "Received get peers message of size {0}", requestedPeerSize);
 
         // Update manifest registry with category/CID reference
-        manifestRegistry.put(category, cid);
+        categories.forEach(category -> manifestRegistry.put(category, cid));
     }
 
     @Override

@@ -212,20 +212,9 @@ public class Wallet extends BalanceOperations implements WalletTransactionAdapte
         return vUTXOProvider;
     }
 
-    /**
-     * Allows attaching a {@link UTXOProvider} which the wallet will consult
-     * when calculating balances and selecting coins. Passing null disables the
-     * provider and makes the wallet use its internal in-memory pools only.
-     */
-    public void setUTXOProvider(UTXOProvider provider) {
-        lock.lock();
-        try {
-            this.vUTXOProvider = provider;
-        } finally {
-            lock.unlock();
-        }
-    }
-
+    // NOTE: UTXO provider is now final and must be supplied at construction time via Wallet.of(...).
+    // This simplifies lifecycle and ensures the wallet's view of on-chain UTXOs is stable for the wallet
+    // instance lifetime. If null is supplied, the wallet will operate in standalone/in-memory mode.
     /**
      * Enumerates possible resolutions for missing signatures.
      */
@@ -249,18 +238,27 @@ public class Wallet extends BalanceOperations implements WalletTransactionAdapte
         THROW
     }
 
-    // If this is set then the wallet selects spendable candidate outputs from a UTXO provider.
-//    @Nullable
-    private volatile UTXOProvider vUTXOProvider;
+    // provider for tracking unspent transactions. Immutable for wallet lifetime.
+    private final UTXOProvider vUTXOProvider;
     protected volatile TransactionBroadcaster vTransactionBroadcaster;
 
     private final Map<Transaction, TransactionConfidence.Listener.ChangeReason> confidenceChanged;
 
-    public static Wallet of(Identity identity, NetworkConfiguration networkParams) {
-        return new Wallet(identity, networkParams);
+    /**
+     * Create a Wallet instance for the given identity and network parameters.
+     *
+     * @param identity wallet owner identity
+     * @param networkParams network configuration
+     * @param provider a UTXO provider for dealing with unspent outputs
+     * @return Wallet instance. This variant delegates to
+     * {@link #of(Identity, NetworkConfiguration, UTXOProvider)} and supplies a
+     * null UTXO provider (standalone/in-memory mode).
+     */
+    public static Wallet of(Identity identity, NetworkConfiguration networkParams, UTXOProvider provider) {
+        return new Wallet(identity, networkParams, provider);
     }
 
-    private Wallet(Identity identity, NetworkConfiguration networkParams) {
+    private Wallet(Identity identity, NetworkConfiguration networkParams, UTXOProvider provider) {
 
         this.identity = identity;
         this.params = networkParams;
@@ -275,6 +273,8 @@ public class Wallet extends BalanceOperations implements WalletTransactionAdapte
         confidenceChanged = new LinkedHashMap<>();
         signers = new ArrayList<>();
         addTransactionSigner(new LocalTransactionSigner());
+        // assign immutable provider for UTXO lookups (may be null for in-memory mode)
+        this.vUTXOProvider = provider;
         // TODO: check locally for saved wallet file, else create a new one
     }
 
@@ -334,6 +334,22 @@ public class Wallet extends BalanceOperations implements WalletTransactionAdapte
             this.broadcast = broadcast;
         }
 
+    }
+
+    /**
+     * Get the version of the Wallet. This is an int you can use to indicate
+     * which versions of wallets your code understands, and which come from the
+     * future (and hence cannot be safely loaded).
+     */
+    public int getVersion() {
+        return version;
+    }
+
+    /**
+     * Set the version number of the wallet. See {@link Wallet#getVersion()}.
+     */
+    public void setVersion(int version) {
+        this.version = version;
     }
 
     /**

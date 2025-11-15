@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static org.nexis.base.Coin.FIFTY_COINS;
 import org.nexis.base.Sha256Hash;
 import static org.nexis.base.Sha256Hash.hashTwice;
 import org.nexis.base.utils.ByteUtils;
@@ -25,8 +24,6 @@ import org.nexis.exceptions.VerificationException;
 import org.nexis.internal.InternalUtils;
 import org.nexis.internal.TimeUtils;
 import org.nexis.script.ScriptBuilder;
-import org.nexis.script.ScriptOpCodes;
-import static org.nexis.utilities.CryptographyUtils.digestRipeMd160;
 import org.nexus.base.proto.NexusProtocol;
 
 /**
@@ -156,7 +153,7 @@ public class Block {
 
     private static List<Transaction> genesisTransactions() {
         Transaction tx = Transaction.genesis(genesisTxInputScriptBytes);
-        tx.addOutput(new TransactionOutput(tx, FIFTY_COINS, genesisTxScriptPubKeyBytes));
+        tx.addOutput(new TransactionOutput(tx, MonetaryPolicy.getStartCoinsAsCoin(), genesisTxScriptPubKeyBytes));
         return Collections.singletonList(tx);
     }
 

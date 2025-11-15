@@ -53,6 +53,10 @@ public final class NodeId implements PublicNodeProperties {
         }
         return new BigInteger(1, result);
     }
+    
+    public String getSegwit() {
+        return toSegwitHex(pubKey);
+    }
 
     public String toHex() {
         return HexFormat.of().formatHex(id.getBytes());

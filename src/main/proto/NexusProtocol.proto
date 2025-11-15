@@ -84,12 +84,15 @@ message TransactionInput {
   uint64 sequence = 3;
   optional uint64 value = 4;  // optional value for tracking
   Witness witness = 5;        // per-input witness stack (optional; usually present only for segwit spends)
-
+  Manifest manifest = 6;
 }
 
 message TransactionOutput {
   uint64 value = 1;
   bytes script_bytes = 2;  // API response data or service output
+  bool system = 3; // indicates to the transaction output that this is not
+ // just an ordinary output if set to 0, and it initiate governance protocols
+ // which also include triggers to mint new coins
 }
 
 message Transaction {
@@ -110,7 +113,7 @@ message BroadcastManifestBlock{// send block to all peers
 
 message Manifest {
   bytes cid = 1; // signed manifest id
-  string category = 2; // manifest category
+  repeated string category = 2; // manifest category
   bytes public_key = 3;
 }
 
@@ -126,7 +129,7 @@ message ManifestContent { // actual content
 message GetPeers {
   uint32 size = 2; // get required number of actives peers from a peer, protects system from flooding from bad actors
   bytes cid = 1; // signed manifest id
-  string category = 3; // manifest category      
+  repeated string category = 3; // manifest category      
 }
 
 message GetPeersResponse {

@@ -105,7 +105,7 @@ public class GetPeersMessageHandlerTests {
 
         // incoming envelope
         NexusProtocol.Manifest manifestProto = NexusProtocol.Manifest.newBuilder()
-                .setCategory("catA")
+                .addAllCategory(Arrays.asList("catA"))
                 .setCid(ByteString.copyFromUtf8("cid123"))
                 .build();
 
@@ -145,7 +145,7 @@ public class GetPeersMessageHandlerTests {
         NexusProtocol.NexusEnvelop envelop = NexusProtocol.NexusEnvelop.newBuilder()
                 .setMessage(NexusProtocol.NexusMessage.newBuilder()
                         .setPeersDiscovery(NexusProtocol.GetPeers.newBuilder()
-                                .setCategory("catB")
+                                .addAllCategory(Arrays.asList("catB"))
                                 .setCid(ByteString.copyFromUtf8("cid999"))
                                 .setSize(3).build())
                         .build())

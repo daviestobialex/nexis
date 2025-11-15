@@ -19,7 +19,7 @@ public final record ManifestObject(
         int protocolVersion,
         Map<String, String> organizationRegistrationNumbers,
         List<String> countryCodes,
-        String category,
+        List<String> categories,
         ContactInfo contact,
         String policyUrl,
         String termsUrl,
@@ -43,7 +43,7 @@ public final record ManifestObject(
         private int protocolVersion;
         private Map<String, String> organizationRegistrationNumbers;
         private List<String> countryCodes;
-        private String category;
+        private List<String> categories;
         private ContactInfo contact;
         private String policyUrl;
         private String termsUrl;
@@ -76,8 +76,8 @@ public final record ManifestObject(
             return this;
         }
 
-        public Builder category(String category) {
-            this.category = category;
+        public Builder categories(List<String> categories) {
+            this.categories = categories;
             return this;
         }
 
@@ -124,7 +124,7 @@ public final record ManifestObject(
                     protocolVersion,
                     organizationRegistrationNumbers,
                     countryCodes != null ? countryCodes : List.of(),
-                    category,
+                    categories,
                     contact,
                     policyUrl,
                     termsUrl,

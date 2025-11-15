@@ -18,6 +18,7 @@ import static org.nexis.utilities.Preconditions.checkArgument;
 import org.nexis.base.Sha256Hash;
 import org.nexis.wallet.RedeemData;
 import org.nexus.base.proto.NexusProtocol;
+import org.nexus.base.proto.NexusProtocol.Manifest;
 
 /**
  *
@@ -55,7 +56,16 @@ public class TransactionInput {
         TransactionOutPoint outpoint = TransactionOutPoint.read(inputProto.getOutpoint());
         byte[] scriptBytes = inputProto.getScriptBytes().toByteArray();
         long sequence = inputProto.getSequence();
-        return new TransactionInput(parentTransaction, scriptBytes, outpoint, sequence, null);
+        TransactionInput in = new TransactionInput(parentTransaction, scriptBytes, outpoint, sequence, null);
+        // Read manifest if present (proto3 generated code may provide hasManifest)
+        try {
+            if (inputProto.hasManifest()) {
+                in.manifest = inputProto.getManifest();
+            }
+        } catch (RuntimeException ex) {
+            // Some older generated classes may not have hasManifest; ignore if absent.
+        }
+        return in;
     }
 
     private Transaction parent;
@@ -78,6 +88,8 @@ public class TransactionInput {
     private Coin value;
 
     private TransactionWitness witness;
+    // Optional manifest embedded in the input (used for approval requests)
+    private Manifest manifest;
 
     /**
      * genesis transactions have special inputs with hashes of zero. If this is
@@ -174,14 +186,34 @@ public class TransactionInput {
                     .setOutpoint(outpoint.toProto())
                     .setWitness(witness.toProto())
                     .setScriptBytes(ByteString.copyFrom(scriptBytes))
+                    .setManifest(manifest == null ? NexusProtocol.Manifest.getDefaultInstance() : manifest)
                     .build();
         } else {
             return NexusProtocol.TransactionInput.newBuilder()
                     .setSequence(sequence)
                     .setOutpoint(outpoint.toProto())
                     .setScriptBytes(ByteString.copyFrom(scriptBytes))
+                    .setManifest(manifest == null ? NexusProtocol.Manifest.getDefaultInstance() : manifest)
                     .build();
         }
+    }
+
+    /**
+     * Set or clear the manifest attached to this input. A non-null manifest
+     * indicates this input is carrying an approval request payload.
+     *
+     * @param manifest proto Manifest or null to clear
+     */
+    public void setManifest(Manifest manifest) {
+        this.manifest = manifest;
+    }
+
+    /**
+     * Get the manifest attached to this input, if any.
+     * @return Manifest proto or null
+     */
+    public Manifest getManifest() {
+        return manifest;
     }
 
     /**
