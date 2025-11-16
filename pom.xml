@@ -46,12 +46,6 @@
             <version>33.4.8-jre</version>
         </dependency>
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.13.4</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>2.20.0</version>
@@ -74,14 +68,24 @@
             <version>4.2.6.Final</version>
             <type>jar</type>
         </dependency>
-        
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>2.0.17</version>
         </dependency>
-        
-
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>6.0.0</version>
+            <scope>test</scope>
+            <type>jar</type>
+        </dependency>
+         <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>6.0.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

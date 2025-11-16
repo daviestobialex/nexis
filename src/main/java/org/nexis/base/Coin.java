@@ -431,11 +431,11 @@ public final class Coin implements Monetary, Comparable<Coin> {
     }
 
     /**
-     * Convert to number of bitcoin (in NXS)
+     * Convert to number of NXS
      *
      * @return decimal number of bitcoin (in NXS)
      */
-    public BigDecimal toBtc() {
+    public BigDecimal toNxs() {
         return satoshiToBtc(this.value);
     }
 

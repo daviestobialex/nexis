@@ -90,9 +90,6 @@ message TransactionInput {
 message TransactionOutput {
   uint64 value = 1;
   bytes script_bytes = 2;  // API response data or service output
-  bool system = 3; // indicates to the transaction output that this is not
- // just an ordinary output if set to 0, and it initiate governance protocols
- // which also include triggers to mint new coins
 }
 
 message Transaction {

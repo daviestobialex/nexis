@@ -64,6 +64,7 @@ import org.nexis.wallet.Wallet;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexis.base.Sha256Hash;
 import com.google.protobuf.ByteString;
+import org.nexis.base.Coin;
 import org.nexis.exceptions.InsufficientMoneyException;
 
 /**
@@ -382,7 +383,7 @@ public class NexisInstance {
     }
 
     /**
-     * to listen to blockchain download
+     * TODO: to listen to blockchain download
      *
      * @return
      */
@@ -599,10 +600,16 @@ public class NexisInstance {
 
     }
 
-    public void validatePeer(SendRequest sendRequest) {
+    /**
+     * approve a peer to the network based on fiat exchange off chain
+     *
+     * @param address
+     * @param value
+     */
+    public void approvePeer(Address address, Coin value) {
         if (manifest.canSignFor()) {
             try {
-                sendRequest.setSystem(true);
+                SendRequest sendRequest = SendRequest.approve(address, identity.getKeyPair().getPublic(), value);
                 TransactionBroadcaster broadcaster = (Transaction tx) -> {
                     final TransactionBroadcast broadcast = new TransactionBroadcast(tx);
                     broadcast.broadcastOnly();

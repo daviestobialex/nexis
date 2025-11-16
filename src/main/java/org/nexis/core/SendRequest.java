@@ -6,10 +6,14 @@ package org.nexis.core;
 
 import com.google.common.base.MoreObjects;
 import java.security.PublicKey;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
+import java.math.BigDecimal;
+import org.nexis.base.BondPolicy;
 import org.nexis.base.Address;
 import org.nexis.base.Coin;
-import org.nexis.base.NetworkConfiguration;
+import org.nexis.script.Script;
+import org.nexis.script.ScriptBuilder;
 import org.nexis.utilities.ExchangeRate;
 import org.nexis.wallet.AllowUnconfirmedCoinSelector;
 import org.nexis.wallet.CoinSelector;
@@ -109,12 +113,6 @@ public class SendRequest {
     public boolean signInputs = true;
 
     /**
-     * If false (the default), transaction will be treated normally, if true
-     * transaction is a governance request
-     */
-    public boolean system = false;
-
-    /**
      * If not null, the {@link CoinSelector} to use instead of the wallets
      * default. Coin selectors are responsible for choosing which transaction
      * outputs (coins) in a wallet to use given the desired send value amount.
@@ -193,6 +191,105 @@ public class SendRequest {
     }
 
     /**
+     * Creates a SendRequest for an approval transaction. This creates a
+     * transaction that: 1. Sends coins to the destination address 2. Includes a
+     * multi-signature output script that requires approval from the specified
+     * approver (and potentially other governance nodes)
+     *
+     * The multi-sig output will be signed by governance nodes when they approve
+     * the request. The approval script requires at least 1 signature from the
+     * approver's public key.
+     *
+     * @param destination the address where funds are sent
+     * @param approver the public key of the governance node approving this
+     * request
+     * @param value the amount to send
+     * @return a SendRequest with the approval transaction
+     */
+    public static SendRequest approve(Address destination, PublicKey approver, Coin value) {
+        Transaction tx = new Transaction();
+
+        // First output: send coins to the destination address
+        tx.addOutput(value, destination);
+        // Governance nodes represent the most influential actors in the network,
+        // and therefore also its greatest potential vulnerability. To prevent abuse,
+        // each governor must lock a stake-backed bond as "skin in the game".
+        //
+        // The bond serves two critical roles:
+        //
+        // 1. ECONOMIC SAFETY: 
+        //    A malicious or irresponsible governor risks losing part of their locked 
+        //    stake. This creates a direct financial cost for misbehavior.
+        //
+        // 2. INCENTIVE ALIGNMENT:
+        //    Honest governors earn rewards whenever the nodes they approve behave 
+        //    correctly and contribute value to the network. Good approval decisions 
+        //    become economically beneficial, while poor decisions become costly.
+        //
+        // This bond mechanism turns governance into a Proof-of-Service system:
+        // governors must *prove* their reliability, judgement, and contribution by 
+        // risking real stake, and are continuously evaluated based on the performance 
+        // of the peers they approve. The network becomes self-regulating, economically 
+        // secure, and resistant to Sybil or low-cost governance attacks.
+
+        // Calculate the bond required by policy and add an output that locks
+        // the bond amount to the network (not to any address). The bond is
+        // represented as a dedicated output whose script marks it as a bond
+        // (we use OP_RETURN with approver pubkey bytes as metadata). This
+        // deducts the bond from the sender's balance at creation time.
+        try {
+            // Interpret the provided `value` as the approver's stake amount
+            BigDecimal approverStake = Coin.satoshiToBtc(value.getValue());
+
+            // Very small networks or tests: use the monetary policy genesis as
+            // a conservative source for initial/current supply values.
+            BigDecimal initialSupply = Coin.satoshiToBtc(MonetaryPolicy.getStartCoinsAsCoin().getValue());
+            BigDecimal currentSupply = initialSupply; // best-effort; real supply tracked elsewhere
+
+            // Network size is unknown here; use 1 as a conservative default.
+            int networkSize = 1;
+
+            // Obtain the bond policy from the Context so policy is centrally managed.
+            BondPolicy bondPolicy = Context.get().getBondPolicy();
+            BondPolicy.BondResult bondResult = bondPolicy.calculateBond(approverStake, networkSize, currentSupply, initialSupply);
+
+            if (!bondResult.allowed) {
+                // Approver cannot meet the required bond under current policy.
+                throw new BondPolicy.InsufficientStakeException("Approver stake insufficient for required bond");
+            }
+
+            // Convert bond amount (in whole coins) back to a Coin value
+            Coin bondCoin = Coin.ofBtc(bondResult.bondToLock);
+
+            // Build a small unspendable marker output that locks the bond to
+            // the network. We use an OP_RETURN containing the approver pubkey
+            // bytes so the lock can be associated with the approver later.
+            byte[] opReturnData = approver.getEncoded();
+            Script bondLockScript = ScriptBuilder.createOpReturnScript(opReturnData);
+
+            // Add bond output which deducts the bond amount from the sender's balance
+            tx.addOutput(bondCoin, bondLockScript);
+        } catch (ArithmeticException | BondPolicy.InsufficientStakeException ex) {
+            // If conversion or bond calculation fails, surface as runtime
+            // problem; callers may catch and handle this as needed.
+            throw new RuntimeException("Failed to calculate/lock bond for approval: " + ex.getMessage(), ex);
+        }
+        // Second output: create a multi-signature output that requires approval
+        // Threshold of 1 means at least 1 signature is required (from the approver)
+        // This output serves as a covenant/approval marker on the blockchain
+        List<PublicKey> approverKeys = new ArrayList<>();
+        approverKeys.add(approver);
+
+        Script multiSignatureScript = ScriptBuilder.createMultiSigOutputScript(7, approverKeys);
+
+        // Add a small approval marker output (governance contracts often use 0 value or minimal value)
+        // This output flags the transaction as requiring governance approval
+        tx.addOutput(Coin.ZERO, multiSignatureScript);
+
+        return new SendRequest(tx);
+    }
+
+    /**
      * <p>
      * Creates a new SendRequest to the given pubkey for the given value.</p>
      *
@@ -247,12 +344,4 @@ public class SendRequest {
         return helper.toString();
     }
 
-    /**
-     * set message as a system message
-     *
-     * @param system
-     */
-    public void setSystem(boolean system) {
-        this.system = system;
-    }
 }

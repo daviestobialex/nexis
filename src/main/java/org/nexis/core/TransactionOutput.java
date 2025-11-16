@@ -12,9 +12,7 @@ import java.util.logging.Logger;
 import org.nexis.base.Address;
 import org.nexis.base.Coin;
 import org.nexis.base.Identity;
-import org.nexis.base.ScriptType;
 import org.nexis.base.VarInt;
-import org.nexis.messages.handlers.ChallangeResponseHandler;
 import org.nexis.script.Script;
 import org.nexis.script.ScriptBuilder;
 import org.nexis.script.ScriptException;
@@ -60,17 +58,12 @@ public class TransactionOutput {
         this(parent, value, ScriptBuilder.createOutputScript(to).program());
     }
 
-    public TransactionOutput(Transaction parentTransaction, Coin valueOf, byte[] script, boolean system) {
-        this(parentTransaction, valueOf, script);
-        this.system = system;
-    }
 
     public static TransactionOutput read(NexusProtocol.TransactionOutput proto, Transaction parentTransaction) {
         Objects.requireNonNull(proto, "TransactionOutput proto cannot be null");
         long value = proto.getValue();
         byte[] script = proto.getScriptBytes().toByteArray();
-        boolean system = proto.getSystem();
-        return new TransactionOutput(parentTransaction, Coin.valueOf(value), script, system);
+        return new TransactionOutput(parentTransaction, Coin.valueOf(value), script);
     }
 
 //    @Nullable
@@ -392,4 +385,7 @@ public class TransactionOutput {
         return system;
     }
 
+    public void setSystem(boolean system){
+        this.system = system;
+    }
 }

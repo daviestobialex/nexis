@@ -20,7 +20,9 @@ import org.nexis.utilities.ContextPropagatingThreadFactory;
 
 import java.util.Objects;
 import java.util.logging.Logger;
+import java.math.BigDecimal;
 import org.nexis.base.NetworkConfiguration;
+import org.nexis.base.BondPolicy;
 
 // TODO: Finish adding Context c'tors to all the different objects so we can start deprecating the versions that take NetworkParameters.
 // TODO: Add a working directory notion to Context and make various subsystems that want to use files default to that directory (e.g. Orchid, block stores, wallet, etc).
@@ -57,6 +59,8 @@ public class Context {
     final private boolean ensureMinRequiredFee;
     final private Coin feePerKb;
     final private boolean relaxProofOfWork;
+    // BondPolicy bean (configurable economic policy for governance bonds)
+    private final BondPolicy bondPolicy;
 
     /**
      * Creates a new context object. For now, this will be done for you by the
@@ -89,6 +93,18 @@ public class Context {
         this.ensureMinRequiredFee = ensureMinRequiredFee;
         this.feePerKb = feePerKb;
         this.relaxProofOfWork = true;
+        // Initialize a default BondPolicy. These defaults are conservative and
+        // can be replaced by configuring a different Context in production.
+        this.bondPolicy = new BondPolicy(BigDecimal.ONE, BigDecimal.ONE);
+    }
+
+    /**
+     * Returns the configured BondPolicy instance for this Context. Use this
+     * to calculate required governance bonds across the codebase so that the
+     * policy can be centrally managed and swapped for tests or deployments.
+     */
+    public BondPolicy getBondPolicy() {
+        return bondPolicy;
     }
 
     /**
