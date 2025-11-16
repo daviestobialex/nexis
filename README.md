@@ -34,219 +34,131 @@ Thanks to the pioneering work of Satoshi Nakamoto and projects like BitcoinJ
   Every node publishes a signed **Manifest** (organization identity, services, API spec/ISO 2022).
 
   * Verifiable via SHA-256 + ED25519 signatures.
-  * Cached locally with efficient indexing and compression.
-  * Addressed by CID (Content Identifier).
+  # Nexis
 
-* **Cryptography**
+  Network Exchange Integration System — a lightweight peer-to-peer protocol and toolkit for decentralized marketplaces and interoperable services.
 
-  * ED25519 signatures (BouncyCastle provider).
-  * SHA-256 hashing.
-  * Signed envelopes to guarantee authenticity and integrity.
+  This repository contains the Nexis core: networking, manifesting, message validation, storage primitives, and utilities used to build and run Nexis nodes.
 
-* **Validation Pipeline**
-  Modular message validation via pluggable validators.
+  Project repo: https://github.com/daviestobialex/nexis
 
-* **Extensible Message Protocol**
-  Protobuf definitions for all messages.
-  Support for replay protection, structured request/response, and message dispatch.
+  Reference white paper: https://docs.google.com/document/d/1F-iJ1vNIZSe56MH7gDHZvyG6Clv4w0d2hrckXszotKI
 
----
+  ## Status
 
-## 🏗 Architecture Overview
+  Prototype. Core components (networking, manifests, validation pipeline, wallet primitives) are implemented and under active development. Expect API changes.
 
-### 🔹 Message Flow
+  ## Key Technologies
 
-```
-Peer A → HandshakeRequest  (nonce)
-Peer B → HandshakeResponse/ChallengeResponse   (public key exchange) 
+  - Java (17+ recommended)
+  - Maven for build and dependency management
+  - Protocol Buffers (protobuf) for message definitions
+  - Netty for async networking
+  - BouncyCastle for cryptography (ED25519, SHA-256)
+  - Docker (optional) for containerized runs
 
-Peer A → ManifestRequest (CID + category)  
-Peer B → ManifestResponse (Manifest JSON + signature)  
+  ## Highlights / Features
 
-Peer A → GetPeersRequest  
-Peer B → GetPeersResponse (peer list)  
+  - Peer-to-peer networking with handshake, manifest exchange and peer discovery
+  - Signed manifests (ED25519 + SHA-256) to represent identities and services
+  - Modular, pluggable validation pipeline for incoming messages
+  - Persistent manifest store with index and data files
+  - Protobuf-based message protocol and handlers
 
-Cycle repeats as new peers are discovered.
-```
+  ## Quickstart
 
-### 🔹 Core Modules
+  Prerequisites
 
-* **`org.nexis.base`**
-  Base abstractions: `Identity`, `Manifest`, `SignedManifest`, `ContentRegistry`.
+  - JDK 17+ installed and JAVA_HOME set
+  - Maven 3.6+ (or use the bundled wrapper if added)
+  - Docker (optional) if you want to run in a container
 
-* **`org.nexis.core`**
-  Protocol logic, Netty integration, Protobuf message handlers, ValidationPipeline.
+  Clone and build
 
-* **`org.nexis.net`**
-  Networking (NIO server/client setup, connection handlers, message dispatch).
+  ```bash
+  git clone https://github.com/daviestobialex/nexis.git
+  cd nexis
+  mvn clean install -DskipTests
+  ```
 
-* **`org.nexis.store`**
-  Persistent storage for manifests and content:
+  Run unit tests
 
-  * `ManifestIndex` (sorted `.idx` file for O(log n) lookup).
-  * `ManifestDataFile` (`.dat` file with offsets for O(1) retrieval).
-  * `LruCache` (bounded in-memory cache).
-  * `ManifestStore` (composite store implementing `Storage`).
+  ```bash
+  mvn test
+  ```
 
-* **`org.nexis.utilities`**
-  Utility classes for cryptography, encoding, compression.
+  Run a single node locally (IDE or command-line)
 
----
+  You can run the test entrypoint (example) from your IDE or with Maven exec if configured. If you have a main class such as `org.nexis.example.NexusTestPoint` you can run it with:
 
-## 📂 Manifest
+  ```bash
+  mvn -Dexec.mainClass="org.nexis.example.NexusTestPoint" -Dexec.classpathScope="runtime" org.codehaus.mojo:exec-maven-plugin:3.0.0:java
+  ```
 
-The **Manifest** is a structured JSON file describing an entity on the network.
-It is signed by the node’s private key, producing a verifiable **SignedManifest**.
+  Or build a runnable jar (if a jar/assembly target is configured) and run with:
 
-### Example Fields
+  ```bash
+  java -jar target/nexis-<version>-jar-with-dependencies.jar
+  ```
 
-* `organizationName`
-* `organizationUrl`
-* `registrationNumber`
-* `countries` (list of ISO-3166-1 alpha-2 country codes)
-* `services` (API endpoints, capabilities)
-* `publicKey`
-* `manifestVersion`
-* `timestamp`
+  Docker (optional)
 
-### Example JSON
+  This repo contains a Dockerfile you can use to build and run a containerized node.
 
-```json
-{
-  "organizationName": "FXBud Ltd",
-  "organizationUrl": "https://fxbud.com",
-  "registrationNumber": "RC123456",
-  "countries": ["NG", "KE", "GB"],
-  "services": {
-    "fxRates": "/api/v1/rates",
-    "trading": "/api/v1/trade"
-  },
-  "publicKey": "ed25519:abc123...",
-  "manifestVersion": 1,
-  "timestamp": 1738234823
-}
-```
+  ```bash
+  docker build -t nexis:latest .
+  docker run -p 9004:9004 nexis:latest
+  ```
 
----
+  Adjust the port and environment variables as needed for your test topology.
 
-## 📦 Installation
+  ## How the project is organized
 
-Clone the repo:
+  - `src/main/java/org/nexis/base` — core domain objects (Identity, Manifest, Address, Coin, etc.)
+  - `src/main/java/org/nexis/core` — protocol logic, message handlers, validators
+  - `src/main/java/org/nexis/net` — networking code (Netty handlers)
+  - `src/main/java/org/nexis/store` — manifest storage (index + data files)
+  - `src/main/java/org/nexis/messages` — protobuf-based message envelopes and handlers
 
-```bash
-git clone https://github.com/your-org/nexis-p2p.git
-cd nexis-p2p
-```
+  Read the Java packages for the detailed API and examples.
 
-Build with Maven:
+  ## Development notes
 
-```bash
-mvn clean install
-```
+  - The `Manifest` format is a JSON structure signed by a node's ED25519 keypair and addressed via a Content ID (CID).
+  - The project uses a validation pipeline — validators live under `org.nexis.validator` and can be extended to add custom checks.
+  - There are convenience test utilities under `src/test/java/org/nexis/tests` used by unit tests.
 
----
+  ## Running tests and linting
 
-# 🚀 Getting Started
+  Run unit tests:
 
-## How to install
-### Maven
+  ```bash
+  mvn test
+  ```
 
-```maven
-<dependency>
-    <groupId>org.nexis</groupId>
-    <artifactId>instance-core</artifactId>
-    <version>0.0.1</version>
-</dependency>
-````
-#### Gradle
+  Checkstyle / lints (if configured) can be run with the Maven plugin configured in `pom.xml`.
 
-- Groovy DSL
-    ```groovy
-    implementation 'org.nexis:insatnce-core:0.0.1'
-    ```
+  ## Contributing
 
-- Kotlin DSL
-    ```groovy
-    implementation("org.nexis:insatnce-core:0.0.1")
-    ```
+  Contributions are welcome. A minimal workflow:
 
+  1. Fork the repo
+  2. Create a feature branch: `git checkout -b feat/my-change`
+  3. Run tests locally and ensure they pass
+  4. Open a pull request describing the change and rationale
 
-### Start a Node
+  For larger design changes, please open an issue first to discuss the approach.
 
-```java
-       public class NexusTestPoint {
+  ## Roadmap & Issues
 
-    // for test purposes alone and will be removed
-    public static void main(String[] args) throws Exception {
+  The project uses an issue tracker (GitHub Issues). See the repository board for current tasks and roadmap items.
 
-        NexisInstance businessInstance = new NexisInstance(NexusNetwork.LOCALHOSTTEST);
+  ## License
 
-        businessInstance
-                .start(9004)
-                .connect(5, false);
+  This project is licensed under the Apache License 2.0 — see `LICENSE` for details.
 
-        // Keep the JVM alive
-        Thread.currentThread().join();
-    }
-   }
+  ## Contact
 
-```
+  email: daviestobialex@nxis.org
 
-# How to Interact with the Network
-
-## Get Instances by category
-
-```java
-var instances = busienssInstance.getByCategory("payments", "logistics");
-````
-
-## Get Manifest by CID
-
-```java
-var contentJson = busienssInstance.getCIDContent("content identification");
-````
-
-## Make an RPC
-
-```java
-var contentJson = busienssInstance.rpc("content identification", rpc_id, rpc_request);
-````
----
-
-## 🧪 Testing
-
-Run the unit tests:
-
-```bash
-mvn test
-```
-
----
-
-## 📚 Roadmap
-
-[Trello Board](https://trello.com/b/W1jlPV9G/nexis)
----
-
-## 🤝 Contributing
-
-We welcome contributions!
-
-* Fork the repo
-* Create a feature branch
-* Submit a PR
-
-Check the [issues](https://github.com/your-org/nexis-p2p/issues) for open tasks.
-
----
-
-## Donations
-If you like my work, you can become a sponsor here on GitHub or tip me through:
-
-[Paypal]()
-
----
-
-## 📜 License
-
-Licensed under the [Apache 2.0 License](LICENSE).
+  If you'd like help running the project or contributing, open an issue or reach out via GitHub.

@@ -166,10 +166,7 @@ public class TransactionBroadcast {
     }
 
     private void broadcastOne(PeerConnection peer) {
-
-        // TODO: convert to proto message
-        ChannelFuture writeAndFlush = peer.channel().writeAndFlush(tx.toProto());
-
+        peer.channel().writeAndFlush(tx.toProto());
     }
 
     private int numSeemPeers;

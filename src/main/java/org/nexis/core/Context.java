@@ -21,7 +21,6 @@ import org.nexis.utilities.ContextPropagatingThreadFactory;
 import java.util.Objects;
 import java.util.logging.Logger;
 import java.math.BigDecimal;
-import org.nexis.base.NetworkConfiguration;
 import org.nexis.base.BondPolicy;
 
 // TODO: Finish adding Context c'tors to all the different objects so we can start deprecating the versions that take NetworkParameters.
@@ -61,6 +60,10 @@ public class Context {
     final private boolean relaxProofOfWork;
     // BondPolicy bean (configurable economic policy for governance bonds)
     private final BondPolicy bondPolicy;
+    /**
+     * default monetary policies that governs the economic unit value
+     */
+    private final MonetaryPolicy monetaryPolicy;
 
     /**
      * Creates a new context object. For now, this will be done for you by the
@@ -93,18 +96,23 @@ public class Context {
         this.ensureMinRequiredFee = ensureMinRequiredFee;
         this.feePerKb = feePerKb;
         this.relaxProofOfWork = true;
+        this.monetaryPolicy = new MonetaryPolicy();
         // Initialize a default BondPolicy. These defaults are conservative and
         // can be replaced by configuring a different Context in production.
         this.bondPolicy = new BondPolicy(BigDecimal.ONE, BigDecimal.ONE);
     }
 
     /**
-     * Returns the configured BondPolicy instance for this Context. Use this
-     * to calculate required governance bonds across the codebase so that the
+     * Returns the configured BondPolicy instance for this Context. Use this to
+     * calculate required governance bonds across the codebase so that the
      * policy can be centrally managed and swapped for tests or deployments.
      */
     public BondPolicy getBondPolicy() {
         return bondPolicy;
+    }
+
+    public MonetaryPolicy getMonetaryPolicy() {
+        return monetaryPolicy;
     }
 
     /**

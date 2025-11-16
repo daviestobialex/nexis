@@ -16,6 +16,7 @@
 package org.nexis.core;
 
 import com.google.common.math.IntMath;
+import com.google.protobuf.ByteString;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -356,6 +357,8 @@ public class Transaction {
             builder.addOutputs(output.toProto());
         }
 
+        
+//        builder.setSignature(ByteString.copyFrom(bytes));
         return builder.build();
     }
 
