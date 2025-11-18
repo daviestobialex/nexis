@@ -21,7 +21,7 @@ import java.security.PublicKey;
 
 import org.nexis.script.Script;
 import org.nexis.script.ScriptPattern;
-import static org.nexis.utilities.Preconditions.checkArgument;
+import static org.nexis.internal.Preconditions.checkArgument;
 
 /**
  * This class aggregates data required to spend transaction output.

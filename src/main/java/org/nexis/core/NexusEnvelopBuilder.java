@@ -110,14 +110,13 @@ public final class NexusEnvelopBuilder {
         try {
             byte[] signature = CryptographyUtils.sign(message.serialize(), node.getKeyPair().getPrivate());
 
-            NexusProtocol.NexusEnvelop envelop = NexusProtocol.NexusEnvelop.newBuilder()
+            return NexusProtocol.NexusEnvelop.newBuilder()
                     .setChecksum(ByteString.copyFrom(message.checkSum()))
                     .setNodeId(ByteString.copyFrom(message.getNodeId()))
                     .setMessage(message.message())
                     .setTimeStamp(now())
                     .setSignature(ByteString.copyFrom(signature))
                     .build();
-            return envelop;
         } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | SignatureException ex) {
             Logger.getLogger(NexusEnvelopBuilder.class.getName()).log(Level.SEVERE, null, ex);
         }

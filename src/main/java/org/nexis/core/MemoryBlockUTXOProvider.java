@@ -150,7 +150,7 @@ public class MemoryBlockUTXOProvider implements UTXOProvider {
                         // Iterate through outputs
                         for (TransactionOutput output : tx.getOutputs()) {
                             // Check if it's a GovernanceOutput
-                            if (output.isSystem()) {
+                            if (output.getValue().isZero()) {
                                 results.add(output);
                             }
                         }

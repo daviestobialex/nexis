@@ -24,8 +24,7 @@ import org.nexis.core.TransactionOutput;
 import org.nexis.core.UTXO;
 import org.nexis.core.UTXOProvider;
 import org.nexis.exceptions.UTXOProviderException;
-import org.nexis.internal.StreamUtils;
-import static org.nexis.utilities.Preconditions.checkState;
+import static org.nexis.internal.Preconditions.checkState;
 
 /**
  *

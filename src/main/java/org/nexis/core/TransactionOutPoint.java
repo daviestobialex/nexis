@@ -6,18 +6,19 @@ package org.nexis.core;
 
 import com.google.protobuf.ByteString;
 import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import org.nexis.base.Identity;
-import org.nexis.base.ScriptType;
 import org.nexis.script.Script;
 import org.nexis.script.ScriptError;
 import org.nexis.script.ScriptException;
 import org.nexis.script.ScriptPattern;
 import org.nexis.base.utils.ByteUtils;
-import static org.nexis.utilities.Preconditions.checkArgument;
+import static org.nexis.internal.Preconditions.checkArgument;
 import org.nexis.base.Sha256Hash;
+import org.nexis.exceptions.ProtocolException;
 import org.nexis.wallet.RedeemData;
 import org.nexus.base.proto.NexusProtocol;
 
@@ -30,15 +31,45 @@ public class TransactionOutPoint {
     public static final int BYTES = 36;
 
     /**
-     * Special outpoint that normally marks a coinbase input. It's also used as
-     * a test dummy.
+     * Special outpoint that normally marks a genesis input. It's also used as a
+     * test dummy.
      */
     public static final TransactionOutPoint UNCONNECTED
             = new TransactionOutPoint(ByteUtils.MAX_UNSIGNED_INTEGER, Sha256Hash.ZERO_HASH);
 
+    /**
+     * Deserialize this transaction outpoint from a given payload.
+     *
+     * @param payload payload to deserialize from
+     * @return read transaction outpoint
+     * @throws BufferUnderflowException if the read message extends beyond the
+     * remaining bytes of the payload
+     */
+    public static TransactionOutPoint read(ByteBuffer payload) throws BufferUnderflowException, ProtocolException {
+        Sha256Hash hash = Sha256Hash.read(payload);
+        long index = ByteUtils.readUint32(payload);
+        return TransactionOutPoint.of(hash, index);
+    }
+
     public static TransactionOutPoint read(NexusProtocol.TransactionOutPoint outpoint) {
-        Sha256Hash hash = Sha256Hash.of(outpoint.getHash().toByteArray());
+        // The proto stores the raw hash bytes. Wrap them directly instead of
+        // re-hashing the bytes (Sha256Hash.of would compute SHA-256 over the
+        // provided bytes and thus change the value). Use wrap() to preserve
+        // the exact hash value transmitted in the proto.
+        Sha256Hash hash = Sha256Hash.wrap(outpoint.getHash().toByteArray());
         long index = outpoint.getIndex();
+        return new TransactionOutPoint(index, hash);
+    }
+
+    /**
+     * Create a simple {@code TransactionOutPoint} with only {@code txid} and
+     * {@code index}.
+     *
+     * @param hash Transaction ID of the referenced transaction
+     * @param index Output index of the referenced output
+     * @return a new transaction outpoint
+     */
+    public static TransactionOutPoint of(Sha256Hash hash, long index) {
         return new TransactionOutPoint(index, hash);
     }
 
@@ -83,6 +114,33 @@ public class TransactionOutPoint {
     }
 
     /**
+     * Create a {@code TransactionOutPoint} <i>from</i> an existing
+     * {@link Transaction}.
+     *
+     * @param fromTx transaction the new outpoint will reference (and be
+     * "connected to")
+     * @param index index of the transaction output the new outpoint will
+     * reference
+     * @return a new transaction outpoint
+     */
+    public static TransactionOutPoint from(Transaction fromTx, long index) {
+        return new TransactionOutPoint(fromTx.getTxId(), index, fromTx, null);
+    }
+
+    /**
+     * Create a {@code TransactionOutPoint} <i>from</i> an existing
+     * {@link TransactionOutput}.
+     *
+     * @param connectedOutput transaction output the new outpoint will reference
+     * (and be "connected to")
+     * @return a new transaction outpoint
+     */
+    public static TransactionOutPoint from(TransactionOutput connectedOutput) {
+        return new TransactionOutPoint(connectedOutput.getParentTransactionHash(), connectedOutput.getIndex(), null,
+                connectedOutput);
+    }
+
+    /**
      * Write this transaction outpoint into the given buffer.
      *
      * @param buf buffer to write into
@@ -91,9 +149,18 @@ public class TransactionOutPoint {
      * buffer
      */
     public ByteBuffer write(ByteBuffer buf) throws BufferOverflowException {
-        buf.put(hash.serialize());
+        hash.write(buf);
         ByteUtils.writeInt32LE(index, buf);
         return buf;
+    }
+
+    /**
+     * Allocates a byte array and writes this transaction outpoint into it.
+     *
+     * @return byte array containing the transaction outpoint
+     */
+    public byte[] serialize() {
+        return write(ByteBuffer.allocate(BYTES)).array();
     }
 
     /**
@@ -163,6 +230,7 @@ public class TransactionOutPoint {
      * P2PKH, P2WPKH, P2PK or P2SH scripts. If the script forms cannot be
      * understood, throws ScriptException.
      *
+     * @param identity
      * @return a RedeemData or null if the connected data cannot be found in the
      * wallet.
      */
@@ -183,13 +251,13 @@ public class TransactionOutPoint {
             throw new ScriptException(ScriptError.SCRIPT_ERR_UNKNOWN_ERROR, "Could not understand form of connected output script: " + connectedScript);
         }
     }
-    
-     public NexusProtocol.TransactionOutPoint toProto(){
-         return  NexusProtocol.TransactionOutPoint.newBuilder()
-                 .setIndex(index)
-                 .setHash(ByteString.copyFrom(hash.getBytes()))
-                 .build();
-                 
-     }
+
+    public NexusProtocol.TransactionOutPoint toProto() {
+        return NexusProtocol.TransactionOutPoint.newBuilder()
+                .setIndex(index)
+                .setHash(ByteString.copyFrom(hash.getBytes()))
+                .build();
+
+    }
 
 }

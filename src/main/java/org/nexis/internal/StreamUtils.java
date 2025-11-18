@@ -16,11 +16,15 @@
 
 package org.nexis.internal;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.nexis.base.utils.ByteUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Stream Utilities. Bitcoinj is moving towards functional-style programming, immutable data structures, and
@@ -38,5 +42,21 @@ public class StreamUtils {
      */
     public static <T> Collector<T, ?, List<T>> toUnmodifiableList() {
         return Collectors.collectingAndThen(Collectors.toList(), Collections::unmodifiableList);
+    }
+    
+    /**
+     * Max initial size of variable length arrays and ArrayLists that could be attacked.
+     * Avoids this attack: Attacker sends a msg indicating it will contain a huge number (e.g. 2 billion) elements (e.g. transaction inputs) and
+     * forces bitcoinj to try to allocate a huge piece of the memory resulting in OutOfMemoryError.
+    */
+    public static final int MAX_INITIAL_ARRAY_LENGTH = 20;
+
+    private static final Logger log = LoggerFactory.getLogger(StreamUtils.class);
+
+    public static String toString(List<byte[]> stack) {
+        List<String> parts = new ArrayList<>(stack.size());
+        for (byte[] push : stack)
+            parts.add('[' + ByteUtils.formatHex(push) + ']');
+        return InternalUtils.SPACE_JOINER.join(parts);
     }
 }

@@ -27,7 +27,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import org.nexis.base.utils.ByteUtils;
-import static org.nexis.utilities.Preconditions.checkArgument;
+import static org.nexis.internal.Preconditions.checkArgument;
 
 /**
  * A {@code Sha256Hash} wraps a {@code byte[]} so that {@link #equals} and

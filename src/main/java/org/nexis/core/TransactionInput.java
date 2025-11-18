@@ -6,16 +6,21 @@ package org.nexis.core;
 
 import com.google.protobuf.ByteString;
 import java.lang.ref.WeakReference;
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import org.nexis.base.Coin;
 import org.nexis.base.Identity;
-import org.nexis.base.VarInt;
 import org.nexis.script.Script;
 import org.nexis.script.ScriptException;
 import org.nexis.base.utils.ByteUtils;
-import static org.nexis.utilities.Preconditions.checkArgument;
+import static org.nexis.internal.Preconditions.checkArgument;
 import org.nexis.base.Sha256Hash;
+import org.nexis.exceptions.ProtocolException;
+import org.nexis.internal.Buffers;
 import org.nexis.wallet.RedeemData;
 import org.nexus.base.proto.NexusProtocol;
 import org.nexus.base.proto.NexusProtocol.Manifest;
@@ -51,6 +56,23 @@ public class TransactionInput {
     // Magic outpoint index that indicates the input is in fact unconnected.
     private static final long UNCONNECTED = 0xFFFFFFFFL;
 
+    /**
+     * Deserialize this transaction input from a given payload.
+     *
+     * @param payload payload to deserialize from
+     * @param parentTransaction parent transaction of the input
+     * @return read message
+     * @throws BufferUnderflowException if the read message extends beyond the
+     * remaining bytes of the payload
+     */
+    public static TransactionInput read(ByteBuffer payload, Transaction parentTransaction) throws BufferUnderflowException, ProtocolException {
+        Objects.requireNonNull(parentTransaction);
+        TransactionOutPoint outpoint = TransactionOutPoint.read(payload);
+        byte[] scriptBytes = Buffers.readLengthPrefixedBytes(payload);
+        long sequence = ByteUtils.readUint32(payload);
+        return new TransactionInput(parentTransaction, scriptBytes, outpoint, sequence, null);
+    }
+
     public static TransactionInput read(NexusProtocol.TransactionInput inputProto, Transaction parentTransaction) {
         Objects.requireNonNull(parentTransaction);
         TransactionOutPoint outpoint = TransactionOutPoint.read(inputProto.getOutpoint());
@@ -66,6 +88,116 @@ public class TransactionInput {
             // Some older generated classes may not have hasManifest; ignore if absent.
         }
         return in;
+    }
+
+    /**
+     * Returns a clone of this input, with given script bytes. The typical use
+     * case is transaction signing.
+     *
+     * @param scriptBytes script bytes for the clone
+     * @return clone of input, with given script bytes
+     */
+    public TransactionInput withScriptBytes(byte[] scriptBytes) {
+        Objects.requireNonNull(scriptBytes);
+        return new TransactionInput(this.parent, null, scriptBytes, this.outpoint, this.sequence, this.value,
+                this.witness);
+    }
+
+    /**
+     * Returns a clone of this input, with a given sequence number.
+     * <p>
+     * Sequence numbers allow participants in a multi-party transaction signing
+     * protocol to create new versions of the transaction independently of each
+     * other. Newer versions of a transaction can replace an existing version
+     * that's in nodes memory pools if the existing version is time locked. See
+     * the Contracts page on the Bitcoin wiki for examples of how you can use
+     * this feature to build contract protocols.
+     *
+     * @param sequence sequence number for the clone
+     * @return clone of input, with given sequence number
+     */
+    public TransactionInput withSequence(long sequence) {
+        checkArgument(sequence >= 0 && sequence <= ByteUtils.MAX_UNSIGNED_INTEGER, ()
+                -> "sequence out of range: " + sequence);
+        Script scriptSig = this.scriptSig != null ? this.scriptSig.get() : null;
+        return new TransactionInput(this.parent, scriptSig, this.scriptBytes, this.outpoint, sequence, this.value,
+                this.witness);
+    }
+
+    /**
+     * Returns a clone of this input, without script bytes. The typical use case
+     * is transaction signing.
+     *
+     * @return clone of input, without script bytes
+     */
+    public TransactionInput withoutScriptBytes() {
+        return new TransactionInput(this.parent, null, TransactionInput.EMPTY_ARRAY, this.outpoint, this.sequence,
+                this.value, this.witness);
+    }
+
+    /**
+     * Returns a clone of this input, without witness. The typical use-case is
+     * transaction signing.
+     *
+     * @return clone of input, without witness
+     */
+    public TransactionInput withoutWitness() {
+        Script scriptSig = this.scriptSig != null ? this.scriptSig.get() : null;
+        return new TransactionInput(this.parent, scriptSig, this.scriptBytes, this.outpoint, sequence, this.value,
+                null);
+    }
+
+    /**
+     * Returns a clone of this input, with a given witness. The typical use-case
+     * is transaction signing.
+     *
+     * @param witness witness for the clone
+     * @return clone of input, with given witness
+     */
+    public TransactionInput withWitness(TransactionWitness witness) {
+        Objects.requireNonNull(witness);
+        Script scriptSig = this.scriptSig != null ? this.scriptSig.get() : null;
+        return new TransactionInput(this.parent, scriptSig, this.scriptBytes, this.outpoint, sequence, this.value,
+                witness);
+    }
+
+    /**
+     * internal use only
+     *
+     * @param parentTransaction
+     * @param scriptBytes
+     * @param outpoint
+     */
+    public TransactionInput(@Nullable Transaction parentTransaction, byte[] scriptBytes, TransactionOutPoint outpoint,
+            long sequence, @Nullable Coin value, @Nullable TransactionWitness witness) {
+        this(parentTransaction, null, scriptBytes, outpoint, sequence, value, witness);
+    }
+
+    private TransactionInput(@Nullable Transaction parentTransaction, @Nullable Script scriptSig, byte[] scriptBytes,
+            TransactionOutPoint outpoint, long sequence, @Nullable Coin value,
+            @Nullable TransactionWitness witness) {
+        checkArgument(value == null || value.signum() >= 0, () -> "value out of range: " + value);
+        parent = parentTransaction;
+        this.scriptSig = scriptSig != null ? new WeakReference<>(scriptSig) : null;
+        this.scriptBytes = Objects.requireNonNull(scriptBytes);
+        this.outpoint = Objects.requireNonNull(outpoint);
+        this.sequence = sequence;
+        this.value = value;
+        this.witness = witness;
+    }
+
+    /**
+     * Creates an UNSIGNED input that links to the given output
+     */
+    TransactionInput(Transaction parentTransaction, TransactionOutput output) {
+        this(parentTransaction,
+                null, EMPTY_ARRAY,
+                output.getParentTransaction() != null
+                ? TransactionOutPoint.from(output.getParentTransaction(), output.getIndex())
+                : TransactionOutPoint.from(output),
+                NO_SEQUENCE,
+                output.getValue(),
+                null);
     }
 
     private Transaction parent;
@@ -157,45 +289,34 @@ public class TransactionInput {
     }
 
     /**
-     * Creates an UNSIGNED input that links to the given output
-     *
-     * @param parentTransaction
-     * @param output
-     */
-    public TransactionInput(Transaction parentTransaction, TransactionOutput output) {
-        this(parentTransaction,
-                EMPTY_ARRAY,
-                output.getParentTransaction() != null
-                ? new TransactionOutPoint(output.getIndex(), output.getParentTransaction())
-                : new TransactionOutPoint(output),
-                NO_SEQUENCE,
-                output.getValue());
-    }
-
-    /**
      * Allocates a byte array and writes this transaction input into it.
      *
-     * @param useSegit
+     *
      * @return byte array containing the transaction input
      */
-    public NexusProtocol.TransactionInput toProto(boolean useSegit) {
+    public NexusProtocol.TransactionInput toProto() {
+        NexusProtocol.TransactionInput.Builder builder = NexusProtocol.TransactionInput.newBuilder()
+                .setSequence(sequence)
+                .setOutpoint(outpoint.toProto())
+                .setScriptBytes(ByteString.copyFrom(scriptBytes == null ? EMPTY_ARRAY : scriptBytes));
 
-        if (useSegit) {
-            return NexusProtocol.TransactionInput.newBuilder()
-                    .setSequence(sequence)
-                    .setOutpoint(outpoint.toProto())
-                    .setWitness(witness.toProto())
-                    .setScriptBytes(ByteString.copyFrom(scriptBytes))
-                    .setManifest(manifest == null ? NexusProtocol.Manifest.getDefaultInstance() : manifest)
-                    .build();
-        } else {
-            return NexusProtocol.TransactionInput.newBuilder()
-                    .setSequence(sequence)
-                    .setOutpoint(outpoint.toProto())
-                    .setScriptBytes(ByteString.copyFrom(scriptBytes))
-                    .setManifest(manifest == null ? NexusProtocol.Manifest.getDefaultInstance() : manifest)
-                    .build();
+        // Set value if known
+        if (value != null) {
+            builder.setValue(value.value);
         }
+
+        // Attach witness only if present
+        if (hasWitness()) {
+            builder.setWitness(witness.toProto());
+        }
+
+        // Attach manifest if present
+        if (manifest != null) {
+            builder.setManifest(manifest);
+        }
+
+        return builder.build();
+
     }
 
     /**
@@ -210,6 +331,7 @@ public class TransactionInput {
 
     /**
      * Get the manifest attached to this input, if any.
+     *
      * @return Manifest proto or null
      */
     public Manifest getManifest() {
@@ -341,6 +463,30 @@ public class TransactionInput {
     }
 
     /**
+     * Write this transaction input into the given buffer.
+     *
+     * @param buf buffer to write into
+     * @return the buffer
+     * @throws BufferOverflowException if the input doesn't fit the remaining
+     * buffer
+     */
+    public ByteBuffer write(ByteBuffer buf) throws BufferOverflowException {
+        outpoint.write(buf);
+        Buffers.writeLengthPrefixedBytes(buf, scriptBytes);
+        ByteUtils.writeInt32LE(sequence, buf);
+        return buf;
+    }
+
+    /**
+     * Allocates a byte array and writes this transaction input into it.
+     *
+     * @return byte array containing the transaction input
+     */
+    public byte[] serialize() {
+        return write(ByteBuffer.allocate(messageSize())).array();
+    }
+
+    /**
      * Return the size of the serialized message. Note that if the message was
      * deserialized from a payload, this size can differ from the size of the
      * original payload.
@@ -348,10 +494,9 @@ public class TransactionInput {
      * @return size of the serialized message in bytes
      */
     public int messageSize() {
-        int size = TransactionOutPoint.BYTES;
-        size += VarInt.sizeOf(scriptBytes.length) + scriptBytes.length;
-        size += 4; // sequence
-        return size;
+        return TransactionOutPoint.BYTES
+                + Buffers.lengthPrefixedBytesSize(scriptBytes)
+                + 4; // sequence
     }
 
     /**

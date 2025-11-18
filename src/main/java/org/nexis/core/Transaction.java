@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -58,6 +61,10 @@ import static org.nexis.base.utils.ByteUtils.writeInt64LE;
 import org.nexis.utilities.CryptographyUtils;
 import org.nexis.utilities.ExchangeRate;
 import org.nexis.base.Sha256Hash;
+import static org.nexis.core.ProtocolVersion.WITNESS_VERSION;
+import org.nexis.exceptions.ProtocolException;
+import static org.nexis.internal.Preconditions.check;
+import static org.nexis.internal.StreamUtils.MAX_INITIAL_ARRAY_LENGTH;
 import org.nexis.wallet.WalletTransaction.Pool;
 import org.nexus.base.proto.NexusProtocol;
 
@@ -133,6 +140,12 @@ public class Transaction {
     private List<TransactionOutput> outputs;
 
     private volatile LockTime vLockTime;
+
+    private final int protocolVersion;
+
+    // These are in memory helpers only. They contain the transaction hashes without and with witness.
+    private Sha256Hash cachedTxId;
+    private Sha256Hash cachedWTxId;
 
     // This is either the time the transaction was broadcast as measured from the local clock, or the time from the
     // block in which it was included. Note that this can be changed by re-orgs so the wallet may update this field.
@@ -251,10 +264,10 @@ public class Transaction {
     private String memo;
 
     /**
-     * Constructs an incomplete coinbase transaction with a minimal input script
+     * Constructs an incomplete genesis transaction with a minimal input script
      * and no outputs.
      *
-     * @return coinbase transaction
+     * @return genesis transaction
      */
     public static Transaction genesis() {
         Transaction tx = new Transaction();
@@ -263,15 +276,83 @@ public class Transaction {
     }
 
     /**
-     * Constructs an incomplete coinbase transaction with given bytes for the
+     * Constructs an incomplete genesis transaction with given bytes for the
      * input script and no outputs.
      *
-     * @param inputScriptBytes arbitrary bytes for the coinbase input
-     * @return coinbase transaction
+     * @param inputScriptBytes arbitrary bytes for the genesis input
+     * @return genesis transaction
      */
     public static Transaction genesis(byte[] inputScriptBytes) {
         Transaction tx = new Transaction();
         tx.addInput(TransactionInput.genesisInput(tx, inputScriptBytes));
+        return tx;
+    }
+
+    /**
+     * Deserialize this message from a given payload.
+     *
+     * @param payload payload to deserialize from
+     * @return read message
+     * @throws BufferUnderflowException if the read message extends beyond the
+     * remaining bytes of the payload
+     */
+    public static Transaction read(ByteBuffer payload) throws BufferUnderflowException, ProtocolException {
+        return Transaction.read(payload, ProtocolVersion.CURRENT.intValue());
+    }
+
+    /**
+     * Deserialize this message from a given payload, according to
+     * <a href="https://github.com/bitcoin/bips/blob/master/bip-0144.mediawiki">BIP144</a>
+     * or the
+     * <a href="https://en.bitcoin.it/wiki/Protocol_documentation#tx">classic
+     * format</a>, depending on if the transaction is segwit or not.
+     *
+     * @param payload payload to deserialize from
+     * @param protocolVersion protocol version to use for deserialization
+     * @return read message
+     * @throws BufferUnderflowException if the read message extends beyond the
+     * remaining bytes of the payload
+     */
+    public static Transaction read(ByteBuffer payload, int protocolVersion) throws BufferUnderflowException, ProtocolException {
+        Transaction tx = new Transaction(protocolVersion);
+        boolean allowWitness = allowWitness(protocolVersion);
+
+        // version
+        tx.version = ByteUtils.readUint32(payload);
+        byte flags = 0;
+        // Try to parse the inputs. In case the dummy is there, this will be read as an empty array list.
+        tx.readInputs(payload);
+        if (tx.inputs.size() == 0 && allowWitness) {
+            // We read a dummy or an empty input
+            flags = payload.get();
+
+            if (flags != 0) {
+                tx.readInputs(payload);
+                tx.readOutputs(payload);
+            } else {
+                tx.outputs = new ArrayList<>(0);
+            }
+        } else {
+            // We read non-empty inputs. Assume normal outputs follows.
+            tx.readOutputs(payload);
+        }
+
+        if (((flags & 1) != 0) && allowWitness) {
+            // The witness flag is present, and we support witnesses.
+            flags ^= 1;
+            // script_witnesses
+            tx.readWitnesses(payload);
+            if (!tx.hasWitnesses()) {
+                // It's illegal to encode witnesses when all witness stacks are empty.
+                throw new ProtocolException("Superfluous witness record");
+            }
+        }
+        if (flags != 0) {
+            // Unknown flag in the serialization
+            throw new ProtocolException("Unknown transaction optional data");
+        }
+        // lock_time
+        tx.vLockTime = LockTime.of(ByteUtils.readUint32(payload));
         return tx;
     }
 
@@ -303,37 +384,24 @@ public class Transaction {
     }
 
     /**
-     * TODO: this clone is not going to work like this
-     *
-     * @return
-     */
-    public Transaction clone() {
-        return this;
-    }
-
-    /**
      * Gets the transaction weight as defined in BIP141.
-     *
-     * @return
      */
     public int getWeight() {
-
-        try (final ByteArrayOutputStream stream = new ByteArrayOutputStream(255)) { // just a guess at an average tx length
-            serializeToStream(stream, false);
-            final int baseSize = stream.size();
-            stream.reset();
-            serializeToStream(stream, true);
-            final int totalSize = stream.size();
-            return baseSize * 3 + totalSize;
-        } catch (IOException e) {
-            throw new RuntimeException(e); // cannot happen
+        if (!hasWitnesses()) {
+            return this.messageSize() * 4;
         }
+        int baseSize = messageSize(false);
+        int totalSize = messageSize(true);
+        return baseSize * 3 + totalSize;
     }
 
     /**
      * Gets the virtual transaction size as defined in BIP141.
      */
     public int getVsize() {
+        if (!hasWitnesses()) {
+            return this.messageSize();
+        }
         return IntMath.divide(getWeight(), 4, RoundingMode.CEILING); // round up
     }
 
@@ -349,7 +417,7 @@ public class Transaction {
 
         // Add inputs
         for (TransactionInput input : inputs) {
-            builder.addInputs(input.toProto(hasWitnesses()));
+            builder.addInputs(input.toProto());
         }
 
         // Add outputs
@@ -357,9 +425,38 @@ public class Transaction {
             builder.addOutputs(output.toProto());
         }
 
-        
-//        builder.setSignature(ByteString.copyFrom(bytes));
+//        builder.setSignature(ByteString.copyFrom(bytes));// TODO: need to understand this
         return builder.build();
+    }
+
+    private void readInputs(ByteBuffer payload) throws BufferUnderflowException, ProtocolException {
+        VarInt numInputsVarInt = VarInt.read(payload);
+        check(numInputsVarInt.fitsInt(), BufferUnderflowException::new);
+        int numInputs = numInputsVarInt.intValue();
+        inputs = new ArrayList<>(Math.min((int) numInputs, MAX_INITIAL_ARRAY_LENGTH));
+        for (long i = 0; i < numInputs; i++) {
+            inputs.add(TransactionInput.read(payload, this));
+        }
+        invalidateCachedTxIds();
+    }
+
+    private void readOutputs(ByteBuffer payload) throws BufferUnderflowException, ProtocolException {
+        VarInt numOutputsVarInt = VarInt.read(payload);
+        check(numOutputsVarInt.fitsInt(), BufferUnderflowException::new);
+        int numOutputs = numOutputsVarInt.intValue();
+        outputs = new ArrayList<>(Math.min((int) numOutputs, MAX_INITIAL_ARRAY_LENGTH));
+        for (long i = 0; i < numOutputs; i++) {
+            outputs.add(TransactionOutput.read(payload, this));
+        }
+        invalidateCachedTxIds();
+    }
+
+    private void readWitnesses(ByteBuffer payload) throws BufferUnderflowException, ProtocolException {
+        int numInputs = inputs.size();
+        for (int i = 0; i < numInputs; i++) {
+            TransactionWitness witness = TransactionWitness.read(payload);
+            replaceInput(i, getInput(i).withWitness(witness));
+        }
     }
 
     /**
@@ -370,19 +467,87 @@ public class Transaction {
     }
 
     /**
-     * Returns the transaction id as you see them in block explorers.It is used
+     * Replaces an already added input. This is meant to amend a transaction
+     * before it's committed to a wallet.
+     *
+     * @param index index of input to replace
+     * @param input input to replace with
+     */
+    public void replaceInput(int index, TransactionInput input) {
+        TransactionInput oldInput = inputs.remove(index);
+        oldInput.setParent(null);
+        input.setParent(this);
+        inputs.add(index, input);
+        invalidateCachedTxIds();
+    }
+
+    /**
+     * invalidates cache for both transaction IDs
+     */
+    private void invalidateCachedTxIds() {
+        cachedTxId = null;
+        cachedWTxId = null;
+    }
+
+    /**
+     * Returns the transaction ID as you see them in block explorers. It is used
      * as a reference by transaction inputs via outpoints.
      *
-     * @return
+     * @return transaction ID
      */
     public Sha256Hash getTxId() {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try {
-            serializeToStream(baos, false);
-        } catch (IOException e) {
-            throw new RuntimeException(e); // cannot happen
+        if (cachedTxId == null) {
+            if (!hasWitnesses() && cachedWTxId != null) {
+                cachedTxId = cachedWTxId;
+            } else {
+                ByteBuffer buf = ByteBuffer.allocate(messageSize(false));
+                write(buf, false);
+                cachedTxId = Sha256Hash.wrapReversed(Sha256Hash.hashTwice(buf.array()));
+            }
         }
-        return Sha256Hash.wrapReversed(Sha256Hash.hashTwice(baos.toByteArray()));
+        return cachedTxId;
+    }
+
+    /**
+     * Determines if segwit serialization should be used for this transaction,
+     * based on whether it has any witnesses and on protocol version.
+     *
+     * @return {@code true} if segwit serialization should be used,
+     * {@code false} otherwise
+     */
+    private boolean useSegwitSerialization() {
+        return hasWitnesses() && allowWitness(protocolVersion);
+    }
+
+    public int messageSize() {
+        return messageSize(useSegwitSerialization());
+    }
+
+    private int messageSize(boolean useSegwitSerialization) {
+        int size = 4; // version
+        if (useSegwitSerialization) {
+            size += 2; // marker, flag
+        }
+        size += VarInt.sizeOf(inputs.size())
+                + inputs.stream()
+                        .mapToInt(TransactionInput::messageSize)
+                        .sum()
+                + VarInt.sizeOf(outputs.size())
+                + outputs.stream()
+                        .mapToInt(TransactionOutput::messageSize)
+                        .sum();
+        if (useSegwitSerialization) {
+            size += inputs.stream()
+                    .mapToInt(in -> in.getWitness().messageSize())
+                    .sum();
+        }
+        size += 4; // locktime
+        return size;
+    }
+
+    public ByteBuffer write(ByteBuffer buf) throws BufferOverflowException {
+        write(buf, useSegwitSerialization());
+        return buf;
     }
 
     /**
@@ -392,43 +557,43 @@ public class Transaction {
      * <a href="https://en.bitcoin.it/wiki/Protocol_documentation#tx">classic
      * format</a>, depending on if segwit is desired.
      *
-     * @param stream
-     * @param useSegwit
-     * @throws java.io.IOException
+     * @param buf
+     * @param useSegwitSerialization
      */
-    protected void serializeToStream(OutputStream stream, boolean useSegwit) throws IOException {
+    protected void write(ByteBuffer buf, boolean useSegwitSerialization) throws BufferOverflowException {
         // version
-        writeInt32LE(version, stream);
+        writeInt32LE(version, buf);
         // marker, flag
-        if (useSegwit) {
-            stream.write(0);
-            stream.write(1);
+        if (useSegwitSerialization) {
+            buf.put((byte) 0);
+            buf.put((byte) 1);
         }
         // txin_count, txins
-        stream.write(ByteUtils.writInt32BE(inputs.size()));
+        VarInt.of(inputs.size()).write(buf);
         for (TransactionInput in : inputs) {
-            stream.write(in.toProto(useSegwit).toByteArray());//TODO: bullsit, to fix
+            in.write(buf);
         }
         // txout_count, txouts
-        stream.write(ByteUtils.writInt32BE(outputs.size()));
+        VarInt.of(outputs.size()).write(buf);
         for (TransactionOutput out : outputs) {
-            stream.write(out.serialize());
+            out.write(buf);
         }
-        // script_witnisses
-        if (useSegwit) {
+        // script_witnesses
+        if (useSegwitSerialization) {
             for (TransactionInput in : inputs) {
-                stream.write(in.getWitness().serialize());
+                in.getWitness().write(buf);
             }
         }
         // lock_time
-        writeInt32LE(vLockTime.rawValue(), stream);
+        writeInt32LE(vLockTime.rawValue(), buf);
     }
 
     private Transaction(int protocolVersion) {
-        this.version = protocolVersion;
+        this.protocolVersion = protocolVersion;
     }
 
     public Transaction() {
+        this.protocolVersion = ProtocolVersion.CURRENT.intValue();
         version = 1;
         inputs = new ArrayList<>();
         outputs = new ArrayList<>();
@@ -763,6 +928,24 @@ public class Transaction {
     }
 
     /**
+     * Returns if tx witnesses are allowed based on the protocol version
+     */
+    private static boolean allowWitness(int protocolVersion) {
+        return (protocolVersion & SERIALIZE_TRANSACTION_NO_WITNESS) == 0
+                && protocolVersion >= WITNESS_VERSION.intValue();
+    }
+
+    /**
+     * Serialize this message to a byte array that conforms to the Bitcoin wire
+     * protocol.
+     *
+     * @return serialized data in Bitcoin protocol format
+     */
+    public byte[] serialize() {
+        return write(ByteBuffer.allocate(messageSize())).array();
+    }
+
+    /**
      * This is required for signatures which use a sigHashType which cannot be
      * represented using SigHash and anyoneCanPay See transaction
      * c99c49da4c38af669dea436d3e73780dfdb6c1ecf9958baa52960e8baee30e73, which
@@ -779,91 +962,88 @@ public class Transaction {
         //
         //   https://en.bitcoin.it/wiki/Contracts
 
-        try {
-            // Create a copy of this transaction to operate upon because we need make changes to the inputs and outputs.
-            // It would not be thread-safe to change the attributes of the transaction object itself.
-            Transaction tx = this.clone();
+        // Create a copy of this transaction to operate upon because we need make changes to the inputs and outputs.
+        // It would not be thread-safe to change the attributes of the transaction object itself.
+        Transaction tx = Transaction.read(ByteBuffer.wrap(serialize()));
 
-            // Clear input scripts in preparation for signing. If we're signing a fresh
-            // transaction that step isn't very helpful, but it doesn't add much cost relative to the actual
-            // EC math so we'll do it anyway.
-            for (int i = 0; i < tx.inputs.size(); i++) {
-                TransactionInput input = tx.inputs.get(i);
-                input.clearScriptBytes();
-                input.setWitness(null);
-            }
-
-            // This step has no purpose beyond being synchronized with Bitcoin Core's bugs. OP_CODESEPARATOR
-            // is a legacy holdover from a previous, broken design of executing scripts that shipped in Bitcoin 0.1.
-            // It was seriously flawed and would have let anyone take anyone elses money. Later versions switched to
-            // the design we use today where scripts are executed independently but share a stack. This left the
-            // OP_CODESEPARATOR instruction having no purpose as it was only meant to be used internally, not actually
-            // ever put into scripts. Deleting OP_CODESEPARATOR is a step that should never be required but if we don't
-            // do it, we could split off the best chain.
-            connectedScript = Script.removeAllInstancesOfOp(connectedScript, ScriptOpCodes.OP_CODESEPARATOR);
-
-            // Set the input to the script of its output. Bitcoin Core does this but the step has no obvious purpose as
-            // the signature covers the hash of the prevout transaction which obviously includes the output script
-            // already. Perhaps it felt safer to him in some way, or is another leftover from how the code was written.
-            TransactionInput input = tx.inputs.get(inputIndex);
-            input.setScriptBytes(connectedScript);
-
-            if ((sigHashType & 0x1f) == SigHash.NONE.value) {
-                // SIGHASH_NONE means no outputs are signed at all - the signature is effectively for a "blank cheque".
-                tx.outputs = new ArrayList<>(0);
-                // The signature isn't broken by new versions of the transaction issued by other parties.
-                for (int i = 0; i < tx.inputs.size(); i++) {
-                    if (i != inputIndex) {
-                        tx.inputs.get(i).setSequenceNumber(0);
-                    }
-                }
-            } else if ((sigHashType & 0x1f) == SigHash.SINGLE.value) {
-                // SIGHASH_SINGLE means only sign the output at the same index as the input (ie, my output).
-                if (inputIndex >= tx.outputs.size()) {
-                    // The input index is beyond the number of outputs, it's a buggy signature made by a broken
-                    // Bitcoin implementation. Bitcoin Core also contains a bug in handling this case:
-                    // any transaction output that is signed in this case will result in both the signed output
-                    // and any future outputs to this public key being steal-able by anyone who has
-                    // the resulting signature and the public key (both of which are part of the signed tx input).
-
-                    // Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
-                    // actually returns the constant "1" to indicate an error, which is never checked for. Oops.
-                    return Sha256Hash.wrap("0100000000000000000000000000000000000000000000000000000000000000");
-                }
-                // In SIGHASH_SINGLE the outputs after the matching input index are deleted, and the outputs before
-                // that position are "nulled out". Unintuitively, the value in a "null" transaction is set to -1.
-                tx.outputs = new ArrayList<>(tx.outputs.subList(0, inputIndex + 1));
-                for (int i = 0; i < inputIndex; i++) {
-                    tx.outputs.set(i, new TransactionOutput(tx, Coin.NEGATIVE_SATOSHI, new byte[]{}));
-                }
-                // The signature isn't broken by new versions of the transaction issued by other parties.
-                for (int i = 0; i < tx.inputs.size(); i++) {
-                    if (i != inputIndex) {
-                        tx.inputs.get(i).setSequenceNumber(0);
-                    }
-                }
-            }
-
-            if ((sigHashType & SigHash.ANYONECANPAY.value) == SigHash.ANYONECANPAY.value) {
-                // SIGHASH_ANYONECANPAY means the signature in the input is not broken by changes/additions/removals
-                // of other inputs. For example, this is useful for building assurance contracts.
-                tx.inputs = new ArrayList<>();
-                tx.inputs.add(input);
-            }
-
-            ByteArrayOutputStream bos = new ByteArrayOutputStream(255); // just a guess at an average tx length
-            tx.serializeToStream(bos, false);
-            // We also have to write a hash type (sigHashType is actually an unsigned char)
-            writeInt32LE(0x000000ff & sigHashType, bos);
-            // Note that this is NOT reversed to ensure it will be signed correctly. If it were to be printed out
-            // however then we would expect that it is IS reversed.
-            Sha256Hash hash = Sha256Hash.twiceOf(bos.toByteArray());
-            bos.close();
-
-            return hash;
-        } catch (IOException e) {
-            throw new RuntimeException(e);  // Cannot happen.
+        // Clear input scripts in preparation for signing. If we're signing a fresh
+        // transaction that step isn't very helpful, but it doesn't add much cost relative to the actual
+        // EC math so we'll do it anyway.
+        for (int i = 0; i < tx.inputs.size(); i++) {
+            TransactionInput input = tx.getInput(i);
+            input = input.withoutScriptBytes();
+            input = input.withoutWitness();
+            tx.replaceInput(i, input);
         }
+
+        // This step has no purpose beyond being synchronized with Bitcoin Core's bugs. OP_CODESEPARATOR
+        // is a legacy holdover from a previous, broken design of executing scripts that shipped in Bitcoin 0.1.
+        // It was seriously flawed and would have let anyone take anyone elses money. Later versions switched to
+        // the design we use today where scripts are executed independently but share a stack. This left the
+        // OP_CODESEPARATOR instruction having no purpose as it was only meant to be used internally, not actually
+        // ever put into scripts. Deleting OP_CODESEPARATOR is a step that should never be required but if we don't
+        // do it, we could split off the best chain.
+        connectedScript = Script.removeAllInstancesOfOp(connectedScript, ScriptOpCodes.OP_CODESEPARATOR);
+
+        // Set the input to the script of its output. Bitcoin Core does this but the step has no obvious purpose as
+        // the signature covers the hash of the prevout transaction which obviously includes the output script
+        // already. Perhaps it felt safer to him in some way, or is another leftover from how the code was written.
+        TransactionInput input = tx.getInput(inputIndex);
+        input = input.withScriptBytes(connectedScript);
+        tx.replaceInput(inputIndex, input);
+
+        if ((sigHashType & 0x1f) == SigHash.NONE.value) {
+            // SIGHASH_NONE means no outputs are signed at all - the signature is effectively for a "blank cheque".
+            tx.outputs = new ArrayList<>(0);
+            // The signature isn't broken by new versions of the transaction issued by other parties.
+            for (int i = 0; i < tx.inputs.size(); i++) {
+                if (i != inputIndex) {
+                    tx.replaceInput(i, tx.getInput(i).withSequence(0));
+                }
+            }
+        } else if ((sigHashType & 0x1f) == SigHash.SINGLE.value) {
+            // SIGHASH_SINGLE means only sign the output at the same index as the input (ie, my output).
+            if (inputIndex >= tx.outputs.size()) {
+                // The input index is beyond the number of outputs, it's a buggy signature made by a broken
+                // Bitcoin implementation. Bitcoin Core also contains a bug in handling this case:
+                // any transaction output that is signed in this case will result in both the signed output
+                // and any future outputs to this public key being steal-able by anyone who has
+                // the resulting signature and the public key (both of which are part of the signed tx input).
+
+                // Bitcoin Core's bug is that SignatureHash was supposed to return a hash and on this codepath it
+                // actually returns the constant "1" to indicate an error, which is never checked for. Oops.
+                return Sha256Hash.wrap("0100000000000000000000000000000000000000000000000000000000000000");
+            }
+            // In SIGHASH_SINGLE the outputs after the matching input index are deleted, and the outputs before
+            // that position are "nulled out". Unintuitively, the value in a "null" transaction is set to -1.
+            tx.outputs = new ArrayList<>(tx.outputs.subList(0, inputIndex + 1));
+            for (int i = 0; i < inputIndex; i++) {
+                tx.outputs.set(i, new TransactionOutput(tx, Coin.NEGATIVE_SATOSHI, new byte[]{}));
+            }
+            // The signature isn't broken by new versions of the transaction issued by other parties.
+            for (int i = 0; i < tx.inputs.size(); i++) {
+                if (i != inputIndex) {
+                    tx.replaceInput(i, tx.getInput(i).withSequence(0));
+                }
+            }
+        }
+
+        if ((sigHashType & SigHash.ANYONECANPAY.value) == SigHash.ANYONECANPAY.value) {
+            // SIGHASH_ANYONECANPAY means the signature in the input is not broken by changes/additions/removals
+            // of other inputs. For example, this is useful for building assurance contracts.
+            tx.inputs = new ArrayList<>();
+            tx.inputs.add(input);
+        }
+
+        ByteBuffer buf = ByteBuffer.allocate(tx.messageSize() + 4);
+        tx.write(buf, false);
+        // We also have to write a hash type (sigHashType is actually an unsigned char)
+        writeInt32LE(0x000000ff & sigHashType, buf);
+        // Note that this is NOT reversed to ensure it will be signed correctly. If it were to be printed out
+        // however then we would expect that it IS reversed.
+        Sha256Hash hash = Sha256Hash.twiceOf(buf.array());
+
+        return hash;
     }
 
     public byte[] calculateWitnessSignature(
@@ -1068,29 +1248,6 @@ public class Transaction {
         Collections.shuffle(outputs);
     }
 
-    public int messageSize() {
-//        boolean useSegwit = true;
-        int size = 4; // version
-//        if (useSegwit) {
-        size += 2; // marker, flag
-//        }
-        size += VarInt.sizeOf(inputs.size());
-        for (TransactionInput in : inputs) {
-            size += in.messageSize();
-        }
-        size += VarInt.sizeOf(outputs.size());
-        for (TransactionOutput out : outputs) {
-            size += out.messageSize();
-        }
-//        if (useSegwit) {
-        for (TransactionInput in : inputs) {
-            size += in.getWitness().messageSize();
-        }
-//        }
-        size += 4; // locktime
-        return size;
-    }
-
     /**
      *
      * /**
@@ -1265,19 +1422,22 @@ public class Transaction {
     }
 
     /**
-     * Returns the witness transaction id (aka witness id) as per BIP144.For
+     * Returns the witness transaction ID (aka witness ID) as per BIP144. For
      * transactions without witness, this is the same as {@link #getTxId()}.
      *
-     * @return
+     * @return witness transaction ID
      */
     public Sha256Hash getWTxId() {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try {
-            serializeToStream(baos, true);
-        } catch (IOException e) {
-            throw new RuntimeException(e); // cannot happen
+        if (cachedWTxId == null) {
+            if (!hasWitnesses() && cachedTxId != null) {
+                cachedWTxId = cachedTxId;
+            } else {
+                ByteBuffer buf = ByteBuffer.allocate(messageSize(hasWitnesses()));
+                write(buf, hasWitnesses());
+                cachedWTxId = Sha256Hash.wrapReversed(Sha256Hash.hashTwice(buf.array()));
+            }
         }
-        return Sha256Hash.wrapReversed(Sha256Hash.hashTwice(baos.toByteArray()));
+        return cachedWTxId;
     }
 
     /**

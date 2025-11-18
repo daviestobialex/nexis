@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -150,7 +151,7 @@ public class Block {
     public static Block createGenesis(Instant time, long nonce) {
         return new Block(BLOCK_VERSION_GENESIS, time, nonce, genesisTransactions());
     }
-
+    
     private static List<Transaction> genesisTransactions() {
         Transaction tx = Transaction.genesis(genesisTxInputScriptBytes);
         tx.addOutput(new TransactionOutput(tx, MonetaryPolicy.getStartCoinsAsCoin(), genesisTxScriptPubKeyBytes));
@@ -160,16 +161,16 @@ public class Block {
     // A script containing the difficulty bits and the following message:
     //
     //   "Times on 04/Dec/2025, building something I could not resist but needed to be created."
-    private static final byte[] genesisTxInputScriptBytes = ByteUtils.parseHex("04ffff001d01044554696d6573206f6e2030342f4465632f323032352c206275696c64696e6720736f6d657468696e67204920636f756c64206e6f742072657369737420627574206e656564656420746f20626520637265617465642e");
+    public static final byte[] genesisTxInputScriptBytes = ByteUtils.parseHex("04ffff001d01044554696d6573206f6e2030342f4465632f323032352c206275696c64696e6720736f6d657468696e67204920636f756c64206e6f742072657369737420627574206e656564656420746f20626520637265617465642e");
 
-    private static final byte[] genesisTxScriptPubKeyBytes
+    public static final byte[] genesisTxScriptPubKeyBytes
             = new ScriptBuilder()
                     .smallNum(0)
                     .data(
                             ByteUtils.
                             parseHex("43332f52fa5163eee052675664db00e385b4388c"))
                     .build()
-                    .program();
+                    .program();//p2wpkh
 
 //    private static final byte[] genesisTxScriptPubKeyBytes = new ScriptBuilder()
 //            .data(ByteUtils.parseHex("fe7afe209b36127700166af92015cb1fd523885401987e99d61a831d4708cf71"))
@@ -215,6 +216,7 @@ public class Block {
      * @param time time when the block was mined.
      * @param nonce Arbitrary number to make the block hash lower than the
      * target.
+     * @param difficultyTarget
      * @param transactions List of transactions including the coinbase, or
      * {@code null} for header-only blocks
      */
@@ -320,7 +322,8 @@ public class Block {
     }
 
     /**
-     * Returns the merkle root in big endian form, calculating it from
+     * Returns the merkle root in bi
+            int difficultyTarget,g endian form, calculating it from
      * transactions if necessary.
      *
      * @return
@@ -351,6 +354,7 @@ public class Block {
     /**
      * Returns the witness root in big endian form, calculating it from
      * transactions if necessary.
+     * @return 
      */
     public Sha256Hash getWitnessRoot() {
         if (witnessRoot == null) {

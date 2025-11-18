@@ -5,7 +5,6 @@
 package org.nexis.core;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.netty.channel.ChannelFuture;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +17,7 @@ import org.nexis.base.PeerConnection;
 import org.nexis.exceptions.RejectedTransactionException;
 import org.nexis.internal.Threading;
 import org.nexis.listeners.PreMessageReceivedEventListener;
-import static org.nexis.utilities.Preconditions.checkState;
+import static org.nexis.internal.Preconditions.checkState;
 import org.nexis.wallet.Wallet;
 import org.nexus.base.proto.NexusProtocol;
 
@@ -166,7 +165,7 @@ public class TransactionBroadcast {
     }
 
     private void broadcastOne(PeerConnection peer) {
-        peer.channel().writeAndFlush(tx.toProto());
+        peer.channel().writeAndFlush(tx.toProto()); 
     }
 
     private int numSeemPeers;

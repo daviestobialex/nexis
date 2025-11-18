@@ -19,7 +19,7 @@ import org.nexis.core.TransactionInput;
 import org.nexis.core.TransactionOutput;
 import org.nexis.internal.ListenableCompletableFuture;
 import org.nexis.internal.Threading;
-import static org.nexis.utilities.Preconditions.checkState;
+import static org.nexis.internal.Preconditions.checkState;
 
 /**
  *

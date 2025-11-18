@@ -4,6 +4,9 @@
  */
 package org.nexis.core;
 
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -12,14 +15,15 @@ import java.util.logging.Logger;
 import org.nexis.base.Address;
 import org.nexis.base.Coin;
 import org.nexis.base.Identity;
-import org.nexis.base.VarInt;
 import org.nexis.script.Script;
 import org.nexis.script.ScriptBuilder;
 import org.nexis.script.ScriptException;
 import org.nexis.script.ScriptPattern;
-import static org.nexis.utilities.Preconditions.checkArgument;
-import static org.nexis.utilities.Preconditions.checkState;
+import static org.nexis.internal.Preconditions.checkArgument;
+import static org.nexis.internal.Preconditions.checkState;
 import org.nexis.base.Sha256Hash;
+import org.nexis.exceptions.ProtocolException;
+import org.nexis.internal.Buffers;
 import org.nexus.base.proto.NexusProtocol;
 
 /**
@@ -58,6 +62,21 @@ public class TransactionOutput {
         this(parent, value, ScriptBuilder.createOutputScript(to).program());
     }
 
+    /**
+     * Deserialize this transaction output from a given payload.
+     *
+     * @param payload payload to deserialize from
+     * @param parentTransaction parent transaction of the output
+     * @return read message
+     * @throws BufferUnderflowException if the read message extends beyond the
+     * remaining bytes of the payload
+     */
+    public static TransactionOutput read(ByteBuffer payload, Transaction parentTransaction) throws BufferUnderflowException, ProtocolException {
+        Objects.requireNonNull(parentTransaction);
+        Coin value = Coin.read(payload);
+        byte[] scriptBytes = Buffers.readLengthPrefixedBytes(payload);
+        return new TransactionOutput(parentTransaction, value, scriptBytes);
+    }
 
     public static TransactionOutput read(NexusProtocol.TransactionOutput proto, Transaction parentTransaction) {
         Objects.requireNonNull(proto, "TransactionOutput proto cannot be null");
@@ -79,10 +98,6 @@ public class TransactionOutput {
     // The script bytes are parsed and turned into a Script on demand.
     private Script scriptPubKey;
 
-    // indicates that this is a governance transaction output and coin value 
-    // is to be allocated to receiver even if the system does not have, essentially minitng 
-    // new coin on demand based on real life exchanges baked into the system from root/genesis 
-    private boolean system = false;// default is false
     // These fields are not Bitcoin serialized. They are used for tracking purposes in our wallet
     // only. If set to true, this output is counted towards our balance. If false and spentBy is null the tx output
     // was owned by us and was sent to somebody else. If false and spentBy is set it means this output was owned by
@@ -152,12 +167,39 @@ public class TransactionOutput {
     }
 
     /**
-     * Allocates a byte array and writes into it.
+     * Write this transaction output into the given buffer.
      *
-     * @return byte array containing the transaction input
+     * @param buf buffer to write into
+     * @return the buffer
+     * @throws BufferOverflowException if the output doesn't fit the remaining
+     * buffer
+     */
+    public ByteBuffer write(ByteBuffer buf) throws BufferOverflowException {
+        Coin.valueOf(value).write(buf);
+        Buffers.writeLengthPrefixedBytes(buf, scriptBytes);
+        return buf;
+    }
+
+    /**
+     * Allocates a byte array and writes this transaction output into it.
+     *
+     * @return byte array containing the transaction output
      */
     public byte[] serialize() {
-        return toProto().toByteArray();
+        return write(ByteBuffer.allocate(messageSize())).array();
+    }
+
+    /**
+     * Return the size of the serialized message. Note that if the message was
+     * deserialized from a payload, this size can differ from the size of the
+     * original payload.
+     *
+     * @return size of the serialized message in bytes
+     */
+    public int messageSize() {
+        return Coin.BYTES
+                + // value
+                Buffers.lengthPrefixedBytesSize(scriptBytes);
     }
 
     public NexusProtocol.TransactionOutput toProto() {
@@ -332,19 +374,6 @@ public class TransactionOutput {
     }
 
     /**
-     * Return the size of the serialized message. Note that if the message was
-     * deserialized from a payload, this size can differ from the size of the
-     * original payload.
-     *
-     * @return size of the serialized message in bytes
-     */
-    public int messageSize() {
-        int size = Coin.BYTES; // value
-        size += VarInt.sizeOf(scriptBytes.length) + scriptBytes.length;
-        return size;
-    }
-
-    /**
      * Sets the value of this output.
      *
      * @param value
@@ -379,13 +408,5 @@ public class TransactionOutput {
 //                    parent != null ? ((Transaction) parent).getTxId() : "(no parent)", e.toString());
             return false;
         }
-    }
-
-    public boolean isSystem() {
-        return system;
-    }
-
-    public void setSystem(boolean system){
-        this.system = system;
     }
 }

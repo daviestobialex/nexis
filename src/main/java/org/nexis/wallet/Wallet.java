@@ -68,9 +68,10 @@ import org.nexis.signers.LocalTransactionSigner;
 import org.nexis.signers.MissingSigResolutionSigner;
 import org.nexis.signers.TransactionSigner;
 import org.nexis.base.utils.ByteUtils;
-import static org.nexis.utilities.Preconditions.checkArgument;
-import static org.nexis.utilities.Preconditions.checkState;
+import static org.nexis.internal.Preconditions.checkArgument;
+import static org.nexis.internal.Preconditions.checkState;
 import org.nexis.base.Sha256Hash;
+import org.nexis.core.NodeId;
 import org.nexis.wallet.WalletTransaction.Pool;
 import org.slf4j.LoggerFactory;
 
@@ -314,7 +315,7 @@ public class Wallet extends BalanceOperations implements WalletTransactionAdapte
     public Address currentAddress() {
         return SegwitAddress.fromHash(
                 this.params.getNetwork(),
-                this.identity.getNodeId().getId());
+                NodeId.toSegwit(this.identity.getKeyPair().getPublic().getEncoded()));
     }
 
     /**
@@ -1045,7 +1046,7 @@ public class Wallet extends BalanceOperations implements WalletTransactionAdapte
 
     private void addSuppliedInputs(Transaction tx, List<TransactionInput> originalInputs) {
         for (TransactionInput input : originalInputs) {
-            tx.addInput(TransactionInput.read(input.toProto(input.hasWitness()), tx));
+            tx.addInput(TransactionInput.read(input.toProto(), tx));
         }
     }
 

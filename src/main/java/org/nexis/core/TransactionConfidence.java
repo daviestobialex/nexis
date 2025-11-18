@@ -47,10 +47,12 @@ import static org.nexis.internal.Preconditions.checkState;
  * decision about a transaction. It also contains some pre-canned rules for
  * common scenarios: if you aren't really sure what level of confidence you
  * need, these should prove useful. You can get a confidence object using
- * {@link Transaction#getConfidence()}. They cannot be constructed directly.</p>
+ * {@link Transaction#getConfidence()}. They cannot be constructed directly.
+ * </p>
  *
  * <p>
- * Confidence in a transaction can come in multiple ways:</p>
+ * Confidence in a transaction can come in multiple ways:
+ * </p>
  *
  * <ul>
  * <li>Because you created it yourself and only you have the necessary
@@ -74,12 +76,14 @@ import static org.nexis.internal.Preconditions.checkState;
  * <p>
  * Alternatively, you may know that the transaction is "dead", that is, one or
  * more of its inputs have been double spent and will never confirm unless there
- * is another re-org.</p>
+ * is another re-org.
+ * </p>
  *
  * <p>
  * TransactionConfidence is updated via the
  * {@link TransactionConfidence#incrementDepthInBlocks()} method to ensure the
- * block depth is up to date.</p>
+ * block depth is up to date.
+ * </p>
  * To make a copy that won't be changed, use
  * {@link TransactionConfidence#duplicate()}.
  */
@@ -102,7 +106,7 @@ public class TransactionConfidence {
      * The time the transaction was last announced to us, or {@code null} if
      * unknown.
      */
-//    @Nullable
+    // @Nullable
     private Instant lastBroadcastTime = null;
     /**
      * The Transaction that this confidence object is associated with.
@@ -111,7 +115,8 @@ public class TransactionConfidence {
     // Lazily created listeners array.
     private final CopyOnWriteArrayList<ListenerRegistration<Listener>> listeners;
 
-    // The depth of the transaction on the best chain in blocks. An unconfirmed block has depth 0.
+    // The depth of the transaction on the best chain in blocks. An unconfirmed
+    // block has depth 0.
     private int depth;
 
     /**
@@ -199,6 +204,7 @@ public class TransactionConfidence {
          */
         SELF
     }
+
     private Source source = Source.UNKNOWN;
 
     public TransactionConfidence(Sha256Hash hash) {
@@ -217,11 +223,13 @@ public class TransactionConfidence {
      * threshold. <b>Note that confidence can go down as well as up.</b>
      * For example, this can happen if somebody is doing a double-spend attack
      * against you. Whilst it's unlikely, your code should be able to handle
-     * that in order to be correct.</p>
+     * that in order to be correct.
+     * </p>
      *
      * <p>
      * During listener execution, it's safe to remove the current listener but
-     * not others.</p>
+     * not others.
+     * </p>
      */
     public interface Listener {
 
@@ -257,20 +265,27 @@ public class TransactionConfidence {
         void onConfidenceChanged(TransactionConfidence confidence, ChangeReason reason);
     }
 
-    // This is used to ensure that confidence objects which aren't referenced from anywhere but which have an event
-    // listener set on them don't become eligible for garbage collection. Otherwise the TxConfidenceTable, which only
-    // has weak references to these objects, would not be enough to keep the event listeners working as transactions
-    // propagate around the network - it cannot know directly if the API user is interested in the object, so it uses
+    // This is used to ensure that confidence objects which aren't referenced from
+    // anywhere but which have an event
+    // listener set on them don't become eligible for garbage collection. Otherwise
+    // the TxConfidenceTable, which only
+    // has weak references to these objects, would not be enough to keep the event
+    // listeners working as transactions
+    // propagate around the network - it cannot know directly if the API user is
+    // interested in the object, so it uses
     // heap reachability as a proxy for interest.
     //
-    // We add ourselves to this set when a listener is added and remove ourselves when the listener list is empty.
-    private static final Set<TransactionConfidence> pinnedConfidenceObjects = Collections.synchronizedSet(new HashSet<TransactionConfidence>());
+    // We add ourselves to this set when a listener is added and remove ourselves
+    // when the listener list is empty.
+    private static final Set<TransactionConfidence> pinnedConfidenceObjects = Collections
+            .synchronizedSet(new HashSet<TransactionConfidence>());
 
     /**
      * <p>
      * Adds an event listener that will be run when this confidence object is
      * updated. The listener will be locked and is likely to be invoked on a
-     * peer thread.</p>
+     * peer thread.
+     * </p>
      *
      * <p>
      * Note that this is NOT called when every block arrives. Instead it is
@@ -278,7 +293,8 @@ public class TransactionConfidence {
      * from not being seen in the chain to being seen (not necessarily in the
      * best chain). If you want to know when the transaction gets buried under
      * another block, consider using a future from
-     * {@link #getDepthFuture(int)}.</p>
+     * {@link #getDepthFuture(int)}.
+     * </p>
      */
     public void addEventListener(Executor executor, Listener listener) {
         Objects.requireNonNull(listener);
@@ -290,7 +306,8 @@ public class TransactionConfidence {
      * <p>
      * Adds an event listener that will be run when this confidence object is
      * updated. The listener will be locked and is likely to be invoked on a
-     * peer thread.</p>
+     * peer thread.
+     * </p>
      *
      * <p>
      * Note that this is NOT called when every block arrives. Instead it is
@@ -300,7 +317,8 @@ public class TransactionConfidence {
      * another block, implement
      * {@link org.bitcoinj.core.listeners.NewBestBlockListener} and related
      * listeners, attach them to a {@link BlockChain} and then use the getters
-     * on the confidence object to determine the new depth.</p>
+     * on the confidence object to determine the new depth.
+     * </p>
      */
     public void addEventListener(Listener listener) {
         addEventListener(Threading.USER_THREAD, listener);
@@ -381,7 +399,7 @@ public class TransactionConfidence {
     public boolean markBroadcastBy(PeerAddress address) {
         lastBroadcastTime = TimeUtils.currentTime();
         if (!broadcastBy.addIfAbsent(address)) {
-            return false;  // Duplicate.
+            return false; // Duplicate.
         }
         synchronized (this) {
             if (getConfidenceType() == ConfidenceType.UNKNOWN) {
@@ -421,7 +439,7 @@ public class TransactionConfidence {
      * unknown.
      *
      * @return time the transaction was last announced to us, or empty if
-     * unknown
+     *         unknown
      */
     public Optional<Instant> getLastBroadcastTime() {
         return Optional.ofNullable(lastBroadcastTime);
@@ -499,11 +517,13 @@ public class TransactionConfidence {
      * EOY 2011 network security is high enough that often only one block is
      * considered enough even for high value transactions. For low value
      * transactions like songs, or other cheap items, no blocks at all may be
-     * necessary.</p>
+     * necessary.
+     * </p>
      *
      * <p>
      * If the transaction appears in the top block, the depth is one. If it's
-     * anything else (pending, dead, unknown) the depth is zero.</p>
+     * anything else (pending, dead, unknown) the depth is zero.
+     * </p>
      */
     public synchronized int getDepthInBlocks() {
         return depth;
@@ -536,7 +556,7 @@ public class TransactionConfidence {
      * @return the transaction id that double spent this one
      * @throws IllegalStateException if confidence type is not DEAD.
      */
-//    @Nullable
+    // @Nullable
     public synchronized Sha256Hash getOverridingTxId() {
         if (getConfidenceType() != ConfidenceType.DEAD) {
             throw new IllegalStateException("Confidence type is " + getConfidenceType()
@@ -555,7 +575,7 @@ public class TransactionConfidence {
      * this tx.
      *
      * @deprecated Use {@link #getOverridingTxId()} (and {@code null} is
-     * no-longer allowed)
+     *             no-longer allowed)
      */
     @Deprecated
     public synchronized void setOverridingTransaction(Transaction overridingTransaction) {
@@ -574,7 +594,7 @@ public class TransactionConfidence {
      * this tx.
      */
     public synchronized void setOverridingTxId(
-            //            @Nullable
+            // @Nullable
             Sha256Hash overridingTxId) {
         this.overridingTxId = overridingTxId;
         setConfidenceType(ConfidenceType.DEAD);
@@ -605,7 +625,8 @@ public class TransactionConfidence {
      */
     public void queueListeners(final Listener.ChangeReason reason) {
         for (final ListenerRegistration<Listener> registration : listeners) {
-            registration.executor.execute(() -> registration.listener.onConfidenceChanged(TransactionConfidence.this, reason));
+            registration.executor
+                    .execute(() -> registration.listener.onConfidenceChanged(TransactionConfidence.this, reason));
         }
     }
 
@@ -632,8 +653,8 @@ public class TransactionConfidence {
      * Once set it's immutable.
      */
     public synchronized void setSource(Source source) {
-        checkState(this.source == Source.UNKNOWN || source == this.source, ()
-                -> "source cannot be set again: from " + this.source + " to " + source);
+        checkState(this.source == Source.UNKNOWN || source == this.source,
+                () -> "source cannot be set again: from " + this.source + " to " + source);
         this.source = source;
     }
 
@@ -657,7 +678,8 @@ public class TransactionConfidence {
      * appears in a block on the best chain, and zero will wait until it has
      * been seen on the network.
      */
-    private synchronized ListenableCompletableFuture<TransactionConfidence> getDepthFuture(final int depth, Executor executor) {
+    private synchronized ListenableCompletableFuture<TransactionConfidence> getDepthFuture(final int depth,
+            Executor executor) {
         final ListenableCompletableFuture<TransactionConfidence> result = new ListenableCompletableFuture<>();
         if (getDepthInBlocks() >= depth) {
             result.complete(this);

@@ -30,8 +30,8 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 import org.nexis.utilities.HexFormat;
-import static org.nexis.utilities.Preconditions.check;
-import static org.nexis.utilities.Preconditions.checkArgument;
+import static org.nexis.internal.Preconditions.check;
+import static org.nexis.internal.Preconditions.checkArgument;
 
 /**
  * Utility methods for bit, byte, and integer manipulation and conversion. Most
