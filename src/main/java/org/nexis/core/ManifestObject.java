@@ -9,7 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
+ * object representing the manifest metadata for a Nexis node or organization.
+ * 
  * @author daviestobialex
  */
 public final record ManifestObject(
@@ -110,8 +111,8 @@ public final record ManifestObject(
             this.specification = specification;
             return this;
         }
-        
-            public Builder protocolVersion(int protocolVersion) {
+
+        public Builder protocolVersion(int protocolVersion) {
             this.protocolVersion = protocolVersion;
             return this;
         }
@@ -130,8 +131,7 @@ public final record ManifestObject(
                     termsUrl,
                     dependencies != null ? dependencies : List.of(),
                     specification,
-                    baseUrl
-            );
+                    baseUrl);
         }
     }
 

@@ -133,17 +133,33 @@ message GetPeersResponse {
       repeated string addresses = 3;
 }
 
-// still trying to understand this fully
+// API function call message
+// Request-response correlation: The correlation_id field enables matching requests to responses
+// in a stateless, idempotent manner without requiring in-memory correlation tables.
+// 
+// Flow:
+// 1. Caller generates unique correlation_id (e.g., UUID or sequential counter)
+// 2. Caller sends Call message with correlation_id + api_id + request payload
+// 3. Handler processes request and sends Result message with same correlation_id
+// 4. Caller matches Result to original Call using correlation_id
+//
+// This approach:
+// - Works over persistent connections (Netty ChannelHandlerContext)
+// - No server-side state needed (correlation_id is echo'd back)
+// - Idempotent: retries use same correlation_id, avoiding duplicates
+// - Compatible with blockchain recording (correlation_id included in transaction)
 message Call {
-  string api_id = 1;// spec path
-  bytes request = 3; // fixed numbering (no gaps)
-  Result response = 4;
+  string api_id = 1;              // API endpoint path (e.g., "/transfer")
+  bytes request = 2;              // Request payload (JSON, protobuf, etc.)
+  bytes correlation_id = 3;       // Unique identifier to match request/response (e.g., UUID bytes)
 }
 
 message Result {
-  uint32 status = 1;  // 0=OK, 1=Error
-  string message = 2;
-  bytes response_data = 3;
+  uint32 status = 1;              // 0=OK, 1=Error
+  string message = 2;             // Human-readable status message
+  uint32 error_code = 5;          // error code
+  bytes response_data = 3;        // Response payload
+  bytes correlation_id = 4;       // Echo of Call.correlation_id for matching
 }
 
 message NexusMessage {
@@ -152,16 +168,17 @@ message NexusMessage {
     Ping ping   = 2;
     GetPeersResponse peers = 3;
     Call functionCall = 4;
-    GetManifestContent getManifestContent = 5;
-    ManifestContent manifestContent = 6;
-    GetPeers peersDiscovery = 7;
-    Challenge handshake = 8; // handshake protocol
-    ChallengeResponse handshakeResponse = 9; // handshake challenge response
-    Block block = 10;
-    Transaction transaction = 11;
-     RejectMessage rejectedMessage = 12;
-     Header header = 13;
-     Header getHeader = 14;
+    Result functionResult = 5;
+    GetManifestContent getManifestContent = 6;
+    ManifestContent manifestContent = 7;
+    GetPeers peersDiscovery = 8;
+    Challenge handshake = 9; // handshake protocol
+    ChallengeResponse handshakeResponse = 10; // handshake challenge response
+    Block block = 11;
+    Transaction transaction = 12;
+     RejectMessage rejectedMessage = 13;
+     Header header = 14;
+     Header getHeader = 15;
   }
 }
 

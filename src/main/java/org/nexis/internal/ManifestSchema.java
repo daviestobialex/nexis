@@ -52,17 +52,19 @@ public interface ManifestSchema {
      */
     public static class EndpointDescriptor {
 
-        final String operationId;
-        final String httpMethod;
-        final String path;
-        final String summary;
-        final List<ParameterDescriptor> parameters;
-        final JsonNode requestBodySchema;
-        final JsonNode responseSchema;
+        public final String operationId;
+        public final String httpMethod;
+        public final String path;
+        public final String summary;
+        public final List<ParameterDescriptor> parameters;
+        public final JsonNode requestBodySchema;
+        public final JsonNode responseSchema;
+        public final double cost;  // Cost in NXI tokens (0.0 for free APIs)
+        public final boolean transactional; // true if this endpoint must be written on-chain even if cost == 0
 
         public EndpointDescriptor(String operationId, String httpMethod, String path,
                 String summary, List<ParameterDescriptor> parameters,
-                JsonNode requestBodySchema, JsonNode responseSchema) {
+                JsonNode requestBodySchema, JsonNode responseSchema, double cost, boolean transactional) {
             this.operationId = operationId;
             this.httpMethod = httpMethod.toUpperCase();
             this.path = path;
@@ -70,6 +72,8 @@ public interface ManifestSchema {
             this.parameters = parameters != null ? parameters : Collections.emptyList();
             this.requestBodySchema = requestBodySchema;
             this.responseSchema = responseSchema;
+            this.cost = cost;
+            this.transactional = transactional;
         }
 
         public String getKey() {

@@ -123,13 +123,21 @@ public final class Manifest {
      */
     public static class ApiClientContext {
 
-        final String baseUrl;
-        final Map<String, EndpointDescriptor> endpoints;
+        private final String baseUrl;
+        private final Map<String, EndpointDescriptor> endpoints;
 
         ApiClientContext(String baseUrl,
                 Map<String, EndpointDescriptor> endpoints) {
             this.baseUrl = baseUrl;
             this.endpoints = endpoints;
+        }
+        
+        public String getBaseUrl(){
+            return this.baseUrl;
+        }
+        
+        public Map<String, EndpointDescriptor> getEndpoints(){
+            return this.endpoints;
         }
     }
 
@@ -322,8 +330,12 @@ public final class Manifest {
     public List<String> getCategories() {
         return manifestObject.categories();
     }
+    
+    public String getOrganizationName() {
+        return manifestObject.organizationName();
+    }
 
-    private String getBaseUrl() {
+    public String getBaseUrl() {
         return manifestObject.baseUrl();
     }
 

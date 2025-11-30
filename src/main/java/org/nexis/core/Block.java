@@ -121,14 +121,14 @@ public class Block {
      * Construct a block initialized with all the given fields.
      *
      * @param version This should usually be set to 1 or 2, depending on if the
-     * height is in the coinbase input.
+     * height is in the genesis input.
      * @param prevBlockHash Reference to previous block in the chain or
      * {@link Sha256Hash#ZERO_HASH} if genesis.
      * @param merkleRoot The root of the merkle tree formed by the transactions.
      * @param time time when the block was mined.
      * @param nonce Arbitrary number to make the block hash lower than the
      * target.
-     * @param transactions List of transactions including the coinbase, or
+     * @param transactions List of transactions including the genesis, or
      * {@code null} for header-only blocks
      */
     public Block(long version, Sha256Hash prevBlockHash, Sha256Hash merkleRoot, Instant time,

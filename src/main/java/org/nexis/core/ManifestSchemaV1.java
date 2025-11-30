@@ -52,11 +52,18 @@ public final class ManifestSchemaV1 implements ManifestSchema {
             String path = pathEntry.getKey();
             JsonNode pathItem = pathEntry.getValue();
 
+            // Extract path-level cost and transactional flags if present (apply to all operations on this path)
+            double pathLevelCost = 0.0;
+            if (pathItem.has("cost")) {
+                pathLevelCost = pathItem.get("cost").asDouble(0.0);
+            }
+            boolean pathLevelTransactional = pathItem.has("transactional") && pathItem.get("transactional").asBoolean(false);
+
             // Parse each HTTP method
             for (String method : Arrays.asList("get", "post", "put", "delete", "patch", "head", "options")) {
                 if (pathItem.has(method)) {
                     JsonNode operation = pathItem.get(method);
-                    EndpointDescriptor descriptor = parseOperation(path, method, operation);
+                    EndpointDescriptor descriptor = parseOperation(path, method, operation, pathLevelCost, pathLevelTransactional);
                     endpoints.put(descriptor.getKey(), descriptor);
                 }
             }
@@ -120,9 +127,10 @@ public final class ManifestSchemaV1 implements ManifestSchema {
      * @param path
      * @param method
      * @param operation
+     * @param pathLevelCost the cost defined at path level (applies to all operations)
      * @return
      */
-    private EndpointDescriptor parseOperation(String path, String method, JsonNode operation) {
+    private EndpointDescriptor parseOperation(String path, String method, JsonNode operation, double pathLevelCost, boolean pathLevelTransactional) {
         String operationId = operation.has("operationId")
                 ? operation.get("operationId").asText() : method + path.replace("/", "_");
 
@@ -182,26 +190,57 @@ public final class ManifestSchemaV1 implements ManifestSchema {
             }
         }
 
+        // Use path-level cost (operation-level cost could override this in future)
+        double cost = pathLevelCost;
+
         return new EndpointDescriptor(
-                operationId, method, path, summary, parameters,
-                requestBodySchema, responseSchema
+            operationId, method, path, summary, parameters,
+            requestBodySchema, responseSchema, cost, pathLevelTransactional
         );
     }
 
     private void validateSpecifications(JsonNode specifications) throws ManifestValidationException {
-
-        // Check if it's a Swagger/OpenAPI specification
+        // Step 1: Validate the "type" field exists
+        if (!specifications.has("type") || specifications.get("type").asText().isEmpty()) {
+            throw new ManifestValidationException(
+                    "Specification must have a 'type' field (e.g., 'openapi' or 'iso2022')");
+        }
+        
+        String specType = specifications.get("type").asText().toLowerCase();
+        
+        // Step 2: Route to appropriate validator based on type
+        if ("openapi".equals(specType)) {
+            validateOpenApiSpecification(specifications);
+        } else if ("iso2022".equals(specType)) {
+            validateIso2022Specification(specifications);
+        } else {
+            throw new ManifestValidationException(
+                    "Unsupported specification type: " + specType + ". Supported types: 'openapi', 'iso2022'");
+        }
+    }
+    
+    /**
+     * Validate OpenAPI specification.
+     * For type="openapi", the specification must contain either:
+     * - "swagger" field (denoting Swagger 2.x version)
+     * - "openapi" field (denoting OpenAPI 3.x version)
+     * 
+     * Once the version is determined, format-specific validation is performed.
+     */
+    private void validateOpenApiSpecification(JsonNode specifications) throws ManifestValidationException {
+        // Determine OpenAPI flavor: Swagger 2.x or OpenAPI 3.x
         if (specifications.has("swagger")) {
+            // Swagger 2.x format
             String swaggerVersion = specifications.get("swagger").asText();
-            if (!swaggerVersion.startsWith("2.") && !swaggerVersion.startsWith("3.")) {
+            if (!swaggerVersion.startsWith("2.")) {
                 throw new ManifestValidationException(
-                        "Unsupported Swagger version: " + swaggerVersion);
+                        "Unsupported Swagger version: " + swaggerVersion + ". Expected 2.x");
             }
 
-            // Validate required Swagger fields
+            // Validate required Swagger 2.x fields
             if (!specifications.has("info") || !specifications.has("paths")) {
                 throw new ManifestValidationException(
-                        "Swagger specification missing required fields (info, paths)");
+                        "Swagger 2.x specification missing required fields (info, paths)");
             }
 
             // Scrub URL - ensure host is not exposing internal details
@@ -209,7 +248,47 @@ public final class ManifestSchemaV1 implements ManifestSchema {
                 String host = specifications.get("host").asText();
                 validateHostSecurity(host);
             }
+        } else if (specifications.has("openapi")) {
+            // OpenAPI 3.x format
+            String openapiVersion = specifications.get("openapi").asText();
+            if (!openapiVersion.startsWith("3.")) {
+                throw new ManifestValidationException(
+                        "Unsupported OpenAPI version: " + openapiVersion + ". Expected 3.x");
+            }
+            
+            // Validate required OpenAPI 3.x fields
+            if (!specifications.has("info") || !specifications.has("paths")) {
+                throw new ManifestValidationException(
+                        "OpenAPI 3.x specification missing required fields (info, paths)");
+            }
+            
+            // OpenAPI 3.x uses "servers" array instead of "host"
+            if (specifications.has("servers")) {
+                JsonNode servers = specifications.get("servers");
+                if (servers.isArray() && servers.size() > 0) {
+                    for (JsonNode server : servers) {
+                        if (server.has("url")) {
+                            String url = server.get("url").asText();
+                            validateHostSecurity(url);
+                        }
+                    }
+                }
+            }
+        } else {
+            throw new ManifestValidationException(
+                    "OpenAPI type specification must contain either 'swagger' (for 2.x) or 'openapi' (for 3.x) version field");
         }
+    }
+    
+    private void validateIso2022Specification(JsonNode specifications) throws ManifestValidationException {
+        // Validate that specDirectory is provided
+        if (!specifications.has("specDirectory") || specifications.get("specDirectory").asText().isEmpty()) {
+            throw new ManifestValidationException(
+                    "ISO 20022 specification requires 'specDirectory' field pointing to XML schema files");
+        }
+        
+        // For now, just validate the field exists. Full ISO 20022 validation will be implemented later.
+        // Future: validate directory exists, contains valid ISO 20022 XSD files, etc.
     }
 
     private void validateHostSecurity(String host) throws ManifestValidationException {

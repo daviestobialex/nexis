@@ -19,7 +19,6 @@ import org.nexis.core.TxConfidenceTable;
 import org.nexis.core.TransactionConfidence;
 import org.nexis.core.Peer;
 import org.nexis.core.TransactionBroadcast;
-import org.nexis.core.TransactionOutPoint;
 import org.nexis.exceptions.VerificationException;
 import org.nexis.internal.MessageHandler;
 import org.nexis.script.Script;
@@ -268,7 +267,7 @@ public class TransactionMessageHandler implements MessageHandler {
      * @param txId the transaction ID (for logging)
      * @throws ScriptException if the script structure is invalid
      */
-    @SuppressWarnings("unused") // inputScript reserved for full cryptographic verification in future
+    // inputScript reserved for full cryptographic verification in future
     private void verifyScriptStructure(Script inputScript, Script scriptPubKey, int inputIndex, String txId)
             throws ScriptException {
         // Check if this is a P2PKH output being spent
@@ -295,7 +294,7 @@ public class TransactionMessageHandler implements MessageHandler {
     private void broadcastValidTransaction() {
         try {
             // Broadcast to the connected peer (could extend to multi-peer broadcast)
-            
+
             log.log(Level.INFO, "Broadcasting validated transaction {0} to peers", transaction.getTxId());
             TransactionBroadcast transactionBroadcast = new TransactionBroadcast(transaction);
             transactionBroadcast.broadcastOnly();
